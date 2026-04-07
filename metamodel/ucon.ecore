@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="ucon" nsURI="http://www.kma.edu.vn/ucon" nsPrefix="ucon">
+  
+  <eClassifiers xsi:type="ecore:EClass" name="PolicyModel">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="policies" upperBound="-1"
+        eType="#//Policy" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EClass" name="Policy">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="policyId" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" iD="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" lowerBound="1" eType="#//PolicyType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="targetAction" lowerBound="1" eType="#//ActionType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="priority" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="effect" lowerBound="1" eType="#//PolicyEffect"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="denyReason" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    
+    <eStructuralFeatures xsi:type="ecore:EReference" name="condition" lowerBound="1"
+        eType="#//Expression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="postUpdates" upperBound="-1"
+        eType="#//Statement" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="PolicyType">
+    <eLiterals name="PRE_AUTHORIZATION" value="0"/>
+    <eLiterals name="ONGOING_AUTHORIZATION" value="1"/>
+    <eLiterals name="POST_UPDATE" value="2"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="ActionType">
+    <eLiterals name="REGISTER" value="0"/>
+    <eLiterals name="DROP" value="1"/>
+    <eLiterals name="ANY" value="2"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="PolicyEffect">
+    <eLiterals name="PERMIT" value="0"/>
+    <eLiterals name="DENY" value="1"/>
+  </eClassifiers>
+
+  <!-- Abstract Expression Base Class -->
+  <eClassifiers xsi:type="ecore:EClass" name="Expression" abstract="true"/>
+
+  <!-- Logical Connectives (AND, OR, NOT) -->
+  <eClassifiers xsi:type="ecore:EClass" name="LogicalOperator" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operator" lowerBound="1"
+        eType="#//LogicalOp"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="left" lowerBound="1"
+        eType="#//Expression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="right" lowerBound="0"
+        eType="#//Expression" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="LogicalOp">
+    <eLiterals name="AND" value="0"/>
+    <eLiterals name="OR" value="1"/>
+    <eLiterals name="NOT" value="2"/>
+  </eClassifiers>
+
+  <!-- Relational Operator (==, <, <=, >, >=, !=, IN, CONTAINS) -->
+  <eClassifiers xsi:type="ecore:EClass" name="RelationalOperator" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operator" lowerBound="1"
+        eType="#//RelationalOp"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="left" lowerBound="1"
+        eType="#//Expression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="right" lowerBound="1"
+        eType="#//Expression" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="RelationalOp">
+    <eLiterals name="EQUALS" value="0"/>
+    <eLiterals name="NOT_EQUALS" value="1"/>
+    <eLiterals name="GREATER_THAN" value="2"/>
+    <eLiterals name="LESS_THAN" value="3"/>
+    <eLiterals name="GREATER_OR_EQUALS" value="4"/>
+    <eLiterals name="LESS_OR_EQUALS" value="5"/>
+    <eLiterals name="IN" value="6"/>
+    <eLiterals name="CONTAINS" value="7"/>
+    <eLiterals name="NOT_CONTAINS" value="8"/>
+    <eLiterals name="SUBSET_OF" value="9"/>
+    <eLiterals name="OVERLAPS" value="10"/>
+  </eClassifiers>
+
+  <!-- Arithmetic Operator (+, -, *, /) -->
+  <eClassifiers xsi:type="ecore:EClass" name="ArithmeticOperator" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operator" lowerBound="1"
+        eType="#//ArithmeticOp"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="left" lowerBound="1"
+        eType="#//Expression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="right" lowerBound="1"
+        eType="#//Expression" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="ArithmeticOp">
+    <eLiterals name="ADD" value="0"/>
+    <eLiterals name="SUBTRACT" value="1"/>
+  </eClassifiers>
+
+  <!-- Variable Access (e.g. subject.currentCredits, object.course.capacity) -->
+  <eClassifiers xsi:type="ecore:EClass" name="VariableAccess" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="entity" lowerBound="1"
+        eType="#//EntityScope"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="path" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="EntityScope">
+    <eLiterals name="SUBJECT" value="0"/>
+    <eLiterals name="OBJECT" value="1"/>
+    <eLiterals name="ENVIRONMENT" value="2"/>
+    <eLiterals name="REQUEST" value="3"/>
+  </eClassifiers>
+
+  <!-- Hardcoded Constants (String, Boolean, Integer) -->
+  <eClassifiers xsi:type="ecore:EClass" name="Constant" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" lowerBound="1"
+        eType="#//DataType"/>
+  </eClassifiers>
+
+  <!-- Array/List Constants (e.g., ["NORMAL", "LATE"]) -->
+  <eClassifiers xsi:type="ecore:EClass" name="ListConstant" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="values" upperBound="-1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="elementType" lowerBound="1"
+        eType="#//DataType"/>
+  </eClassifiers>
+  
+  <!-- Function Call checking (e.g., isEmpty, existsRegistration) -->
+  <eClassifiers xsi:type="ecore:EClass" name="FunctionCall" eSuperTypes="#//Expression">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="functionName" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="arguments" upperBound="-1"
+        eType="#//Expression" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="DataType">
+    <eLiterals name="STRING" value="0"/>
+    <eLiterals name="INTEGER" value="1"/>
+    <eLiterals name="BOOLEAN" value="2"/>
+    <eLiterals name="ENUM" value="3"/>
+  </eClassifiers>
+
+  <!-- Post-Update Statement structure -->
+  <eClassifiers xsi:type="ecore:EClass" name="Statement" abstract="true"/>
+
+  <eClassifiers xsi:type="ecore:EClass" name="UpdateStatement" eSuperTypes="#//Statement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="target" lowerBound="1"
+        eType="#//VariableAccess" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="operator" lowerBound="1"
+        eType="#//AssignmentOp"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" lowerBound="1"
+        eType="#//Expression" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="AssignmentOp">
+    <eLiterals name="ASSIGN" value="0"/>
+    <eLiterals name="ADD_ASSIGN" value="1"/>
+    <eLiterals name="SUB_ASSIGN" value="2"/>
+    <eLiterals name="APPEND" value="3"/>
+    <eLiterals name="REMOVE" value="4"/>
+  </eClassifiers>
+  
+  <eClassifiers xsi:type="ecore:EClass" name="CreateTransactionStatement" eSuperTypes="#//Statement">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="entityName" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="arguments" upperBound="-1"
+        eType="#//Expression" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EClass" name="AuditLogStatement" eSuperTypes="#//Statement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="arguments" upperBound="-1"
+        eType="#//Expression" containment="true"/>
+  </eClassifiers>
+
+</ecore:EPackage>
