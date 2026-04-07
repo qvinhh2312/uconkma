@@ -1,0 +1,60 @@
+# ============================================================
+# UCON_KMA Project — .gitignore
+# ============================================================
+
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+
+# Maven wrapper cache
+.mvn/
+
+# Maven binary (đừng commit vào git)
+**/apache-maven-3.9.6/
+**/maven.zip
+
+# ANTLR generated cache (auto-regenerated khi build)
+dsl/.antlr/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# H2 database files (in-memory, không cần commit)
+*.db
+*.mv.db
+*.trace.db
+
+# Test coverage reports
+.jacoco/
+jacoco.exec
+
+# Environment / secrets
+*.env
+application-local.properties
+
+# Gemini/AI workspace files
+.gemini/
