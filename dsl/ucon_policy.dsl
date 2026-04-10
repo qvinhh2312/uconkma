@@ -141,6 +141,7 @@ policy P11_RegisterStateUpdate_Post {
        object.enrolled ADD_ASSIGN 1
        subject.currentCredits ADD_ASSIGN object.course.credits
        subject.registeredScheduleSlots APPEND object.scheduleSlots
+       subject.registeredClassIds APPEND object.classId
 }
 
 policy P12_AuditAndTrace_Post {
