@@ -65,7 +65,6 @@ public class PolicyEngine {
                 return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
             }
             if (!match && "PERMIT".equals(effect.getName())) {
-               // Policy explicitly requires a match to permit, if it misses, fail
                return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
             }
         }
@@ -78,10 +77,6 @@ public class PolicyEngine {
         executePostUpdateInternal(subject, obj, env, req, false);
     }
 
-    /**
-     * Executes ONLY the AuditLog side-effect (P12) for DENY outcomes.
-     * This prevents P11 state mutations (enrolled++, credits+=) from running on denied requests.
-     */
     public void executeAuditLogOnly(Student subject, ClassSection obj, Environment env, UconRequest req) {
         log.info("Executing AuditLog-only POST_UPDATE for DENY outcome...");
         executePostUpdateInternal(subject, obj, env, req, true);
@@ -119,7 +114,6 @@ public class PolicyEngine {
             if (match) {
                 List<EObject> postUpdates = (List<EObject>) policy.eGet(policy.eClass().getEStructuralFeature("postUpdates"));
                 if (auditLogOnly) {
-                    // On DENY: only execute AuditLogStatement nodes; skip all state mutations
                     List<EObject> auditOnly = postUpdates.stream()
                         .filter(s -> "AuditLogStatement".equals(s.eClass().getName()))
                         .collect(Collectors.toList());

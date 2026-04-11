@@ -31,65 +31,64 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class UconEngineApplicationTests {
 
-    @Autowired private RegistrationController regController;
-    @Autowired private PolicyEngine policyEngine;
-    @Autowired private StudentRepository studentRepo;
-    @Autowired private ClassSectionRepository classRepo;
-    @Autowired private CourseRepository courseRepo;
-    @Autowired private AuditLogRepository auditRepo;
-    @Autowired private RegistrationRepository registrationRepo;
+    @Autowired RegistrationController regController;
+    @Autowired StudentRepository studentRepo;
+    @Autowired ClassSectionRepository classRepo;
+    @Autowired CourseRepository courseRepo;
+    @Autowired RegistrationRepository registrationRepo;
+    @Autowired AuditLogRepository auditRepo;
+    @Autowired PolicyEngine policyEngine;
 
     @BeforeEach
     void setUp() {
-        // Full cleanup before each test for complete isolation
         auditRepo.deleteAll();
         registrationRepo.deleteAll();
         studentRepo.deleteAll();
         classRepo.deleteAll();
         courseRepo.deleteAll();
 
-        // Courses
-        Course cs101 = new Course("CS101", 3, "");
-        Course cs102 = new Course("CS102", 4, "CS101"); // prereq: CS101
+        Course cs101 = new Course();
+        cs101.setCourseId("CS101");
+        cs101.setCredits(3);
+        cs101.setPrerequisites("");
         courseRepo.save(cs101);
+
+        Course cs102 = new Course();
+        cs102.setCourseId("CS102");
+        cs102.setCredits(4);
+        cs102.setPrerequisites("CS101");
         courseRepo.save(cs102);
 
-        // Classes
-        ClassSection c1 = new ClassSection();
-        c1.setClassId("CS101_01");
-        c1.setCourse(cs101);
-        c1.setCapacity(50);
-        c1.setEnrolled(0);
-        c1.setStatus("OPEN");
-        c1.setScheduleSlots("T2_1-3,T4_4-6");
-        classRepo.save(c1);
+        ClassSection cs102Class = new ClassSection();
+        cs102Class.setClassId("CS102_01");
+        cs102Class.setCourse(courseRepo.findById("CS102").orElseThrow());
+        cs102Class.setCapacity(5);
+        cs102Class.setEnrolled(4);
+        cs102Class.setStatus("OPEN");
+        cs102Class.setScheduleSlots("T3_1-3,T5_4-6");
+        classRepo.save(cs102Class);
 
-        ClassSection c2 = new ClassSection();
-        c2.setClassId("CS102_01");
-        c2.setCourse(cs102);
-        c2.setCapacity(5);
-        c2.setEnrolled(4); // 1 slot left — for Race Condition test
-        c2.setStatus("OPEN");
-        c2.setScheduleSlots("T3_1-3,T5_4-6");
-        classRepo.save(c2);
+        ClassSection cs101Class = new ClassSection();
+        cs101Class.setClassId("CS101_01");
+        cs101Class.setCourse(courseRepo.findById("CS101").orElseThrow());
+        cs101Class.setCapacity(30);
+        cs101Class.setEnrolled(10);
+        cs101Class.setStatus("OPEN");
+        cs101Class.setScheduleSlots("T2_1-3");
+        classRepo.save(cs101Class);
 
-        // Default happy-path student (SV001)
         Student sv001 = new Student();
         sv001.setStudentId("SV001");
-        sv001.setCurrentCredits(0);
         sv001.setTuitionPaid(true);
-        sv001.setAcademicWarning(false);
+        sv001.setCurrentCredits(0);
         sv001.setMaxCreditsEffective(15);
         sv001.setCompletedCourses("CS101");
-        sv001.setRegisteredScheduleSlots("");
         sv001.setRegisteredClassIds("");
+        sv001.setRegisteredScheduleSlots("");
         sv001.setHolds("");
         studentRepo.save(sv001);
     }
 
-    // =========================================================================
-    // TEST 01 — Happy Path: full ALLOW flow (P11 + P12 verified)
-    // =========================================================================
     @Test
     @DisplayName("[P11+P12] Happy Path — Đăng ký thành công, state mutation + audit log")
     void test01_HappyPath_SuccessfulRegistration() {
@@ -108,7 +107,6 @@ class UconEngineApplicationTests {
         System.out.println("  → HTTP Status : " + response.getStatusCode().value() + " ✅");
         System.out.println("  → Body        : " + response.getBody());
 
-        // P11: State mutations via DSL
         Student updatedStudent = studentRepo.findById("SV001").orElseThrow();
         assertEquals(4, updatedStudent.getCurrentCredits(), "Credits must increment by 4");
         assertTrue(updatedStudent.getRegisteredClassIds().contains("CS102_01"), "registeredClassIds must contain CS102_01");
@@ -120,20 +118,15 @@ class UconEngineApplicationTests {
         assertEquals(5, updatedClass.getEnrolled(), "Enrolled must increment to 5");
         System.out.println("  → enrolled          : " + updatedClass.getEnrolled() + " (4 → 5) ✅");
 
-        // P11: Registration transaction persisted by DSL (not hardcoded)
-        assertEquals(1, registrationRepo.count(), "DSL P11 must create 1 Registration record");
+        assertEquals(1, registrationRepo.count(), "P11 must create 1 Registration record");
         System.out.println("  → Registration rows : " + registrationRepo.count() + " ✅");
 
-        // P12: AuditLog written by DSL (not hardcoded)
-        assertEquals(1, auditRepo.count(), "DSL P12 must create 1 AuditLog record");
+        assertEquals(1, auditRepo.count(), "P12 must create 1 AuditLog record");
         assertEquals("ALLOW", auditRepo.findAll().get(0).getDecision(), "AuditLog decision must be ALLOW");
         System.out.println("  → AuditLog decision : " + auditRepo.findAll().get(0).getDecision() + " ✅");
         System.out.println("  ✅ TEST 01 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 02 — P01: Tuition not paid → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P01] TuitionPaid — Sinh viên chưa đóng học phí bị DENY")
     void test02_P01_TuitionNotPaid_ShouldDeny() {
@@ -163,12 +156,10 @@ class UconEngineApplicationTests {
         System.out.println("  → HTTP Status : " + response.getStatusCode().value() + " ✅");
         System.out.println("  → Body        : " + body02);
 
-        // P12 AuditLog written on DENY
         assertEquals(1, auditRepo.count(), "P12 must write AuditLog even on DENY");
         assertEquals("DENY", auditRepo.findAll().get(0).getDecision());
         System.out.println("  → AuditLog written (DENY isolation): decision=" + auditRepo.findAll().get(0).getDecision() + " ✅");
 
-        // CRITICAL: P11 must NOT run on DENY
         assertEquals(0, registrationRepo.count(), "P11 must NOT create Registration on DENY");
         Student unchanged = studentRepo.findById("SV002").orElseThrow();
         assertEquals(0, unchanged.getCurrentCredits(), "Credits must NOT change on DENY");
@@ -179,9 +170,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 02 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 03 — P03: Class not OPEN → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P03] ClassStatusOpen — Lớp bị LOCKED phải DENY")
     void test03_P03_ClassNotOpen_ShouldDeny() {
@@ -209,9 +197,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 03 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 04 — P04: Already registered → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P04] NotAlreadyRegistered — Không cho đăng ký trùng lớp")
     void test04_P04_AlreadyRegistered_ShouldDeny() {
@@ -244,9 +229,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 04 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 05 — P05: Credit limit exceeded → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P05] CreditLimit — Vượt hạn mức tín chỉ bị DENY")
     void test05_P05_MaxCreditLimit_ShouldDeny() {
@@ -275,9 +257,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 05 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 06 — P06: Prerequisite not met → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P06] Prerequisite — Thiếu môn tiên quyết bị DENY")
     void test06_P06_Prerequisite_ShouldDeny() {
@@ -306,9 +285,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 06 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 07 — P07: Schedule conflict → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P07] ScheduleConflict — Trùng lịch học bị DENY")
     void test07_P07_ScheduleConflict_ShouldDeny() {
@@ -337,9 +313,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 07 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 08 — P10: Student on hold → DENY (ONGOING phase)
-    // =========================================================================
     @Test
     @DisplayName("[P10] StudentHold — Sinh viên bị cấm thi/kỷ luật bị DENY ở ONGOING")
     void test08_P10_StudentOnHold_ShouldDeny() {
@@ -373,9 +346,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 08 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 09 — P08 + Optimistic Locking: Race Condition on last seat
-    // =========================================================================
     @Test
     @DisplayName("[P08] CapacityRecheck — Race condition: 2 thread tranh suất cuối, chỉ 1 thắng")
     void test09_P08_RaceCondition_OptimisticLocking() throws InterruptedException {
@@ -384,6 +354,7 @@ class UconEngineApplicationTests {
         System.out.println(  "║  Kịch bản : enrolled=4/capacity=5, 2 SV đăng ký đồng thời   ║");
         System.out.println(  "║  Kỳ vọng  : 1 thành công (200), 1 thất bại (403/409)         ║");
         System.out.println(  "╚══════════════════════════════════════════════════════════════╝");
+
         Student sv002 = new Student();
         sv002.setStudentId("SV002");
         sv002.setTuitionPaid(true);
@@ -412,7 +383,6 @@ class UconEngineApplicationTests {
             } catch (ObjectOptimisticLockingFailureException e) {
                 failCount.incrementAndGet();
             } catch (Exception e) {
-                // Optimistic lock may be wrapped inside a transaction rollback exception
                 failCount.incrementAndGet();
             } finally {
                 doneLatch.countDown();
@@ -440,8 +410,8 @@ class UconEngineApplicationTests {
         executor.submit(registerSV001);
         executor.submit(registerSV002);
 
-        startLatch.countDown(); // Release both threads simultaneously
-        doneLatch.await();      // Wait for both to finish
+        startLatch.countDown();
+        doneLatch.await();
         executor.shutdown();
 
         assertEquals(1, successCount.get(), "Exactly 1 thread should claim the last seat");
@@ -458,9 +428,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 09 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 10 — P02: Outside registration window → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P02] RegistrationWindow — Ngoài đợt đăng ký bị DENY")
     void test10_P02_OutsideRegistrationWindow_ShouldDeny() {
@@ -495,9 +462,6 @@ class UconEngineApplicationTests {
         System.out.println("  ✅ TEST 10 PASSED\n");
     }
 
-    // =========================================================================
-    // TEST 11 — P09: Class status changed to LOCKED during ONGOING → DENY
-    // =========================================================================
     @Test
     @DisplayName("[P09] ClassStatusRecheck — Admin khóa lớp giữa PRE và ONGOING bị DENY")
     void test11_P09_ClassStatusChangedOngoing_ShouldDeny() {

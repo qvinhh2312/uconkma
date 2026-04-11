@@ -77,7 +77,6 @@ public class RegistrationController {
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(preDecision.getFailedCode());
-            // Only execute AuditLog (P12), NOT state mutations (P11), on DENY
             policyEngine.executeAuditLogOnly(student, cls, env, req);
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
@@ -90,21 +89,15 @@ public class RegistrationController {
         if (!ongoingDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(ongoingDecision.getFailedCode());
-            // Only execute AuditLog (P12), NOT state mutations (P11), on DENY
             policyEngine.executeAuditLogOnly(student, cls, env, req);
             return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
         }
 
         // ── PHASE 3: POST_UPDATE ───────────────────────────────────────────────────
-        // Set decision to ALLOW so P12 AuditLog records the correct outcome.
         req.setDecision("ALLOW");
         req.setFailedPolicyCodes("NONE");
-
-        // DSL engine executes all postUpdates: enrolled++, credits+=, slots append,
-        // registeredClassIds append, create Transaction(...), create AuditLog(...)
         policyEngine.executePostUpdates(student, cls, env, req);
 
-        // Persist mutated entities back to DB (triggers OptimisticLocking check)
         classRepo.save(cls);
         studentRepo.save(student);
 
