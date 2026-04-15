@@ -51,12 +51,14 @@ class UconEngineApplicationTests {
         cs101.setCourseId("CS101");
         cs101.setCredits(3);
         cs101.setPrerequisites("");
+        cs101.setTuitionFee(3000000);
         courseRepo.save(cs101);
 
         Course cs102 = new Course();
         cs102.setCourseId("CS102");
         cs102.setCredits(4);
         cs102.setPrerequisites("CS101");
+        cs102.setTuitionFee(4000000);
         courseRepo.save(cs102);
 
         ClassSection cs102Class = new ClassSection();
@@ -499,5 +501,140 @@ class UconEngineApplicationTests {
         System.out.println("  → permit     : " + decision.isPermit() + " ✅");
         System.out.println("  → failedCode : " + decision.getFailedCode() + " ✅");
         System.out.println("  ✅ TEST 11 PASSED\n");
+    }
+
+    @Test
+    @DisplayName("[P13] EmergencyMaintenance — Admin bật bảo trì giữa ONGOING, request bị chặn")
+    void test12_P13_EmergencyMaintenance_ShouldDeny() {
+        System.out.println("\n╔══════════════════════════════════════════════════════════════╗");
+        System.out.println(  "║  TEST 12 — P13 │ Phase: ONGOING_AUTHORIZATION                ║");
+        System.out.println(  "║  Kịch bản : Admin bật isMaintenance=true giữa PRE→ONGOING    ║");
+        System.out.println(  "║  Kỳ vọng  : DENY, failedCode=SYSTEM_UNDER_MAINTENANCE        ║");
+        System.out.println(  "╚══════════════════════════════════════════════════════════════╝");
+
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
+
+        Environment env = new Environment("NORMAL", "2026-03-27");
+        env.setOpenTime("2026-01-01");
+        env.setCloseTime("2026-12-31");
+        env.setSemester("2026_FALL");
+        env.setIsMaintenance(true);
+
+        UconRequest req = new UconRequest();
+        req.setRequestId(java.util.UUID.randomUUID().toString());
+        req.setActionType("REGISTER");
+        req.setStudentId("SV001");
+        req.setClassId("CS102_01");
+
+        vn.edu.kma.ucon.engine.pdp.AuthDecision decision =
+                policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
+
+        assertFalse(decision.isPermit(), "P13 must DENY when isMaintenance=true");
+        assertEquals("SYSTEM_UNDER_MAINTENANCE", decision.getFailedCode(),
+                "FailedCode must be SYSTEM_UNDER_MAINTENANCE");
+        System.out.println("  → permit     : " + decision.isPermit() + " ✅");
+        System.out.println("  → failedCode : " + decision.getFailedCode() + " ✅");
+        System.out.println("  ✅ TEST 12 PASSED\n");
+    }
+
+    @Test
+    @DisplayName("[P14] DropStateRevert — DROP thành công: enrolled--, credits-=, Registration deleted")
+    void test13_P14_DropStateRevert_Success() {
+        System.out.println("\n╔══════════════════════════════════════════════════════════════╗");
+        System.out.println(  "║  TEST 13 — P14 │ Phase: POST_UPDATE (DROP)                   ║");
+        System.out.println(  "║  Kịch bản : SV001 REGISTER rồi DROP CS102_01                 ║");
+        System.out.println(  "║  Kỳ vọng  : enrolled--, credits-=4, Registration deleted      ║");
+        System.out.println(  "╚══════════════════════════════════════════════════════════════╝");
+
+        UconRequest regReq = new UconRequest();
+        regReq.setStudentId("SV001");
+        regReq.setClassId("CS102_01");
+        ResponseEntity<String> regResponse = regController.register(regReq);
+        assertEquals(200, regResponse.getStatusCode().value(), "REGISTER must succeed first");
+        System.out.println("  → REGISTER: HTTP " + regResponse.getStatusCode().value() + " ✅");
+
+        Student afterReg = studentRepo.findById("SV001").orElseThrow();
+        ClassSection afterRegCls = classRepo.findById("CS102_01").orElseThrow();
+        assertEquals(4, afterReg.getCurrentCredits());
+        assertEquals(5, afterRegCls.getEnrolled());
+        assertEquals(1, registrationRepo.count());
+        System.out.println("  → After REGISTER: credits=4, enrolled=5, registration=1 ✅");
+
+        UconRequest dropReq = new UconRequest();
+        dropReq.setStudentId("SV001");
+        dropReq.setClassId("CS102_01");
+        ResponseEntity<String> dropResponse = regController.drop(dropReq);
+        assertEquals(200, dropResponse.getStatusCode().value(), "DROP must succeed");
+        System.out.println("  → DROP: HTTP " + dropResponse.getStatusCode().value() + " ✅");
+
+        Student afterDrop = studentRepo.findById("SV001").orElseThrow();
+        ClassSection afterDropCls = classRepo.findById("CS102_01").orElseThrow();
+
+        assertEquals(0, afterDrop.getCurrentCredits(), "Credits must revert to 0");
+        assertEquals(4, afterDropCls.getEnrolled(), "Enrolled must revert to 4");
+        assertFalse(afterDrop.getRegisteredClassIds().contains("CS102_01"), "classId must be removed");
+        assertFalse(afterDrop.getRegisteredScheduleSlots().contains("T3_1-3"), "slots must be removed");
+        assertEquals(0, registrationRepo.count(), "Registration record must be deleted");
+
+        System.out.println("  → After DROP: credits=0, enrolled=4, registration=0 ✅");
+        System.out.println("  → registeredClassIds: '" + afterDrop.getRegisteredClassIds() + "' ✅");
+        System.out.println("  ✅ TEST 13 PASSED\n");
+    }
+
+    @Test
+    @DisplayName("[P15a] RegisterBilling — REGISTER thành công: tuitionDebt += tuitionFee")
+    void test14_P15a_RegisterBilling() {
+        System.out.println("\n╔══════════════════════════════════════════════════════════════╗");
+        System.out.println(  "║  TEST 14 — P15a │ Phase: POST_UPDATE (REGISTER)              ║");
+        System.out.println(  "║  Kịch bản : SV001 đăng ký CS102_01 (tuitionFee=4000000)      ║");
+        System.out.println(  "║  Kỳ vọng  : tuitionDebt += 4000000                            ║");
+        System.out.println(  "╚══════════════════════════════════════════════════════════════╝");
+
+        Student before = studentRepo.findById("SV001").orElseThrow();
+        assertEquals(0, before.getTuitionDebt(), "tuitionDebt starts at 0");
+
+        UconRequest req = new UconRequest();
+        req.setStudentId("SV001");
+        req.setClassId("CS102_01");
+        ResponseEntity<String> response = regController.register(req);
+        assertEquals(200, response.getStatusCode().value());
+        System.out.println("  → REGISTER: HTTP " + response.getStatusCode().value() + " ✅");
+
+        Student after = studentRepo.findById("SV001").orElseThrow();
+        assertEquals(4000000, after.getTuitionDebt(), "tuitionDebt must be 4000000 after REGISTER");
+        System.out.println("  → tuitionDebt: " + after.getTuitionDebt() + " (0 → 4000000) ✅");
+        System.out.println("  ✅ TEST 14 PASSED\n");
+    }
+
+    @Test
+    @DisplayName("[P15b] DropRefund — DROP thành công: tuitionDebt -= tuitionFee")
+    void test15_P15b_DropRefund() {
+        System.out.println("\n╔══════════════════════════════════════════════════════════════╗");
+        System.out.println(  "║  TEST 15 — P15b │ Phase: POST_UPDATE (DROP)                  ║");
+        System.out.println(  "║  Kịch bản : SV001 REGISTER rồi DROP (tuitionFee=4000000)     ║");
+        System.out.println(  "║  Kỳ vọng  : tuitionDebt 0 → 4000000 → 0                      ║");
+        System.out.println(  "╚══════════════════════════════════════════════════════════════╝");
+
+        UconRequest regReq = new UconRequest();
+        regReq.setStudentId("SV001");
+        regReq.setClassId("CS102_01");
+        ResponseEntity<String> regRes = regController.register(regReq);
+        assertEquals(200, regRes.getStatusCode().value());
+
+        Student afterReg = studentRepo.findById("SV001").orElseThrow();
+        assertEquals(4000000, afterReg.getTuitionDebt(), "tuitionDebt after REGISTER = 4000000");
+        System.out.println("  → After REGISTER: tuitionDebt=" + afterReg.getTuitionDebt() + " ✅");
+
+        UconRequest dropReq = new UconRequest();
+        dropReq.setStudentId("SV001");
+        dropReq.setClassId("CS102_01");
+        ResponseEntity<String> dropRes = regController.drop(dropReq);
+        assertEquals(200, dropRes.getStatusCode().value());
+
+        Student afterDrop = studentRepo.findById("SV001").orElseThrow();
+        assertEquals(0, afterDrop.getTuitionDebt(), "tuitionDebt after DROP must revert to 0");
+        System.out.println("  → After DROP: tuitionDebt=" + afterDrop.getTuitionDebt() + " (4000000 → 0) ✅");
+        System.out.println("  ✅ TEST 15 PASSED\n");
     }
 }

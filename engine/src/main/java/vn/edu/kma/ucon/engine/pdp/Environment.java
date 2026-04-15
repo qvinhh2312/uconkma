@@ -51,4 +51,14 @@ public class Environment {
     public void setSemester(String semester) {
         this.semester = semester;
     }
+
+    private boolean isMaintenance;
+
+    public boolean getIsMaintenance() {
+        return isMaintenance;
+    }
+
+    public void setIsMaintenance(boolean isMaintenance) {
+        this.isMaintenance = isMaintenance;
+    }
 }

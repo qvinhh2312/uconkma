@@ -70,6 +70,9 @@ public class ExpressionEvaluator {
                 case "CreateTransactionStatement":
                     executeCreateTransaction(stmt, subject, obj, env, req);
                     break;
+                case "DeleteTransactionStatement":
+                    executeDeleteTransaction(stmt, subject, obj, env, req);
+                    break;
                 case "AuditLogStatement":
                     executeAuditLog(stmt, subject, obj, env, req);
                     break;
@@ -308,12 +311,11 @@ public class ExpressionEvaluator {
                 break;
             }
             case "REMOVE": {
-                // Remove a value from a comma-separated string list
                 if (currentValue != null && value != null) {
-                    final String removeTarget = value.toString().trim();
+                    Collection<?> removeTargets = asListOptimized(value);
                     List<String> existing = asListOptimized(currentValue).stream()
                             .map(Object::toString)
-                            .filter(s -> !s.equals(removeTarget))
+                            .filter(s -> !removeTargets.contains(s))
                             .collect(Collectors.toList());
                     newValue = String.join(",", existing);
                 }
@@ -348,6 +350,19 @@ public class ExpressionEvaluator {
 
         Registration reg = new Registration(studentId, classId, semester, actionType);
         registrationRepository.save(reg);
+    }
+
+    private void executeDeleteTransaction(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
+        List<?> args = (List<?>) node.eGet(node.eClass().getEStructuralFeature("arguments"));
+        if (args == null || args.size() < 3) {
+            throw new IllegalArgumentException("delete Transaction(...) requires 3 arguments: studentId, classId, semester");
+        }
+
+        String studentId = resolveArg(args, 0, subject, obj, env, req);
+        String classId   = resolveArg(args, 1, subject, obj, env, req);
+        String semester  = resolveArg(args, 2, subject, obj, env, req);
+
+        registrationRepository.deleteByStudentIdAndClassIdAndSemester(studentId, classId, semester);
     }
 
     /**

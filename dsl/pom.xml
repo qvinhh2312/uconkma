@@ -1,15 +1,17 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>vn.edu.kma.ucon</groupId>
     <artifactId>ucon-dsl-parser</artifactId>
     <version>1.0.0</version>
-    
+
     <properties>
         <antlr.version>4.13.1</antlr.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>org.antlr</groupId>
@@ -32,7 +34,7 @@
             <version>2.21.0</version>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
@@ -51,7 +53,8 @@
                             <includes>
                                 <include>UconPolicy.g4</include>
                             </includes>
-                            <outputDirectory>${project.build.directory}/generated-sources/antlr4/vn/edu/kma/ucon/parser</outputDirectory>
+                            <outputDirectory>
+                                ${project.build.directory}/generated-sources/antlr4/vn/edu/kma/ucon/parser</outputDirectory>
                             <arguments>
                                 <argument>-package</argument>
                                 <argument>vn.edu.kma.ucon.parser</argument>

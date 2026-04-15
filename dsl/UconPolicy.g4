@@ -47,10 +47,13 @@ listConstant: '[' STRING (',' STRING)* ']';
 functionCall: ID '(' (expression (',' expression)*)? ')';
 
 // Update Statements
-updateStatement: createTransactionStatement | auditLogStatement | standardUpdateStatement;
+updateStatement: createTransactionStatement | deleteTransactionStatement | auditLogStatement | standardUpdateStatement;
+
 
 createTransactionStatement: 'create' ID '(' (expression (',' expression)*)? ')';
 auditLogStatement: 'create' 'AuditLog' '(' (expression (',' expression)*)? ')';
+deleteTransactionStatement: 'delete' ID '(' (expression (',' expression)*)? ')';
+
 standardUpdateStatement: variableAccess assignmentOp expression;
 
 // Operators

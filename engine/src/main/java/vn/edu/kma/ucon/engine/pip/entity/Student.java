@@ -32,6 +32,8 @@ public class Student {
     
     @Version
     private Long version;
+
+    private int tuitionDebt;
     
     public Student() {}
 
@@ -61,6 +63,9 @@ public class Student {
 
     public String getHolds() { return holds; }
     public void setHolds(String holds) { this.holds = holds; }
+
+    public int getTuitionDebt() { return tuitionDebt; }
+    public void setTuitionDebt(int tuitionDebt) { this.tuitionDebt = tuitionDebt; }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }

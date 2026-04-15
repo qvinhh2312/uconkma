@@ -32,13 +32,13 @@ public class UconDslToXmiParser {
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("xmi", new XMIResourceFactoryImpl());
         
         ResourceSet resSet = new ResourceSetImpl();
-        File ecoreFile = new File("../metamodel/ucon.ecore");
+        File ecoreFile = new File("metamodel/ucon.ecore");
         Resource ecoreResource = resSet.getResource(URI.createFileURI(ecoreFile.getAbsolutePath()), true);
         EPackage uconPackage = (EPackage) ecoreResource.getContents().get(0);
         EPackage.Registry.INSTANCE.put(uconPackage.getNsURI(), uconPackage);
 
         // 2. Parse the DSL file using ANTLR
-        File dslFile = new File("ucon_policy.dsl");
+        File dslFile = new File("dsl/ucon_policy.dsl");
         UconPolicyLexer lexer = new UconPolicyLexer(CharStreams.fromFileName(dslFile.getAbsolutePath()));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         UconPolicyParser parser = new UconPolicyParser(tokens);
@@ -49,7 +49,7 @@ public class UconDslToXmiParser {
         EObject rootModel = visitor.visit(tree);
 
         // 4. Serialize to XMI
-        File xmiOutputFile = new File("../xmi/ucon_policy.xmi");
+        File xmiOutputFile = new File("xmi/ucon_policy.xmi");
         Resource xmiResource = resSet.createResource(URI.createFileURI(xmiOutputFile.getAbsolutePath()));
         xmiResource.getContents().add(rootModel);
         xmiResource.save(Collections.EMPTY_MAP);
@@ -310,6 +310,20 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
         obj.eSet(getCls("UpdateStatement").getEStructuralFeature("operator"), getEnumVal("AssignmentOp", enumLit));
         
         obj.eSet(getCls("UpdateStatement").getEStructuralFeature("value"), visit(ctx.expression()));
+        return obj;
+    }
+
+    @Override
+    public EObject visitDeleteTransactionStatement(UconPolicyParser.DeleteTransactionStatementContext ctx) {
+        EObject obj = factory.create(getCls("DeleteTransactionStatement"));
+        obj.eSet(getCls("DeleteTransactionStatement").getEStructuralFeature("entityName"), ctx.ID().getText());
+        if (ctx.expression() != null) {
+            List<EObject> args = new ArrayList<>();
+            for (UconPolicyParser.ExpressionContext eCtx : ctx.expression()) {
+                args.add(visit(eCtx));
+            }
+            obj.eSet(getCls("DeleteTransactionStatement").getEStructuralFeature("arguments"), args);
+        }
         return obj;
     }
 }
