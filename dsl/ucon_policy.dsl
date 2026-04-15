@@ -156,3 +156,65 @@ policy P12_AuditAndTrace_Post {
     postUpdates:
        create AuditLog(request.id, subject.studentId, object.classId, request.decision, request.failedPolicyCodes)
 }
+
+// -------------------------------------------------------------------------
+// ONGOING-AUTHORIZATION — Emergency Maintenance
+// -------------------------------------------------------------------------
+
+policy P13_EmergencyMaintenance_On {
+    type: ONGOING_AUTHORIZATION
+    targetAction: ANY
+    effect: PERMIT
+    priority: 50
+    description: "Ngắt toàn bộ giao dịch đang lơ lửng nếu Admin kích hoạt cờ Bảo trì khẩn cấp"
+    denyReason: "SYSTEM_UNDER_MAINTENANCE"
+    
+    condition: environment.isMaintenance == false
+}
+
+// -------------------------------------------------------------------------
+// POST-UPDATE — DROP State Revert + Financial Billing
+// -------------------------------------------------------------------------
+
+policy P14_DropStateRevert_Post {
+    type: POST_UPDATE
+    targetAction: DROP
+    effect: PERMIT
+    priority: 8
+    description: "Hoàn trả dữ liệu: Giảm sĩ số, trừ tín chỉ, xóa lịch, xóa classId, hủy Record"
+    
+    condition: true
+    
+    postUpdates:
+       delete Transaction(subject.studentId, object.classId, environment.semester)
+       object.enrolled SUB_ASSIGN 1
+       subject.currentCredits SUB_ASSIGN object.course.credits
+       subject.registeredScheduleSlots REMOVE object.scheduleSlots
+       subject.registeredClassIds REMOVE object.classId
+}
+
+policy P15a_RegisterBilling_Post {
+    type: POST_UPDATE
+    targetAction: REGISTER
+    effect: PERMIT
+    priority: 5
+    description: "Cộng dồn công nợ học phí ngay sau khi đăng ký lớp thành công"
+    
+    condition: true
+    
+    postUpdates:
+       subject.tuitionDebt ADD_ASSIGN object.course.tuitionFee
+}
+
+policy P15b_DropRefund_Post {
+    type: POST_UPDATE
+    targetAction: DROP
+    effect: PERMIT
+    priority: 5
+    description: "Hoàn trả lại công nợ học phí ngay sau khi hủy lớp thành công"
+    
+    condition: true
+    
+    postUpdates:
+       subject.tuitionDebt SUB_ASSIGN object.course.tuitionFee
+}
