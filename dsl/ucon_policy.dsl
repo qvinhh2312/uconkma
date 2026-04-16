@@ -1,6 +1,6 @@
 // =========================================================================
 // UCON POLICY DSL FOR KMA REGISTRATION
-// Defines 12 Access Control Policies for Pre, On, and Post-Updates
+// Defines 16 Access Control Policies for Pre, On, and Post-Updates
 // =========================================================================
 
 // -------------------------------------------------------------------------
@@ -87,7 +87,7 @@ policy P07_ScheduleConflict_Pre {
 }
 
 // -------------------------------------------------------------------------
-// ONGOING-AUTHORIZATION (3 Policies)
+// ONGOING-AUTHORIZATION (3 Policies: P08, P09, P10)
 // -------------------------------------------------------------------------
 
 policy P08_CapacityRecheck_On {
@@ -124,7 +124,7 @@ policy P10_StudentHoldRecheck_On {
 }
 
 // -------------------------------------------------------------------------
-// POST-UPDATE (2 Policies)
+// POST-UPDATE — REGISTER (P11, P15a)
 // -------------------------------------------------------------------------
 
 policy P11_RegisterStateUpdate_Post {
