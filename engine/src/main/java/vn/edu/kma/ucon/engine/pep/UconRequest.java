@@ -4,9 +4,7 @@ public class UconRequest {
     private String requestId;
     private String studentId;
     private String classId;
-    private String actionType; // REGISTER, DROP
-    
-    // For Audit log evaluations natively mapped in P12
+    private String actionType;
     private String decision;
     private String failedPolicyCodes;
 

@@ -8,11 +8,9 @@ public class Course {
 
     @Id
     private String courseId;
-    
     private int credits;
-    
-    // Comma-separated list of course IDs
     private String prerequisites;
+    private int tuitionFee;
 
     public Course() {}
 
@@ -30,8 +28,6 @@ public class Course {
 
     public String getPrerequisites() { return prerequisites; }
     public void setPrerequisites(String prerequisites) { this.prerequisites = prerequisites; }
-
-    private int tuitionFee;
 
     public int getTuitionFee() { return tuitionFee; }
     public void setTuitionFee(int tuitionFee) { this.tuitionFee = tuitionFee; }

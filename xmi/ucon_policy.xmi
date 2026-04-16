@@ -82,7 +82,13 @@
       <arguments xsi:type="ucon:VariableAccess" path="holds"/>
     </condition>
   </policies>
-  <policies policyId="P11_RegisterStateUpdate_Post" description="Atomic Update tr&#x1ea1;ng th&#xe1;i Object v&#xe0; Subject sau khi &#x110;&#x103;ng k&#xfd;" type="POST_UPDATE" priority="2">
+  <policies policyId="P13_EmergencyMaintenance_On" description="Ng&#x1eaf;t to&#xe0;n b&#x1ed9; giao d&#x1ecb;ch &#x111;ang l&#x1a1; l&#x1eed;ng n&#x1ebf;u Admin k&#xed;ch ho&#x1ea1;t c&#x1edd; B&#x1ea3;o tr&#xec; kh&#x1ea9;n c&#x1ea5;p" type="ONGOING_AUTHORIZATION" targetAction="ANY" priority="50" denyReason="SYSTEM_UNDER_MAINTENANCE">
+    <condition xsi:type="ucon:RelationalOperator">
+      <left xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="isMaintenance"/>
+      <right xsi:type="ucon:Constant" value="false" type="BOOLEAN"/>
+    </condition>
+  </policies>
+  <policies policyId="P11_RegisterStateUpdate_Post" description="Atomic Update tr&#x1ea1;ng th&#xe1;i Object v&#xe0; Subject sau khi &#x110;&#x103;ng k&#xfd;" type="POST_UPDATE" priority="8">
     <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
     <postUpdates xsi:type="ucon:CreateTransactionStatement" entityName="Transaction">
       <arguments xsi:type="ucon:VariableAccess" path="studentId"/>
@@ -106,22 +112,6 @@
       <target path="registeredClassIds"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
     </postUpdates>
-  </policies>
-  <policies policyId="P12_AuditAndTrace_Post" description="Ghi d&#x1ea5;u v&#x1ebf;t Audit Log cho b&#x1ea5;t k&#x1ef3; request n&#xe0;o" type="POST_UPDATE" targetAction="ANY" priority="1">
-    <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
-    <postUpdates xsi:type="ucon:AuditLogStatement">
-      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="id"/>
-      <arguments xsi:type="ucon:VariableAccess" path="studentId"/>
-      <arguments xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
-      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="decision"/>
-      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="failedPolicyCodes"/>
-    </postUpdates>
-  </policies>
-  <policies policyId="P13_EmergencyMaintenance_On" description="Ng&#x1eaf;t to&#xe0;n b&#x1ed9; giao d&#x1ecb;ch &#x111;ang l&#x1a1; l&#x1eed;ng n&#x1ebf;u Admin k&#xed;ch ho&#x1ea1;t c&#x1edd; B&#x1ea3;o tr&#xec; kh&#x1ea9;n c&#x1ea5;p" type="ONGOING_AUTHORIZATION" targetAction="ANY" priority="50" denyReason="SYSTEM_UNDER_MAINTENANCE">
-    <condition xsi:type="ucon:RelationalOperator">
-      <left xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="isMaintenance"/>
-      <right xsi:type="ucon:Constant" value="false" type="BOOLEAN"/>
-    </condition>
   </policies>
   <policies policyId="P14_DropStateRevert_Post" description="Ho&#xe0;n tr&#x1ea3; d&#x1eef; li&#x1ec7;u: Gi&#x1ea3;m s&#x129; s&#x1ed1;, tr&#x1eeb; t&#xed;n ch&#x1ec9;, x&#xf3;a l&#x1ecb;ch, x&#xf3;a classId, h&#x1ee7;y Record" type="POST_UPDATE" targetAction="DROP" priority="8">
     <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
@@ -159,6 +149,16 @@
     <postUpdates xsi:type="ucon:UpdateStatement" operator="SUB_ASSIGN">
       <target path="tuitionDebt"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.tuitionFee"/>
+    </postUpdates>
+  </policies>
+  <policies policyId="P12_AuditAndTrace_Post" description="Ghi d&#x1ea5;u v&#x1ebf;t Audit Log cho b&#x1ea5;t k&#x1ef3; request n&#xe0;o" type="POST_UPDATE" targetAction="ANY" priority="1">
+    <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
+    <postUpdates xsi:type="ucon:AuditLogStatement">
+      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="id"/>
+      <arguments xsi:type="ucon:VariableAccess" path="studentId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="decision"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="failedPolicyCodes"/>
     </postUpdates>
   </policies>
 </ucon:PolicyModel>

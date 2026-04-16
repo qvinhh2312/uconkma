@@ -28,10 +28,8 @@ public class PolicyEngine {
 
     @SuppressWarnings("unchecked")
     public AuthDecision evaluatePhase(String phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
-        log.info("Evaluating policies for phase: {}", phase);
-        
         EObject root = pdp.getPolicyModelRoot();
-        if (root == null) return new AuthDecision(true, null); // Default allow if no policies
+        if (root == null) return new AuthDecision(true, null);
 
         List<EObject> policies = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policies"));
 
@@ -40,14 +38,14 @@ public class PolicyEngine {
                 EEnumLiteral type = (EEnumLiteral) p.eGet(p.eClass().getEStructuralFeature("type"));
                 EEnumLiteral targetAction = (EEnumLiteral) p.eGet(p.eClass().getEStructuralFeature("targetAction"));
                 boolean phaseMatch = phase.equals(type.getName());
-                boolean actionMatch = "ANY".equals(targetAction.getName()) || 
+                boolean actionMatch = "ANY".equals(targetAction.getName()) ||
                                       (req.getActionType() != null && targetAction.getName().equalsIgnoreCase(req.getActionType()));
                 return phaseMatch && actionMatch;
             })
             .sorted((p1, p2) -> {
                 Integer prio1 = (Integer) p1.eGet(p1.eClass().getEStructuralFeature("priority"));
                 Integer prio2 = (Integer) p2.eGet(p2.eClass().getEStructuralFeature("priority"));
-                return prio2.compareTo(prio1); // High priority first
+                return prio2.compareTo(prio1);
             })
             .collect(Collectors.toList());
 
@@ -57,28 +55,25 @@ public class PolicyEngine {
             EEnumLiteral effect = (EEnumLiteral) policy.eGet(policy.eClass().getEStructuralFeature("effect"));
             String denyReason = (String) policy.eGet(policy.eClass().getEStructuralFeature("denyReason"));
 
-            log.debug("Evaluating Policy: {}", ruleId);
             boolean match = evaluator.evaluateCondition(condition, subject, obj, env, req);
 
             if (match && "DENY".equals(effect.getName())) {
-                log.warn("Policy Engine blocked request: violated rule {}", ruleId);
+                log.warn("Policy {} blocked request.", ruleId);
                 return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
             }
             if (!match && "PERMIT".equals(effect.getName())) {
-               return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
+                return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
             }
         }
-        
+
         return new AuthDecision(true, null);
     }
 
     public void executePostUpdates(Student subject, ClassSection obj, Environment env, UconRequest req) {
-        log.info("Executing POST_UPDATE phase...");
         executePostUpdateInternal(subject, obj, env, req, false);
     }
 
     public void executeAuditLogOnly(Student subject, ClassSection obj, Environment env, UconRequest req) {
-        log.info("Executing AuditLog-only POST_UPDATE for DENY outcome...");
         executePostUpdateInternal(subject, obj, env, req, true);
     }
 
@@ -101,7 +96,7 @@ public class PolicyEngine {
             .sorted((p1, p2) -> {
                 Integer prio1 = (Integer) p1.eGet(p1.eClass().getEStructuralFeature("priority"));
                 Integer prio2 = (Integer) p2.eGet(p2.eClass().getEStructuralFeature("priority"));
-                return prio2.compareTo(prio1); // High priority first
+                return prio2.compareTo(prio1);
             })
             .collect(Collectors.toList());
 
@@ -118,11 +113,10 @@ public class PolicyEngine {
                         .filter(s -> "AuditLogStatement".equals(s.eClass().getName()))
                         .collect(Collectors.toList());
                     if (!auditOnly.isEmpty()) {
-                        log.debug("Executing AuditLogStatement for Policy: {}", ruleId);
                         evaluator.executePostUpdates(auditOnly, subject, obj, env, req);
                     }
                 } else {
-                    log.debug("Executing full postUpdates for Policy: {}", ruleId);
+                    log.debug("Executing postUpdates for policy: {}", ruleId);
                     evaluator.executePostUpdates(postUpdates, subject, obj, env, req);
                 }
             }

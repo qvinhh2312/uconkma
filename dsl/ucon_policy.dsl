@@ -1,11 +1,4 @@
-// =========================================================================
-// UCON POLICY DSL FOR KMA REGISTRATION
-// Defines 16 Access Control Policies for Pre, On, and Post-Updates
-// =========================================================================
-
-// -------------------------------------------------------------------------
-// PRE-AUTHORIZATION (7 Policies)
-// -------------------------------------------------------------------------
+// pre authorization
 
 policy P01_TuitionPaid_Pre {
     type: PRE_AUTHORIZATION
@@ -86,9 +79,7 @@ policy P07_ScheduleConflict_Pre {
     condition: NOT (object.scheduleSlots OVERLAPS subject.registeredScheduleSlots)
 }
 
-// -------------------------------------------------------------------------
-// ONGOING-AUTHORIZATION (3 Policies: P08, P09, P10)
-// -------------------------------------------------------------------------
+// ongoing
 
 policy P08_CapacityRecheck_On {
     type: ONGOING_AUTHORIZATION
@@ -123,44 +114,6 @@ policy P10_StudentHoldRecheck_On {
     condition: isEmpty(subject.holds)
 }
 
-// -------------------------------------------------------------------------
-// POST-UPDATE — REGISTER (P11, P15a)
-// -------------------------------------------------------------------------
-
-policy P11_RegisterStateUpdate_Post {
-    type: POST_UPDATE
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 2
-    description: "Atomic Update trạng thái Object và Subject sau khi Đăng ký"
-    
-    condition: true // Luôn chạy nếu request pass toàn bộ cấp trước
-    
-    postUpdates:
-       create Transaction(subject.studentId, object.classId, environment.semester, "REGISTER")
-       object.enrolled ADD_ASSIGN 1
-       subject.currentCredits ADD_ASSIGN object.course.credits
-       subject.registeredScheduleSlots APPEND object.scheduleSlots
-       subject.registeredClassIds APPEND object.classId
-}
-
-policy P12_AuditAndTrace_Post {
-    type: POST_UPDATE
-    targetAction: ANY
-    effect: PERMIT
-    priority: 1
-    description: "Ghi dấu vết Audit Log cho bất kỳ request nào"
-    
-    condition: true 
-    
-    postUpdates:
-       create AuditLog(request.id, subject.studentId, object.classId, request.decision, request.failedPolicyCodes)
-}
-
-// -------------------------------------------------------------------------
-// ONGOING-AUTHORIZATION — Emergency Maintenance
-// -------------------------------------------------------------------------
-
 policy P13_EmergencyMaintenance_On {
     type: ONGOING_AUTHORIZATION
     targetAction: ANY
@@ -172,9 +125,24 @@ policy P13_EmergencyMaintenance_On {
     condition: environment.isMaintenance == false
 }
 
-// -------------------------------------------------------------------------
-// POST-UPDATE — DROP State Revert + Financial Billing
-// -------------------------------------------------------------------------
+// post update
+
+policy P11_RegisterStateUpdate_Post {
+    type: POST_UPDATE
+    targetAction: REGISTER
+    effect: PERMIT
+    priority: 8
+    description: "Atomic Update trạng thái Object và Subject sau khi Đăng ký"
+    
+    condition: true
+    
+    postUpdates:
+       create Transaction(subject.studentId, object.classId, environment.semester, "REGISTER")
+       object.enrolled ADD_ASSIGN 1
+       subject.currentCredits ADD_ASSIGN object.course.credits
+       subject.registeredScheduleSlots APPEND object.scheduleSlots
+       subject.registeredClassIds APPEND object.classId
+}
 
 policy P14_DropStateRevert_Post {
     type: POST_UPDATE
@@ -217,4 +185,17 @@ policy P15b_DropRefund_Post {
     
     postUpdates:
        subject.tuitionDebt SUB_ASSIGN object.course.tuitionFee
+}
+
+policy P12_AuditAndTrace_Post {
+    type: POST_UPDATE
+    targetAction: ANY
+    effect: PERMIT
+    priority: 1
+    description: "Ghi dấu vết Audit Log cho bất kỳ request nào"
+    
+    condition: true
+    
+    postUpdates:
+       create AuditLog(request.id, subject.studentId, object.classId, request.decision, request.failedPolicyCodes)
 }

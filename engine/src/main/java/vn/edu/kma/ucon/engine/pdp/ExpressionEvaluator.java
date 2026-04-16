@@ -19,15 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * AST-based Expression Evaluator for the UCON Policy Engine.
- *
- * Responsible for:
- * 1. Evaluating boolean conditions (PRE/ONGOING phases).
- * 2. Executing POST_UPDATE statements (property mutations + DB side-effects).
- *
- * All business logic is driven purely by the DSL AST — zero hardcoded mutations.
- */
 @Component
 public class ExpressionEvaluator {
 
@@ -40,10 +31,6 @@ public class ExpressionEvaluator {
         this.registrationRepository = registrationRepository;
     }
 
-    // =========================================================================
-    // PUBLIC API
-    // =========================================================================
-
     public boolean evaluateCondition(EObject condition, Student subject, ClassSection obj, Environment env, UconRequest req) {
         if (condition == null) return true;
         Object result = evaluateNode(condition, subject, obj, env, req);
@@ -53,12 +40,7 @@ public class ExpressionEvaluator {
         throw new IllegalArgumentException("Condition must evaluate to a boolean, got: " + result);
     }
 
-    /**
-     * Executes all POST_UPDATE statements from a policy.
-     * Supports: StandardUpdateStatement (=, ADD_ASSIGN, SUB_ASSIGN, APPEND, REMOVE),
-     *           CreateTransactionStatement (creates Registration record in DB),
-     *           AuditLogStatement (creates AuditLog record in DB).
-     */
+
     public void executePostUpdates(List<EObject> updateStatements, Student subject, ClassSection obj, Environment env, UconRequest req) {
         if (updateStatements == null) return;
         for (EObject stmt : updateStatements) {
@@ -82,9 +64,7 @@ public class ExpressionEvaluator {
         }
     }
 
-    // =========================================================================
-    // CONDITION EVALUATION (Private)
-    // =========================================================================
+
 
     private Object evaluateNode(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         String className = node.eClass().getName();
@@ -184,7 +164,7 @@ public class ExpressionEvaluator {
                 }
                 return false;
             case "SUBSET_OF":
-                // Empty set is subset of any set
+
                 if (leftVal.toString().trim().isEmpty()) return true;
                 Collection<?> subset = asListOptimized(leftVal);
                 Collection<?> superset = asListOptimized(rightVal);
@@ -209,7 +189,7 @@ public class ExpressionEvaluator {
         Object leftValObj = evaluateNode(leftNode, subject, obj, env, req);
         Object rightValObj = evaluateNode(rightNode, subject, obj, env, req);
 
-        // Null-safe unboxing: treat null as 0 to avoid NullPointerException
+
         Integer leftVal = leftValObj instanceof Integer ? (Integer) leftValObj : 0;
         Integer rightVal = rightValObj instanceof Integer ? (Integer) rightValObj : 0;
 
@@ -229,8 +209,7 @@ public class ExpressionEvaluator {
         }
 
         if ("checkExistsRegistration".equals(funcName)) {
-            // DSL: checkExistsRegistration(subject.studentId, object.classId, environment.semester)
-            // We check if classId is already in the student's registeredClassIds list.
+
             Object classIdObj = evaluateNode((EObject) args.get(1), subject, obj, env, req);
             if (classIdObj != null && subject != null && subject.getRegisteredClassIds() != null) {
                 return asListOptimized(subject.getRegisteredClassIds()).contains(classIdObj.toString().trim());
@@ -241,16 +220,9 @@ public class ExpressionEvaluator {
         throw new UnsupportedOperationException("Unknown function in DSL condition: " + funcName);
     }
 
-    // =========================================================================
-    // POST-UPDATE STATEMENT EXECUTORS (Private)
-    // =========================================================================
 
-    /**
-     * Handles: object.enrolled ADD_ASSIGN 1
-     *          subject.currentCredits ADD_ASSIGN object.course.credits
-     *          subject.registeredScheduleSlots APPEND object.scheduleSlots
-     *          subject.registeredClassIds APPEND object.classId
-     */
+
+
     private void executeStandardUpdate(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         EObject targetNode = (EObject) node.eGet(node.eClass().getEStructuralFeature("target"));
         EEnumLiteral operator = (EEnumLiteral) node.eGet(node.eClass().getEStructuralFeature("operator"));
@@ -271,7 +243,7 @@ public class ExpressionEvaluator {
 
         if (targetInstance == null) return;
 
-        // Traverse nested path e.g. "course.credits" — stop before the last segment
+
         String[] props = pathOrig.split("\\.");
         for (int i = 0; i < props.length - 1; i++) {
             targetInstance = getProperty(targetInstance, props[i]);
@@ -298,7 +270,7 @@ public class ExpressionEvaluator {
                 }
                 break;
             case "APPEND": {
-                // Comma-separated string list append
+
                 String currentStr = (currentValue == null) ? "" : currentValue.toString();
                 String appendStr  = (value == null) ? "" : value.toString();
                 if (appendStr.isEmpty()) {
@@ -330,13 +302,7 @@ public class ExpressionEvaluator {
         }
     }
 
-    /**
-     * Handles: create Transaction(subject.studentId, object.classId, environment.semester, "REGISTER")
-     *
-     * The DSL calls this entity "Transaction" (from chapter_3_logic.md).
-     * The engine maps it to the Registration entity to avoid naming conflicts.
-     * Argument order: (studentId, classId, semester, actionType)
-     */
+
     private void executeCreateTransaction(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         List<?> args = (List<?>) node.eGet(node.eClass().getEStructuralFeature("arguments"));
         if (args == null || args.size() < 4) {
@@ -365,11 +331,7 @@ public class ExpressionEvaluator {
         registrationRepository.deleteByStudentIdAndClassIdAndSemester(studentId, classId, semester);
     }
 
-    /**
-     * Handles: create AuditLog(request.id, subject.studentId, object.classId, request.decision, request.failedPolicyCodes)
-     *
-     * Argument order: (requestId, studentId, classId, decision, failedPolicyCodes)
-     */
+
     private void executeAuditLog(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         List<?> args = (List<?>) node.eGet(node.eClass().getEStructuralFeature("arguments"));
         if (args == null || args.size() < 5) {
@@ -391,17 +353,13 @@ public class ExpressionEvaluator {
         auditLogRepository.save(al);
     }
 
-    /**
-     * Safely evaluates an argument from a DSL argument list and returns it as a String.
-     */
+
     private String resolveArg(List<?> args, int index, Student subject, ClassSection obj, Environment env, UconRequest req) {
         Object val = evaluateNode((EObject) args.get(index), subject, obj, env, req);
         return val == null ? null : val.toString();
     }
 
-    // =========================================================================
-    // VARIABLE RESOLUTION (Private)
-    // =========================================================================
+
 
     private Object resolveVariable(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         EEnumLiteral entity = (EEnumLiteral) node.eGet(node.eClass().getEStructuralFeature("entity"));
@@ -440,9 +398,7 @@ public class ExpressionEvaluator {
         return (List<String>) node.eGet(node.eClass().getEStructuralFeature("values"));
     }
 
-    // =========================================================================
-    // REFLECTION HELPERS (Private)
-    // =========================================================================
+
 
     private Object getProperty(Object instance, String propName) {
         try {
@@ -451,7 +407,7 @@ public class ExpressionEvaluator {
             try {
                 method = instance.getClass().getMethod(getterName);
             } catch (NoSuchMethodException e) {
-                // Boolean properties may use "is" prefix
+
                 String isName = "is" + propName.substring(0, 1).toUpperCase() + propName.substring(1);
                 method = instance.getClass().getMethod(isName);
             }

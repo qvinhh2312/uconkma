@@ -54,7 +54,6 @@ public class RegistrationController {
         }
 
         Environment env = buildEnvironment();
-
         Student student = studentRepo.findById(req.getStudentId()).orElse(null);
         ClassSection cls = classRepo.findById(req.getClassId()).orElse(null);
 
@@ -62,7 +61,6 @@ public class RegistrationController {
             return ResponseEntity.badRequest().body("Student or ClassSection not found.");
         }
 
-        // ── PHASE 1: PRE_AUTHORIZATION ─────────────────────────────────────────
         AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
@@ -71,10 +69,8 @@ public class RegistrationController {
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
-        // ── CACHE REFRESH ──────────────────────────────────────────────────────
         entityManager.refresh(cls);
 
-        // ── PHASE 2: ONGOING_AUTHORIZATION ────────────────────────────────────
         AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
         if (!ongoingDecision.isPermit()) {
             req.setDecision("DENY");
@@ -83,7 +79,6 @@ public class RegistrationController {
             return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
         }
 
-        // ── PHASE 3: POST_UPDATE ───────────────────────────────────────────────
         req.setDecision("ALLOW");
         req.setFailedPolicyCodes("NONE");
         policyEngine.executePostUpdates(student, cls, env, req);
@@ -105,7 +100,6 @@ public class RegistrationController {
         }
 
         Environment env = buildEnvironment();
-
         Student student = studentRepo.findById(req.getStudentId()).orElse(null);
         ClassSection cls = classRepo.findById(req.getClassId()).orElse(null);
 
@@ -113,7 +107,6 @@ public class RegistrationController {
             return ResponseEntity.badRequest().body("Student or ClassSection not found.");
         }
 
-        // DROP guard: SV phải đang đăng ký lớp đó
         if (!asList(student.getRegisteredClassIds()).contains(req.getClassId())) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes("NOT_REGISTERED");
@@ -121,7 +114,6 @@ public class RegistrationController {
             return ResponseEntity.status(403).body("DENIED: NOT_REGISTERED");
         }
 
-        // ── PHASE 1: PRE_AUTHORIZATION (P01, P02 targetAction:ANY) ────────────
         AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
@@ -130,10 +122,8 @@ public class RegistrationController {
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
-        // ── CACHE REFRESH ──────────────────────────────────────────────────────
         entityManager.refresh(cls);
 
-        // ── PHASE 2: ONGOING_AUTHORIZATION (P10, P13 targetAction:ANY) ────────
         AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
         if (!ongoingDecision.isPermit()) {
             req.setDecision("DENY");
@@ -142,7 +132,6 @@ public class RegistrationController {
             return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
         }
 
-        // ── PHASE 3: POST_UPDATE (P14, P15b, P12) ─────────────────────────────
         req.setDecision("ALLOW");
         req.setFailedPolicyCodes("NONE");
         policyEngine.executePostUpdates(student, cls, env, req);

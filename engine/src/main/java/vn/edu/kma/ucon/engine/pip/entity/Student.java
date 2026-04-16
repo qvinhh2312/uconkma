@@ -14,26 +14,23 @@ public class Student {
     private int currentCredits;
     private boolean tuitionPaid;
     private boolean academicWarning;
-    
-    // Max credits depending on rating
     private int maxCreditsEffective;
-    
-    @Column(length = 1000)
-    private String completedCourses; // Comma-separated
+    private int tuitionDebt;
 
     @Column(length = 1000)
-    private String registeredScheduleSlots; // Comma-separated
+    private String completedCourses;
 
     @Column(length = 1000)
-    private String registeredClassIds; // Comma-separated
+    private String registeredScheduleSlots;
+
+    @Column(length = 1000)
+    private String registeredClassIds;
 
     @Column(length = 1000)
     private String holds;
     
     @Version
     private Long version;
-
-    private int tuitionDebt;
     
     public Student() {}
 
