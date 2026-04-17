@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="ASCII"?>
 <ucon:PolicyModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ucon="http://www.kma.edu.vn/ucon">
-  <policies policyId="P01_TuitionPaid_Pre" description="Ch&#x1ec9; cho ph&#xe9;p SV &#x111;&#xe3; ho&#xe0;n t&#x1ea5;t h&#x1ecd;c ph&#xed;" targetAction="ANY" priority="100" denyReason="TUITION_NOT_PAID">
-    <condition xsi:type="ucon:RelationalOperator">
-      <left xsi:type="ucon:VariableAccess" path="tuitionPaid"/>
+  <policies policyId="P01_TuitionPaid_Pre" description="Chi cho phep SV da hoan tat hoc phi" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="100" denyReason="TUITION_NOT_PAID">
+    <condition xsi:type="ucon:RelationalOperator" operator="EQUALS">
+      <left xsi:type="ucon:VariableAccess" entity="SUBJECT" path="tuitionPaid"/>
       <right xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
     </condition>
   </policies>
-  <policies policyId="P02_RegistrationWindow_Pre" description="Ch&#x1ec9; cho &#x111;&#x103;ng k&#xfd; trong &#x111;&#x1ee3;t v&#xe0; gi&#x1edd; h&#x1ee3;p l&#x1ec7;" targetAction="ANY" priority="90" denyReason="OUTSIDE_REGISTRATION_WINDOW">
-    <condition xsi:type="ucon:LogicalOperator">
-      <left xsi:type="ucon:LogicalOperator">
+  <policies policyId="P13a_EmergencyMaintenance_Pre" description="Chi cho giao dich khi he thong khong o trang thai bao tri" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="ANY" effect="PERMIT" priority="95" denyReason="SYSTEM_UNDER_MAINTENANCE">
+    <condition xsi:type="ucon:RelationalOperator" operator="EQUALS">
+      <left xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="isMaintenance"/>
+      <right xsi:type="ucon:Constant" value="false" type="BOOLEAN"/>
+    </condition>
+  </policies>
+  <policies policyId="P02_RegistrationWindow_Pre" description="Chi cho giao dich trong dot va gio hop le" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="ANY" effect="PERMIT" priority="90" denyReason="OUTSIDE_REGISTRATION_WINDOW">
+    <condition xsi:type="ucon:LogicalOperator" operator="AND">
+      <left xsi:type="ucon:LogicalOperator" operator="AND">
         <left xsi:type="ucon:RelationalOperator" operator="IN">
           <left xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="registrationPhase"/>
           <right xsi:type="ucon:ListConstant" elementType="ENUM">
@@ -27,135 +33,136 @@
       </right>
     </condition>
   </policies>
-  <policies policyId="P03_ClassStatusOpen_Pre" description="Ch&#x1ec9; l&#x1edb;p &#x111;ang m&#x1edf; th&#x1ef1;c s&#x1ef1; m&#x1edb;i &#x111;&#x1b0;&#x1ee3;c &#x111;&#x103;ng k&#xfd;" priority="80" denyReason="CLASS_NOT_OPEN">
-    <condition xsi:type="ucon:RelationalOperator">
+  <policies policyId="P03_ClassStatusOpen_Pre" description="Chi lop dang mo thuc su moi duoc dang ky" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="80" denyReason="CLASS_NOT_OPEN">
+    <condition xsi:type="ucon:RelationalOperator" operator="EQUALS">
       <left xsi:type="ucon:VariableAccess" entity="OBJECT" path="status"/>
-      <right xsi:type="ucon:Constant" value="OPEN"/>
+      <right xsi:type="ucon:Constant" value="OPEN" type="STRING"/>
     </condition>
   </policies>
-  <policies policyId="P04_NotAlreadyRegistered_Pre" description="Kh&#xf4;ng cho &#x111;&#x103;ng k&#xfd; tr&#xf9;ng c&#xf9;ng l&#x1edb;p" priority="70" denyReason="ALREADY_REGISTERED">
+  <policies policyId="P04_NotAlreadyRegistered_Pre" description="Khong cho dang ky trung cung lop" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="70" denyReason="ALREADY_REGISTERED">
     <condition xsi:type="ucon:LogicalOperator" operator="NOT">
       <left xsi:type="ucon:FunctionCall" functionName="checkExistsRegistration">
-        <arguments xsi:type="ucon:VariableAccess" path="studentId"/>
+        <arguments xsi:type="ucon:VariableAccess" entity="SUBJECT" path="studentId"/>
         <arguments xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
         <arguments xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="semester"/>
       </left>
     </condition>
   </policies>
-  <policies policyId="P05_CreditLimit_Pre" description="Kh&#xf4;ng v&#x1b0;&#x1ee3;t tr&#x1ea7;n h&#x1ea1;n m&#x1ee9;c t&#xed;n ch&#x1ec9; th&#x1ef1;c t&#x1ebf;" priority="60" denyReason="CREDIT_LIMIT_EXCEEDED">
+  <policies policyId="P16_DropOnlyIfRegistered_Pre" description="Chi cho huy lop khi SV da co giao dich dang ky hop le" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="DROP" effect="PERMIT" priority="65" denyReason="NOT_REGISTERED">
+    <condition xsi:type="ucon:FunctionCall" functionName="checkExistsRegistration">
+      <arguments xsi:type="ucon:VariableAccess" entity="SUBJECT" path="studentId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="semester"/>
+    </condition>
+  </policies>
+  <policies policyId="P05_CreditLimit_Pre" description="Khong vuot tran han muc tin chi thuc te" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="60" denyReason="CREDIT_LIMIT_EXCEEDED">
     <condition xsi:type="ucon:RelationalOperator" operator="LESS_OR_EQUALS">
-      <left xsi:type="ucon:ArithmeticOperator">
-        <left xsi:type="ucon:VariableAccess" path="currentCredits"/>
+      <left xsi:type="ucon:ArithmeticOperator" operator="ADD">
+        <left xsi:type="ucon:VariableAccess" entity="SUBJECT" path="currentCredits"/>
         <right xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.credits"/>
       </left>
-      <right xsi:type="ucon:VariableAccess" path="maxCreditsEffective"/>
+      <right xsi:type="ucon:VariableAccess" entity="SUBJECT" path="maxCreditsEffective"/>
     </condition>
   </policies>
-  <policies policyId="P06_Prerequisite_Pre" description="&#x110;&#x1ea3;m b&#x1ea3;o &#x111;&#xe3; ho&#xe0;n t&#x1ea5;t m&#xf4;n h&#x1ecd;c ti&#xea;n quy&#x1ebf;t" priority="50" denyReason="PREREQUISITE_NOT_MET">
+  <policies policyId="P06_Prerequisite_Pre" description="Dam bao da hoan tat mon hoc tien quyet" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="50" denyReason="PREREQUISITE_NOT_MET">
     <condition xsi:type="ucon:RelationalOperator" operator="SUBSET_OF">
       <left xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.prerequisites"/>
-      <right xsi:type="ucon:VariableAccess" path="completedCourses"/>
+      <right xsi:type="ucon:VariableAccess" entity="SUBJECT" path="completedCourses"/>
     </condition>
   </policies>
-  <policies policyId="P07_ScheduleConflict_Pre" description="Tr&#xe1;nh tr&#xf9;ng l&#x1ecb;ch h&#x1ecd;c v&#x1edb;i c&#xe1;c m&#xf4;n &#x111;&#xe3; ch&#x1ecd;n" priority="40" denyReason="SCHEDULE_CONFLICT">
+  <policies policyId="P07_ScheduleConflict_Pre" description="Tranh trung lich hoc voi cac mon da chon" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="PRE_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="40" denyReason="SCHEDULE_CONFLICT">
     <condition xsi:type="ucon:LogicalOperator" operator="NOT">
       <left xsi:type="ucon:RelationalOperator" operator="OVERLAPS">
         <left xsi:type="ucon:VariableAccess" entity="OBJECT" path="scheduleSlots"/>
-        <right xsi:type="ucon:VariableAccess" path="registeredScheduleSlots"/>
+        <right xsi:type="ucon:VariableAccess" entity="SUBJECT" path="registeredScheduleSlots"/>
       </left>
     </condition>
   </policies>
-  <policies policyId="P08_CapacityRecheck_On" description="Ch&#x1ed1;ng race condition &#x1edf; slot cu&#x1ed1;i c&#xf9;ng" type="ONGOING_AUTHORIZATION" priority="30" denyReason="CLASS_FULL_ON_COMMIT">
+  <policies policyId="P08_CapacityRecheck_On" description="Chong race condition o slot cuoi cung" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="ONGOING_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="30" denyReason="CLASS_FULL_ON_COMMIT">
     <condition xsi:type="ucon:RelationalOperator" operator="LESS_THAN">
       <left xsi:type="ucon:VariableAccess" entity="OBJECT" path="enrolled"/>
       <right xsi:type="ucon:VariableAccess" entity="OBJECT" path="capacity"/>
     </condition>
   </policies>
-  <policies policyId="P09_ClassStatusRecheck_On" description="Ki&#x1ec3;m tra l&#x1ea1;i tr&#x1ea1;ng th&#xe1;i l&#x1edb;p ph&#xf2;ng khi Admin kh&#xf3;a &#x111;&#x1ed9;t xu&#x1ea5;t" type="ONGOING_AUTHORIZATION" priority="20" denyReason="CLASS_STATUS_CHANGED">
-    <condition xsi:type="ucon:RelationalOperator">
+  <policies policyId="P09_ClassStatusRecheck_On" description="Kiem tra lai trang thai lop phong khi Admin khoa dot xuat" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="ONGOING_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="20" denyReason="CLASS_STATUS_CHANGED">
+    <condition xsi:type="ucon:RelationalOperator" operator="EQUALS">
       <left xsi:type="ucon:VariableAccess" entity="OBJECT" path="status"/>
-      <right xsi:type="ucon:Constant" value="OPEN"/>
+      <right xsi:type="ucon:Constant" value="OPEN" type="STRING"/>
     </condition>
   </policies>
-  <policies policyId="P10_StudentHoldRecheck_On" description="Ki&#x1ec3;m tra t&#xec;nh tr&#x1ea1;ng c&#x1ea7;m ch&#xe2;n k&#x1ef7; lu&#x1ead;t c&#x1ee7;a SV tr&#x1b0;&#x1edb;c khi t&#x1ea1;o m&#x1ed1;c" type="ONGOING_AUTHORIZATION" targetAction="ANY" priority="10" denyReason="STUDENT_ON_HOLD">
+  <policies policyId="P10_StudentHoldRecheck_On" description="Kiem tra tinh trang hold cua SV truoc commit dang ky" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="ONGOING_AUTHORIZATION" targetAction="REGISTER" effect="PERMIT" priority="10" denyReason="STUDENT_ON_HOLD">
     <condition xsi:type="ucon:FunctionCall" functionName="isEmpty">
-      <arguments xsi:type="ucon:VariableAccess" path="holds"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="SUBJECT" path="holds"/>
     </condition>
   </policies>
-  <policies policyId="P13_EmergencyMaintenance_On" description="Ng&#x1eaf;t to&#xe0;n b&#x1ed9; giao d&#x1ecb;ch &#x111;ang l&#x1a1; l&#x1eed;ng n&#x1ebf;u Admin k&#xed;ch ho&#x1ea1;t c&#x1edd; B&#x1ea3;o tr&#xec; kh&#x1ea9;n c&#x1ea5;p" type="ONGOING_AUTHORIZATION" targetAction="ANY" priority="50" denyReason="SYSTEM_UNDER_MAINTENANCE">
-    <condition xsi:type="ucon:RelationalOperator">
+  <policies policyId="P13_EmergencyMaintenance_On" description="Ngat giao dich dang lo lung neu Admin kich hoat bao tri khan cap" subjectType="Student" objectType="ClassSection" ruleFamily="AUTHORIZATION" type="ONGOING_AUTHORIZATION" targetAction="ANY" effect="PERMIT" priority="50" denyReason="SYSTEM_UNDER_MAINTENANCE">
+    <condition xsi:type="ucon:RelationalOperator" operator="EQUALS">
       <left xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="isMaintenance"/>
       <right xsi:type="ucon:Constant" value="false" type="BOOLEAN"/>
     </condition>
   </policies>
-  <policies policyId="P11_RegisterStateUpdate_Post" description="Atomic Update tr&#x1ea1;ng th&#xe1;i Object v&#xe0; Subject sau khi &#x110;&#x103;ng k&#xfd;" type="POST_UPDATE" priority="8">
+  <policies policyId="P11_RegisterStateUpdate_Post" description="Commit dang ky: transaction, state subject object, tuition debt" subjectType="Student" objectType="ClassSection" ruleFamily="MUTATION" type="POST_UPDATE" targetAction="REGISTER" effect="PERMIT" priority="8">
     <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
     <postUpdates xsi:type="ucon:CreateTransactionStatement" entityName="Transaction">
-      <arguments xsi:type="ucon:VariableAccess" path="studentId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="SUBJECT" path="studentId"/>
       <arguments xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
       <arguments xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="semester"/>
-      <arguments xsi:type="ucon:Constant" value="REGISTER"/>
+      <arguments xsi:type="ucon:Constant" value="REGISTER" type="STRING"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="ADD_ASSIGN">
-      <target entity="OBJECT" path="enrolled"/>
+      <target xsi:type="ucon:VariableAccess" entity="OBJECT" path="enrolled"/>
       <value xsi:type="ucon:Constant" value="1" type="INTEGER"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="ADD_ASSIGN">
-      <target path="currentCredits"/>
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="currentCredits"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.credits"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="APPEND">
-      <target path="registeredScheduleSlots"/>
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="registeredScheduleSlots"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="scheduleSlots"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="APPEND">
-      <target path="registeredClassIds"/>
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="registeredClassIds"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
     </postUpdates>
+    <postUpdates xsi:type="ucon:UpdateStatement" operator="ADD_ASSIGN">
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="tuitionDebt"/>
+      <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.tuitionFee"/>
+    </postUpdates>
   </policies>
-  <policies policyId="P14_DropStateRevert_Post" description="Ho&#xe0;n tr&#x1ea3; d&#x1eef; li&#x1ec7;u: Gi&#x1ea3;m s&#x129; s&#x1ed1;, tr&#x1eeb; t&#xed;n ch&#x1ec9;, x&#xf3;a l&#x1ecb;ch, x&#xf3;a classId, h&#x1ee7;y Record" type="POST_UPDATE" targetAction="DROP" priority="8">
+  <policies policyId="P14_DropStateRevert_Post" description="Commit huy lop: xoa transaction, hoan state va cap nhat settlement" subjectType="Student" objectType="ClassSection" ruleFamily="MUTATION" type="POST_UPDATE" targetAction="DROP" effect="PERMIT" priority="8">
     <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
     <postUpdates xsi:type="ucon:DeleteTransactionStatement" entityName="Transaction">
-      <arguments xsi:type="ucon:VariableAccess" path="studentId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="SUBJECT" path="studentId"/>
       <arguments xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
       <arguments xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="semester"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="SUB_ASSIGN">
-      <target entity="OBJECT" path="enrolled"/>
+      <target xsi:type="ucon:VariableAccess" entity="OBJECT" path="enrolled"/>
       <value xsi:type="ucon:Constant" value="1" type="INTEGER"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="SUB_ASSIGN">
-      <target path="currentCredits"/>
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="currentCredits"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.credits"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="REMOVE">
-      <target path="registeredScheduleSlots"/>
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="registeredScheduleSlots"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="scheduleSlots"/>
     </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="REMOVE">
-      <target path="registeredClassIds"/>
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="registeredClassIds"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
     </postUpdates>
-  </policies>
-  <policies policyId="P15a_RegisterBilling_Post" description="C&#x1ed9;ng d&#x1ed3;n c&#xf4;ng n&#x1ee3; h&#x1ecd;c ph&#xed; ngay sau khi &#x111;&#x103;ng k&#xfd; l&#x1edb;p th&#xe0;nh c&#xf4;ng" type="POST_UPDATE" priority="5">
-    <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
-    <postUpdates xsi:type="ucon:UpdateStatement" operator="ADD_ASSIGN">
-      <target path="tuitionDebt"/>
-      <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.tuitionFee"/>
-    </postUpdates>
-  </policies>
-  <policies policyId="P15b_DropRefund_Post" description="Ho&#xe0;n tr&#x1ea3; l&#x1ea1;i c&#xf4;ng n&#x1ee3; h&#x1ecd;c ph&#xed; ngay sau khi h&#x1ee7;y l&#x1edb;p th&#xe0;nh c&#xf4;ng" type="POST_UPDATE" targetAction="DROP" priority="5">
-    <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="SUB_ASSIGN">
-      <target path="tuitionDebt"/>
+      <target xsi:type="ucon:VariableAccess" entity="SUBJECT" path="tuitionDebt"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.tuitionFee"/>
     </postUpdates>
   </policies>
-  <policies policyId="P12_AuditAndTrace_Post" description="Ghi d&#x1ea5;u v&#x1ebf;t Audit Log cho b&#x1ea5;t k&#x1ef3; request n&#xe0;o" type="POST_UPDATE" targetAction="ANY" priority="1">
+  <policies policyId="P12_AuditAndTrace_Post" description="Ghi audit log cho moi request" subjectType="Student" objectType="ClassSection" ruleFamily="TRACE" type="POST_UPDATE" targetAction="ANY" effect="PERMIT" priority="1">
     <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
     <postUpdates xsi:type="ucon:AuditLogStatement">
-      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="id"/>
-      <arguments xsi:type="ucon:VariableAccess" path="studentId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="requestId"/>
+      <arguments xsi:type="ucon:VariableAccess" entity="SUBJECT" path="studentId"/>
       <arguments xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
       <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="decision"/>
       <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="failedPolicyCodes"/>

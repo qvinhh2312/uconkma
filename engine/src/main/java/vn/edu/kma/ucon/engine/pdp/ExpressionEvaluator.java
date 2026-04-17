@@ -13,6 +13,9 @@ import vn.edu.kma.ucon.engine.pip.repository.AuditLogRepository;
 import vn.edu.kma.ucon.engine.pip.repository.RegistrationRepository;
 
 import java.lang.reflect.Method;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,11 +27,17 @@ public class ExpressionEvaluator {
 
     private final AuditLogRepository auditLogRepository;
     private final RegistrationRepository registrationRepository;
+    private final PolicyFunctionRegistry functionRegistry;
+    private final PolicyFunctionExecutor functionExecutor;
 
     public ExpressionEvaluator(AuditLogRepository auditLogRepository,
-                               RegistrationRepository registrationRepository) {
+                               RegistrationRepository registrationRepository,
+                               PolicyFunctionRegistry functionRegistry,
+                               PolicyFunctionExecutor functionExecutor) {
         this.auditLogRepository = auditLogRepository;
         this.registrationRepository = registrationRepository;
+        this.functionRegistry = functionRegistry;
+        this.functionExecutor = functionExecutor;
     }
 
     public boolean evaluateCondition(EObject condition, Student subject, ClassSection obj, Environment env, UconRequest req) {
@@ -128,19 +137,19 @@ public class ExpressionEvaluator {
                 return !leftVal.equals(rightVal);
             case "GREATER_THAN":
                 if (leftVal instanceof Integer && rightVal instanceof Integer) return (Integer) leftVal > (Integer) rightVal;
-                if (leftVal instanceof String && rightVal instanceof String) return ((String) leftVal).compareTo((String) rightVal) > 0;
+                if (leftVal instanceof String && rightVal instanceof String) return compareTemporalAware((String) leftVal, (String) rightVal) > 0;
                 return false;
             case "LESS_THAN":
                 if (leftVal instanceof Integer && rightVal instanceof Integer) return (Integer) leftVal < (Integer) rightVal;
-                if (leftVal instanceof String && rightVal instanceof String) return ((String) leftVal).compareTo((String) rightVal) < 0;
+                if (leftVal instanceof String && rightVal instanceof String) return compareTemporalAware((String) leftVal, (String) rightVal) < 0;
                 return false;
             case "GREATER_OR_EQUALS":
                 if (leftVal instanceof Integer && rightVal instanceof Integer) return (Integer) leftVal >= (Integer) rightVal;
-                if (leftVal instanceof String && rightVal instanceof String) return ((String) leftVal).compareTo((String) rightVal) >= 0;
+                if (leftVal instanceof String && rightVal instanceof String) return compareTemporalAware((String) leftVal, (String) rightVal) >= 0;
                 return false;
             case "LESS_OR_EQUALS":
                 if (leftVal instanceof Integer && rightVal instanceof Integer) return (Integer) leftVal <= (Integer) rightVal;
-                if (leftVal instanceof String && rightVal instanceof String) return ((String) leftVal).compareTo((String) rightVal) <= 0;
+                if (leftVal instanceof String && rightVal instanceof String) return compareTemporalAware((String) leftVal, (String) rightVal) <= 0;
                 return false;
             case "IN":
             case "CONTAINS":
@@ -196,22 +205,21 @@ public class ExpressionEvaluator {
     private Object evalFunctionCall(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         String funcName = (String) node.eGet(node.eClass().getEStructuralFeature("functionName"));
         List<?> args = (List<?>) node.eGet(node.eClass().getEStructuralFeature("arguments"));
+        PolicyFunctionRegistry.FunctionSpec spec = functionRegistry.getRequired(funcName);
 
-        if ("isEmpty".equals(funcName)) {
-            if (args == null || args.isEmpty()) return true;
-            Object argVal = evaluateNode((EObject) args.get(0), subject, obj, env, req);
-            return argVal == null || argVal.toString().trim().isEmpty();
+        if (args == null || args.size() != spec.arity()) {
+            throw new IllegalArgumentException("Function " + funcName + " requires " + spec.arity() + " arguments.");
         }
 
-        if ("checkExistsRegistration".equals(funcName)) {
-            Object classIdObj = evaluateNode((EObject) args.get(1), subject, obj, env, req);
-            if (classIdObj != null && subject != null && subject.getRegisteredClassIds() != null) {
-                return asListOptimized(subject.getRegisteredClassIds()).contains(classIdObj.toString().trim());
-            }
-            return false;
+        List<Object> evaluatedArgs = args.stream()
+                .map(EObject.class::cast)
+                .map(arg -> evaluateNode(arg, subject, obj, env, req))
+                .collect(Collectors.toList());
+        Object result = spec.implementation().apply(evaluatedArgs);
+        if (spec.returnType() == PolicyFunctionRegistry.ReturnType.BOOLEAN) {
+            return Boolean.TRUE.equals(result);
         }
-
-        throw new UnsupportedOperationException("Unknown function in DSL condition: " + funcName);
+        return result;
     }
 
     private void executeStandardUpdate(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
@@ -416,11 +424,38 @@ public class ExpressionEvaluator {
     }
 
     private Collection<?> asListOptimized(Object val) {
-        if (val == null) return Collections.emptyList();
-        if (val instanceof Collection) return (Collection<?>) val;
-        return Arrays.stream(val.toString().split(","))
-                     .map(String::trim)
-                     .filter(s -> !s.isEmpty())
-                     .collect(Collectors.toList());
+        return functionExecutor.asList(val);
+    }
+
+    private int compareTemporalAware(String left, String right) {
+        LocalDateTime leftDateTime = tryParseDateTime(left);
+        LocalDateTime rightDateTime = tryParseDateTime(right);
+        if (leftDateTime != null && rightDateTime != null) {
+            return leftDateTime.compareTo(rightDateTime);
+        }
+
+        LocalDate leftDate = tryParseDate(left);
+        LocalDate rightDate = tryParseDate(right);
+        if (leftDate != null && rightDate != null) {
+            return leftDate.compareTo(rightDate);
+        }
+
+        return left.compareTo(right);
+    }
+
+    private LocalDateTime tryParseDateTime(String value) {
+        try {
+            return LocalDateTime.parse(value);
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
+    }
+
+    private LocalDate tryParseDate(String value) {
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
     }
 }

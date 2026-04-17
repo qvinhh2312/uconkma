@@ -9,6 +9,9 @@ policy: 'policy' ID '{'
         'effect:' policyEffect
         'priority:' INT
         'description:' STRING
+        'subjectType:' STRING
+        'objectType:' STRING
+        'ruleFamily:' ID
         ('denyReason:' STRING)?
         'condition:' expression
         ('postUpdates:' updateStatement+)?

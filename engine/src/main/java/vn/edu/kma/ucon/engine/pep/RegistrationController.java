@@ -12,17 +12,14 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.persistence.EntityManager;
 import vn.edu.kma.ucon.engine.pdp.AuthDecision;
 import vn.edu.kma.ucon.engine.pdp.Environment;
+import vn.edu.kma.ucon.engine.pdp.MaintenanceFlag;
 import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 import vn.edu.kma.ucon.engine.pip.repository.ClassSectionRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -32,15 +29,18 @@ public class RegistrationController {
     private final ClassSectionRepository classRepo;
     private final PolicyEngine policyEngine;
     private final EntityManager entityManager;
+    private final MaintenanceFlag maintenanceFlag;
 
     public RegistrationController(StudentRepository stRepo,
                                   ClassSectionRepository clRepo,
                                   PolicyEngine pe,
-                                  EntityManager em) {
+                                  EntityManager em,
+                                  MaintenanceFlag mf) {
         this.studentRepo = stRepo;
         this.classRepo = clRepo;
         this.policyEngine = pe;
         this.entityManager = em;
+        this.maintenanceFlag = mf;
     }
 
     @PostMapping("/register")
@@ -107,13 +107,6 @@ public class RegistrationController {
             return ResponseEntity.badRequest().body("Student or ClassSection not found.");
         }
 
-        if (!asList(student.getRegisteredClassIds()).contains(req.getClassId())) {
-            req.setDecision("DENY");
-            req.setFailedPolicyCodes("NOT_REGISTERED");
-            policyEngine.executeAuditLogOnly(student, cls, env, req);
-            return ResponseEntity.status(403).body("DENIED: NOT_REGISTERED");
-        }
-
         AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
@@ -153,15 +146,7 @@ public class RegistrationController {
         env.setOpenTime("2026-01-01");
         env.setCloseTime("2026-12-31");
         env.setSemester("2026_FALL");
-        env.setIsMaintenance(false);
+        env.setIsMaintenance(maintenanceFlag.isActive());
         return env;
-    }
-
-    private Collection<String> asList(String csv) {
-        if (csv == null || csv.trim().isEmpty()) return Collections.emptyList();
-        return Arrays.stream(csv.split(","))
-                     .map(String::trim)
-                     .filter(s -> !s.isEmpty())
-                     .collect(Collectors.toList());
     }
 }

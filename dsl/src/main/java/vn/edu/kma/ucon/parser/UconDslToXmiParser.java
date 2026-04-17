@@ -100,9 +100,12 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
         policy.eSet(getCls("Policy").getEStructuralFeature("effect"), getEnumVal("PolicyEffect", ctx.policyEffect().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("priority"), Integer.parseInt(ctx.INT().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("description"), ctx.STRING(0).getText().replace("\"", ""));
+        policy.eSet(getCls("Policy").getEStructuralFeature("subjectType"), ctx.STRING(1).getText().replace("\"", ""));
+        policy.eSet(getCls("Policy").getEStructuralFeature("objectType"), ctx.STRING(2).getText().replace("\"", ""));
+        policy.eSet(getCls("Policy").getEStructuralFeature("ruleFamily"), ctx.ID(1).getText());
         
-        if (ctx.STRING().size() > 1) {
-            String denyReasonStr = ctx.STRING(1).getText().replace("\"", "");
+        if (ctx.STRING().size() > 3) {
+            String denyReasonStr = ctx.STRING(3).getText().replace("\"", "");
             policy.eSet(getCls("Policy").getEStructuralFeature("denyReason"), denyReasonStr);
         }
 

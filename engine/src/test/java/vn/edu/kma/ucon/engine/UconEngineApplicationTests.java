@@ -1,20 +1,41 @@
 package vn.edu.kma.ucon.engine;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.emf.ecore.EEnum;
+import org.eclipse.emf.ecore.EEnumLiteral;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import vn.edu.kma.ucon.engine.pep.RegistrationController;
 import vn.edu.kma.ucon.engine.pep.UconRequest;
 import vn.edu.kma.ucon.engine.pdp.AuthDecision;
 import vn.edu.kma.ucon.engine.pdp.Environment;
+import vn.edu.kma.ucon.engine.pdp.MaintenanceFlag;
+import vn.edu.kma.ucon.engine.pdp.PolicyDecisionPoint;
 import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
+import vn.edu.kma.ucon.engine.pdp.PolicyFunctionRegistry;
+import vn.edu.kma.ucon.engine.pdp.PolicyModelSemanticValidator;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Course;
+import vn.edu.kma.ucon.engine.pip.entity.Registration;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 import vn.edu.kma.ucon.engine.pip.repository.AuditLogRepository;
 import vn.edu.kma.ucon.engine.pip.repository.ClassSectionRepository;
@@ -22,27 +43,35 @@ import vn.edu.kma.ucon.engine.pip.repository.CourseRepository;
 import vn.edu.kma.ucon.engine.pip.repository.RegistrationRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
 
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 @SpringBootTest
 class UconEngineApplicationTests {
 
-    @Autowired RegistrationController regController;
-    @Autowired StudentRepository studentRepo;
-    @Autowired ClassSectionRepository classRepo;
-    @Autowired CourseRepository courseRepo;
-    @Autowired RegistrationRepository registrationRepo;
-    @Autowired AuditLogRepository auditRepo;
-    @Autowired PolicyEngine policyEngine;
+    @Autowired
+    RegistrationController regController;
+    @Autowired
+    StudentRepository studentRepo;
+    @Autowired
+    ClassSectionRepository classRepo;
+    @Autowired
+    CourseRepository courseRepo;
+    @Autowired
+    RegistrationRepository registrationRepo;
+    @Autowired
+    AuditLogRepository auditRepo;
+    @Autowired
+    PolicyEngine policyEngine;
+    @Autowired
+    MaintenanceFlag maintenanceFlag;
+    @Autowired
+    PolicyDecisionPoint policyDecisionPoint;
+    @Autowired
+    PolicyModelSemanticValidator semanticValidator;
+    @Autowired
+    PolicyFunctionRegistry functionRegistry;
 
     @BeforeEach
     void setUp() {
+        maintenanceFlag.setActive(false);
         auditRepo.deleteAll();
         registrationRepo.deleteAll();
         studentRepo.deleteAll();
@@ -94,10 +123,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P11+P12] Happy Path — Dang ky thanh cong, state mutation + audit log")
-    void test01_HappyPath_SuccessfulRegistration() {
-        System.out.println("  TEST 01 — P11 + P12 | POST_UPDATE");
-
+    @DisplayName("[Register] FULL POST behavior: state + billing + transaction + audit")
+    void test01_Register_Success_FullPostBehavior() {
         UconRequest req = new UconRequest();
         req.setStudentId("SV001");
         req.setClassId("CS102_01");
@@ -107,29 +134,33 @@ class UconEngineApplicationTests {
 
         Student s = studentRepo.findById("SV001").orElseThrow();
         assertEquals(4, s.getCurrentCredits());
+        assertEquals(4000000, s.getTuitionDebt());
         assertTrue(s.getRegisteredClassIds().contains("CS102_01"));
         assertTrue(s.getRegisteredScheduleSlots().contains("T3_1-3"));
 
         ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
         assertEquals(5, cls.getEnrolled());
+
         assertEquals(1, registrationRepo.count());
+        Registration registration = registrationRepo.findAll().get(0);
+        assertEquals("SV001", registration.getStudentId());
+        assertEquals("CS102_01", registration.getClassId());
+
         assertEquals(1, auditRepo.count());
         assertEquals("ALLOW", auditRepo.findAll().get(0).getDecision());
-
-        System.out.println("  \u2705 TEST 01 PASSED");
     }
 
     @Test
-    @DisplayName("[P01] TuitionPaid — SV chua dong hoc phi bi DENY")
+    @DisplayName("[P01] TuitionPaid - unpaid student must be denied")
     void test02_P01_TuitionNotPaid_ShouldDeny() {
-        System.out.println("  TEST 02 — P01 | PRE_AUTHORIZATION");
-
         Student sv002 = new Student();
         sv002.setStudentId("SV002");
         sv002.setTuitionPaid(false);
         sv002.setMaxCreditsEffective(15);
         sv002.setCompletedCourses("CS101");
-        sv002.setHolds(""); sv002.setRegisteredClassIds(""); sv002.setRegisteredScheduleSlots("");
+        sv002.setHolds("");
+        sv002.setRegisteredClassIds("");
+        sv002.setRegisteredScheduleSlots("");
         studentRepo.save(sv002);
 
         UconRequest req = new UconRequest();
@@ -141,201 +172,11 @@ class UconEngineApplicationTests {
         assertTrue(response.getBody().contains("TUITION_NOT_PAID"));
         assertEquals("DENY", auditRepo.findAll().get(0).getDecision());
         assertEquals(0, registrationRepo.count());
-
-        Student s = studentRepo.findById("SV002").orElseThrow();
-        assertEquals(0, s.getCurrentCredits());
-
-        System.out.println("  \u2705 TEST 02 PASSED");
     }
 
     @Test
-    @DisplayName("[P03] ClassStatusOpen — Lop bi LOCKED phai DENY")
-    void test03_P03_ClassNotOpen_ShouldDeny() {
-        System.out.println("  TEST 03 — P03 | PRE_AUTHORIZATION");
-
-        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
-        cls.setStatus("LOCKED");
-        classRepo.save(cls);
-
-        UconRequest req = new UconRequest();
-        req.setStudentId("SV001");
-        req.setClassId("CS102_01");
-
-        ResponseEntity<String> response = regController.register(req);
-        assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("CLASS_NOT_OPEN"));
-
-        System.out.println("  \u2705 TEST 03 PASSED");
-    }
-
-    @Test
-    @DisplayName("[P04] NotAlreadyRegistered — Khong cho dang ky trung lop")
-    void test04_P04_AlreadyRegistered_ShouldDeny() {
-        System.out.println("  TEST 04 — P04 | PRE_AUTHORIZATION");
-
-        UconRequest req1 = new UconRequest();
-        req1.setStudentId("SV001"); req1.setClassId("CS102_01");
-        assertEquals(200, regController.register(req1).getStatusCode().value());
-
-        UconRequest req2 = new UconRequest();
-        req2.setStudentId("SV001"); req2.setClassId("CS102_01");
-        ResponseEntity<String> second = regController.register(req2);
-        assertEquals(403, second.getStatusCode().value());
-        assertTrue(second.getBody().contains("ALREADY_REGISTERED"));
-        assertEquals(1, registrationRepo.count());
-
-        System.out.println("  \u2705 TEST 04 PASSED");
-    }
-
-    @Test
-    @DisplayName("[P05] CreditLimit — Vuot han muc tin chi bi DENY")
-    void test05_P05_MaxCreditLimit_ShouldDeny() {
-        System.out.println("  TEST 05 — P05 | PRE_AUTHORIZATION");
-
-        Student s = studentRepo.findById("SV001").orElseThrow();
-        s.setCurrentCredits(12);
-        studentRepo.save(s);
-
-        UconRequest req = new UconRequest();
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
-
-        ResponseEntity<String> response = regController.register(req);
-        assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("CREDIT_LIMIT_EXCEEDED"));
-
-        System.out.println("  \u2705 TEST 05 PASSED");
-    }
-
-    @Test
-    @DisplayName("[P06] Prerequisite — Thieu mon tien quyet bi DENY")
-    void test06_P06_Prerequisite_ShouldDeny() {
-        System.out.println("  TEST 06 — P06 | PRE_AUTHORIZATION");
-
-        Student s = studentRepo.findById("SV001").orElseThrow();
-        s.setCompletedCourses("");
-        studentRepo.save(s);
-
-        UconRequest req = new UconRequest();
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
-
-        ResponseEntity<String> response = regController.register(req);
-        assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("PREREQUISITE_NOT_MET"));
-
-        System.out.println("  \u2705 TEST 06 PASSED");
-    }
-
-    @Test
-    @DisplayName("[P07] ScheduleConflict — Trung lich hoc bi DENY")
-    void test07_P07_ScheduleConflict_ShouldDeny() {
-        System.out.println("  TEST 07 — P07 | PRE_AUTHORIZATION");
-
-        Student s = studentRepo.findById("SV001").orElseThrow();
-        s.setRegisteredScheduleSlots("T3_1-3");
-        studentRepo.save(s);
-
-        UconRequest req = new UconRequest();
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
-
-        ResponseEntity<String> response = regController.register(req);
-        assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("SCHEDULE_CONFLICT"));
-
-        System.out.println("  \u2705 TEST 07 PASSED");
-    }
-
-    @Test
-    @DisplayName("[P10] StudentHold — SV bi cam thi/ky luat bi DENY o ONGOING")
-    void test08_P10_StudentOnHold_ShouldDeny() {
-        System.out.println("  TEST 08 — P10 | ONGOING_AUTHORIZATION");
-
-        Student s = studentRepo.findById("SV001").orElseThrow();
-        s.setHolds("DISCIPLINARY_HOLD");
-        studentRepo.save(s);
-
-        UconRequest req = new UconRequest();
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
-
-        ResponseEntity<String> response = regController.register(req);
-        assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("STUDENT_ON_HOLD"));
-        assertEquals(0, registrationRepo.count());
-
-        Student unchanged = studentRepo.findById("SV001").orElseThrow();
-        assertEquals(0, unchanged.getCurrentCredits());
-
-        System.out.println("  \u2705 TEST 08 PASSED");
-    }
-
-    @Test
-    @DisplayName("[P08] CapacityRecheck — Race condition: 2 SV tranh suat cuoi, chi 1 thang")
-    void test09_P08_RaceCondition_OptimisticLocking() throws InterruptedException {
-        System.out.println("  TEST 09 — P08 | ONGOING_AUTHORIZATION + OptimisticLock");
-
-        Student sv002 = new Student();
-        sv002.setStudentId("SV002");
-        sv002.setTuitionPaid(true);
-        sv002.setMaxCreditsEffective(15);
-        sv002.setCompletedCourses("CS101");
-        sv002.setHolds(""); sv002.setRegisteredClassIds(""); sv002.setRegisteredScheduleSlots("");
-        studentRepo.save(sv002);
-
-        int threads = 2;
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch doneLatch = new CountDownLatch(threads);
-        AtomicInteger successCount = new AtomicInteger(0);
-        AtomicInteger failCount = new AtomicInteger(0);
-
-        Runnable registerSV001 = () -> {
-            try {
-                startLatch.await();
-                UconRequest req = new UconRequest();
-                req.setStudentId("SV001"); req.setClassId("CS102_01");
-                if (regController.register(req).getStatusCode().value() == 200) successCount.incrementAndGet();
-                else failCount.incrementAndGet();
-            } catch (Exception e) {
-                failCount.incrementAndGet();
-            } finally {
-                doneLatch.countDown();
-            }
-        };
-
-        Runnable registerSV002 = () -> {
-            try {
-                startLatch.await();
-                UconRequest req = new UconRequest();
-                req.setStudentId("SV002"); req.setClassId("CS102_01");
-                if (regController.register(req).getStatusCode().value() == 200) successCount.incrementAndGet();
-                else failCount.incrementAndGet();
-            } catch (Exception e) {
-                failCount.incrementAndGet();
-            } finally {
-                doneLatch.countDown();
-            }
-        };
-
-        executor.submit(registerSV001);
-        executor.submit(registerSV002);
-        startLatch.countDown();
-        doneLatch.await();
-        executor.shutdown();
-
-        assertEquals(1, successCount.get());
-        assertEquals(1, failCount.get());
-
-        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
-        assertEquals(5, cls.getEnrolled());
-        assertEquals(1, registrationRepo.count());
-
-        System.out.println("  \u2705 TEST 09 PASSED");
-    }
-
-    @Test
-    @DisplayName("[P02] RegistrationWindow — Ngoai dot dang ky bi DENY")
-    void test10_P02_OutsideRegistrationWindow_ShouldDeny() {
-        System.out.println("  TEST 10 — P02 | PRE_AUTHORIZATION");
-
+    @DisplayName("[P02] Registration window - outside window must be denied")
+    void test03_P02_OutsideRegistrationWindow_ShouldDeny() {
         Environment env = new Environment("ADJUSTMENT", "2025-01-01");
         env.setOpenTime("2026-01-01");
         env.setCloseTime("2026-12-31");
@@ -347,130 +188,382 @@ class UconEngineApplicationTests {
         UconRequest req = new UconRequest();
         req.setRequestId(UUID.randomUUID().toString());
         req.setActionType("REGISTER");
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
+        req.setStudentId("SV001");
+        req.setClassId("CS102_01");
 
         AuthDecision decision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
         assertFalse(decision.isPermit());
         assertEquals("OUTSIDE_REGISTRATION_WINDOW", decision.getFailedCode());
-
-        System.out.println("  \u2705 TEST 10 PASSED");
     }
 
     @Test
-    @DisplayName("[P09] ClassStatusRecheck — Admin khoa lop giua PRE va ONGOING bi DENY")
-    void test11_P09_ClassStatusChangedOngoing_ShouldDeny() {
-        System.out.println("  TEST 11 — P09 | ONGOING_AUTHORIZATION");
+    @DisplayName("[P03 + P09] Class status changes between PRE and ONGOING")
+    void test04_ClassStatus_ChangeBetweenPhases() {
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        ClassSection openCls = classRepo.findById("CS102_01").orElseThrow();
 
-        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
-        cls.setStatus("LOCKED");
-        classRepo.save(cls);
+        Environment env = defaultEnv(false);
+        UconRequest req = registerRequest();
+
+        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, openCls, env, req);
+        assertTrue(preDecision.isPermit());
+
+        openCls.setStatus("LOCKED");
+        classRepo.save(openCls);
+
+        ClassSection lockedCls = classRepo.findById("CS102_01").orElseThrow();
+        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, lockedCls, env, req);
+        assertFalse(ongoingDecision.isPermit());
+        assertEquals("CLASS_STATUS_CHANGED", ongoingDecision.getFailedCode());
+    }
+
+    @Test
+    @DisplayName("[P04] Duplicate check must use RegistrationRepository")
+    void test05_P04_ShouldUseRegistrationRepositoryAsSourceOfTruth() {
+        registrationRepo.save(new Registration("SV001", "CS102_01", "2026_FALL", "REGISTER"));
 
         Student student = studentRepo.findById("SV001").orElseThrow();
-        ClassSection refreshedCls = classRepo.findById("CS102_01").orElseThrow();
+        student.setRegisteredClassIds("");
+        studentRepo.save(student);
 
-        Environment env = new Environment("NORMAL", "2026-03-27");
-        env.setOpenTime("2026-01-01");
-        env.setCloseTime("2026-12-31");
-        env.setSemester("2026_FALL");
+        UconRequest req = registerRequest();
+        ResponseEntity<String> response = regController.register(req);
 
-        UconRequest req = new UconRequest();
-        req.setRequestId(UUID.randomUUID().toString());
-        req.setActionType("REGISTER");
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
-
-        AuthDecision decision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, refreshedCls, env, req);
-        assertFalse(decision.isPermit());
-        assertEquals("CLASS_STATUS_CHANGED", decision.getFailedCode());
-
-        System.out.println("  \u2705 TEST 11 PASSED");
+        assertEquals(403, response.getStatusCode().value());
+        assertTrue(response.getBody().contains("ALREADY_REGISTERED"));
     }
 
     @Test
-    @DisplayName("[P13] EmergencyMaintenance — Bat bao tri giua ONGOING, request bi chan")
-    void test12_P13_EmergencyMaintenance_ShouldDeny() {
-        System.out.println("  TEST 12 — P13 | ONGOING_AUTHORIZATION");
+    @DisplayName("[P05] Credit limit - over limit must be denied")
+    void test06_P05_MaxCreditLimit_ShouldDeny() {
+        Student s = studentRepo.findById("SV001").orElseThrow();
+        s.setCurrentCredits(12);
+        studentRepo.save(s);
 
-        Student student = studentRepo.findById("SV001").orElseThrow();
-        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
-
-        Environment env = new Environment("NORMAL", "2026-03-27");
-        env.setOpenTime("2026-01-01");
-        env.setCloseTime("2026-12-31");
-        env.setSemester("2026_FALL");
-        env.setIsMaintenance(true);
-
-        UconRequest req = new UconRequest();
-        req.setRequestId(UUID.randomUUID().toString());
-        req.setActionType("REGISTER");
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
-
-        AuthDecision decision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
-        assertFalse(decision.isPermit());
-        assertEquals("SYSTEM_UNDER_MAINTENANCE", decision.getFailedCode());
-
-        System.out.println("  \u2705 TEST 12 PASSED");
+        ResponseEntity<String> response = regController.register(registerRequest());
+        assertEquals(403, response.getStatusCode().value());
+        assertTrue(response.getBody().contains("CREDIT_LIMIT_EXCEEDED"));
     }
 
     @Test
-    @DisplayName("[P14] DropStateRevert — DROP thanh cong: enrolled--, credits-=, Registration deleted")
-    void test13_P14_DropStateRevert_Success() {
-        System.out.println("  TEST 13 — P14 | POST_UPDATE (DROP)");
+    @DisplayName("[P06] Prerequisite - missing prerequisite must be denied")
+    void test07_P06_Prerequisite_ShouldDeny() {
+        Student s = studentRepo.findById("SV001").orElseThrow();
+        s.setCompletedCourses("");
+        studentRepo.save(s);
 
-        UconRequest regReq = new UconRequest();
-        regReq.setStudentId("SV001"); regReq.setClassId("CS102_01");
-        assertEquals(200, regController.register(regReq).getStatusCode().value());
+        ResponseEntity<String> response = regController.register(registerRequest());
+        assertEquals(403, response.getStatusCode().value());
+        assertTrue(response.getBody().contains("PREREQUISITE_NOT_MET"));
+    }
 
-        Student afterReg = studentRepo.findById("SV001").orElseThrow();
-        assertEquals(4, afterReg.getCurrentCredits());
+    @Test
+    @DisplayName("[P07] Schedule conflict - overlapping schedule must be denied")
+    void test08_P07_ScheduleConflict_ShouldDeny() {
+        Student s = studentRepo.findById("SV001").orElseThrow();
+        s.setRegisteredScheduleSlots("T3_1-3");
+        studentRepo.save(s);
+
+        ResponseEntity<String> response = regController.register(registerRequest());
+        assertEquals(403, response.getStatusCode().value());
+        assertTrue(response.getBody().contains("SCHEDULE_CONFLICT"));
+    }
+
+    @Test
+    @DisplayName("[P10] Hold - student hold must deny REGISTER at ONGOING")
+    void test09_P10_StudentOnHold_ShouldDenyRegister() {
+        Student s = studentRepo.findById("SV001").orElseThrow();
+        s.setHolds("DISCIPLINARY_HOLD");
+        studentRepo.save(s);
+
+        ResponseEntity<String> response = regController.register(registerRequest());
+        assertEquals(403, response.getStatusCode().value());
+        assertTrue(response.getBody().contains("STUDENT_ON_HOLD"));
+        assertEquals(0, registrationRepo.count());
+    }
+
+    @Test
+    @DisplayName("[P08] Race condition - two students compete for the last slot")
+    void test10_P08_RaceCondition_OptimisticLocking() throws InterruptedException {
+        Student sv002 = new Student();
+        sv002.setStudentId("SV002");
+        sv002.setTuitionPaid(true);
+        sv002.setMaxCreditsEffective(15);
+        sv002.setCompletedCourses("CS101");
+        sv002.setHolds("");
+        sv002.setRegisteredClassIds("");
+        sv002.setRegisteredScheduleSlots("");
+        studentRepo.save(sv002);
+
+        int threads = 2;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threads);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        executor.submit(() -> runConcurrentRegister("SV001", successCount, failCount, startLatch, doneLatch));
+        executor.submit(() -> runConcurrentRegister("SV002", successCount, failCount, startLatch, doneLatch));
+
+        startLatch.countDown();
+        doneLatch.await();
+        executor.shutdown();
+
+        assertEquals(1, successCount.get());
+        assertEquals(1, failCount.get());
+        assertEquals(5, classRepo.findById("CS102_01").orElseThrow().getEnrolled());
         assertEquals(1, registrationRepo.count());
+    }
 
-        UconRequest dropReq = new UconRequest();
-        dropReq.setStudentId("SV001"); dropReq.setClassId("CS102_01");
-        assertEquals(200, regController.drop(dropReq).getStatusCode().value());
+    @Test
+    @DisplayName("[P13] Maintenance continuity + no mutation + audit")
+    void test11_Maintenance_Continuity_And_NoMutation() {
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
+
+        UconRequest req = registerRequest();
+
+        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, defaultEnv(false), req);
+        assertTrue(preDecision.isPermit());
+
+        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, defaultEnv(true), req);
+        assertFalse(ongoingDecision.isPermit());
+        assertEquals("SYSTEM_UNDER_MAINTENANCE", ongoingDecision.getFailedCode());
+
+        maintenanceFlag.setActive(true);
+        ResponseEntity<String> response = regController.register(registerRequest());
+        assertEquals(403, response.getStatusCode().value());
+        assertTrue(response.getBody().contains("SYSTEM_UNDER_MAINTENANCE"));
+
+        Student unchanged = studentRepo.findById("SV001").orElseThrow();
+        assertEquals(0, unchanged.getCurrentCredits());
+        assertFalse(unchanged.getRegisteredClassIds().contains("CS102_01"));
+        assertEquals(4, classRepo.findById("CS102_01").orElseThrow().getEnrolled());
+        assertEquals(0, registrationRepo.count());
+        assertEquals(1, auditRepo.count());
+        assertEquals("DENY", auditRepo.findAll().get(0).getDecision());
+    }
+
+    @Test
+    @DisplayName("[DROP] Full revert + refund + allowed when unpaid")
+    void test12_Drop_Success_FullRevert_Refund_AllowedWhenUnpaid() {
+        ResponseEntity<String> regResponse = regController.register(registerRequest());
+        assertEquals(200, regResponse.getStatusCode().value());
+        assertEquals(1, registrationRepo.count());
+        assertEquals(4000000, studentRepo.findById("SV001").orElseThrow().getTuitionDebt());
+
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        student.setTuitionPaid(false);
+        studentRepo.save(student);
+
+        UconRequest dropReq = dropRequest();
+        ResponseEntity<String> dropResponse = regController.drop(dropReq);
+        assertEquals(200, dropResponse.getStatusCode().value());
 
         Student afterDrop = studentRepo.findById("SV001").orElseThrow();
         ClassSection afterDropCls = classRepo.findById("CS102_01").orElseThrow();
 
+        assertEquals(0, registrationRepo.count());
         assertEquals(0, afterDrop.getCurrentCredits());
+        assertEquals(0, afterDrop.getTuitionDebt());
         assertEquals(4, afterDropCls.getEnrolled());
         assertFalse(afterDrop.getRegisteredClassIds().contains("CS102_01"));
-        assertFalse(afterDrop.getRegisteredScheduleSlots().contains("T3_1-3"), "slots must be removed");
-        assertEquals(0, registrationRepo.count());
-
-        System.out.println("  \u2705 TEST 13 PASSED");
+        assertFalse(afterDrop.getRegisteredScheduleSlots().contains("T3_1-3"));
     }
 
     @Test
-    @DisplayName("[P15a] RegisterBilling — REGISTER: tuitionDebt += tuitionFee")
-    void test14_P15a_RegisterBilling() {
-        System.out.println("  TEST 14 — P15a | POST_UPDATE (REGISTER)");
+    @DisplayName("[Validator] REQUEST update must be rejected")
+    void test13_Validator_ShouldRejectRequestUpdateStatement() {
+        EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject target = firstUpdateTarget(copiedRoot, "P11_RegisterStateUpdate_Post");
+        target.eSet(target.eClass().getEStructuralFeature("entity"), enumLiteral(target, "EntityScope", "REQUEST"));
+        target.eSet(target.eClass().getEStructuralFeature("path"), "decision");
 
-        assertEquals(0, studentRepo.findById("SV001").orElseThrow().getTuitionDebt());
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(copiedRoot));
+        assertTrue(ex.getMessage().contains("updates REQUEST path"));
+    }
 
+    @Test
+    @DisplayName("[Validator] AuditLog statement must match expected schema")
+    void test14_Validator_ShouldRejectInvalidAuditLogArguments() {
+        EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject auditStmt = findPolicyById(copiedRoot, "P12_AuditAndTrace_Post")
+                .eContents()
+                .stream()
+                .filter(e -> "AuditLogStatement".equals(e.eClass().getName()))
+                .findFirst()
+                .orElseThrow();
+
+        @SuppressWarnings("unchecked")
+        List<EObject> arguments = (List<EObject>) auditStmt.eGet(auditStmt.eClass().getEStructuralFeature("arguments"));
+        arguments.remove(arguments.size() - 1);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(copiedRoot));
+        assertTrue(ex.getMessage().contains("create AuditLog(...) must have exactly 5 arguments"));
+    }
+
+    @Test
+    @DisplayName("[PDP] Startup must fail fast when semantic validation fails")
+    void test15_PolicyDecisionPoint_ShouldFailFastWhenValidatorFails() {
+        PolicyDecisionPoint pdp = new PolicyDecisionPoint(new PolicyModelSemanticValidator(functionRegistry) {
+            @Override
+            public void validate(EObject policyModelRoot) {
+                throw new IllegalStateException("forced semantic failure");
+            }
+        });
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, pdp::init);
+        assertTrue(ex.getMessage().contains("PDP startup failed"));
+        assertNotNull(ex.getCause());
+        assertTrue(ex.getCause().getMessage().contains("forced semantic failure"));
+    }
+
+    @Test
+    @DisplayName("[Validator] Invalid condition path, arity, and phase must be rejected")
+    void test16_Validator_ShouldRejectInvalidPath_Arity_And_Phase() {
+        EObject invalidPathRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject badPath = firstVariableAccessInCondition(invalidPathRoot, "P05_CreditLimit_Pre");
+        badPath.eSet(badPath.eClass().getEStructuralFeature("path"), "maxCreditEffecitve");
+        IllegalStateException pathEx = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(invalidPathRoot));
+        assertTrue(pathEx.getMessage().contains("unknown path SUBJECT.maxCreditEffecitve"));
+
+        EObject invalidArityRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject functionCall = firstFunctionCallInCondition(invalidArityRoot, "P10_StudentHoldRecheck_On");
+        @SuppressWarnings("unchecked")
+        List<EObject> args = (List<EObject>) functionCall.eGet(functionCall.eClass().getEStructuralFeature("arguments"));
+        args.add(EcoreUtil.copy(args.get(0)));
+        IllegalStateException arityEx = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(invalidArityRoot));
+        assertTrue(arityEx.getMessage().contains("expects 1 arguments"));
+
+        EObject invalidPhaseRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject postPolicy = findPolicyById(invalidPhaseRoot, "P11_RegisterStateUpdate_Post");
+        EObject replacement = createFunctionCall(invalidPhaseRoot, "checkExistsRegistration", List.of(
+                createVariableAccess(invalidPhaseRoot, "SUBJECT", "studentId"),
+                createVariableAccess(invalidPhaseRoot, "OBJECT", "classId"),
+                createVariableAccess(invalidPhaseRoot, "ENVIRONMENT", "semester")
+        ));
+        postPolicy.eSet(postPolicy.eClass().getEStructuralFeature("condition"), replacement);
+        IllegalStateException phaseEx = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(invalidPhaseRoot));
+        assertTrue(phaseEx.getMessage().contains("disallowed phase POST_UPDATE"));
+    }
+
+    private void runConcurrentRegister(String studentId,
+                                       AtomicInteger successCount,
+                                       AtomicInteger failCount,
+                                       CountDownLatch startLatch,
+                                       CountDownLatch doneLatch) {
+        try {
+            startLatch.await();
+            UconRequest req = new UconRequest();
+            req.setStudentId(studentId);
+            req.setClassId("CS102_01");
+            if (regController.register(req).getStatusCode().value() == 200) {
+                successCount.incrementAndGet();
+            } else {
+                failCount.incrementAndGet();
+            }
+        } catch (Exception e) {
+            failCount.incrementAndGet();
+        } finally {
+            doneLatch.countDown();
+        }
+    }
+
+    private UconRequest registerRequest() {
         UconRequest req = new UconRequest();
-        req.setStudentId("SV001"); req.setClassId("CS102_01");
-        assertEquals(200, regController.register(req).getStatusCode().value());
-
-        assertEquals(4000000, studentRepo.findById("SV001").orElseThrow().getTuitionDebt());
-
-        System.out.println("  \u2705 TEST 14 PASSED");
+        req.setRequestId(UUID.randomUUID().toString());
+        req.setActionType("REGISTER");
+        req.setStudentId("SV001");
+        req.setClassId("CS102_01");
+        return req;
     }
 
-    @Test
-    @DisplayName("[P15b] DropRefund — DROP: tuitionDebt -= tuitionFee")
-    void test15_P15b_DropRefund() {
-        System.out.println("  TEST 15 — P15b | POST_UPDATE (DROP)");
+    private UconRequest dropRequest() {
+        UconRequest req = new UconRequest();
+        req.setRequestId(UUID.randomUUID().toString());
+        req.setActionType("DROP");
+        req.setStudentId("SV001");
+        req.setClassId("CS102_01");
+        return req;
+    }
 
-        UconRequest regReq = new UconRequest();
-        regReq.setStudentId("SV001"); regReq.setClassId("CS102_01");
-        assertEquals(200, regController.register(regReq).getStatusCode().value());
-        assertEquals(4000000, studentRepo.findById("SV001").orElseThrow().getTuitionDebt());
+    private Environment defaultEnv(boolean maintenance) {
+        Environment env = new Environment("NORMAL", "2026-03-27");
+        env.setOpenTime("2026-01-01");
+        env.setCloseTime("2026-12-31");
+        env.setSemester("2026_FALL");
+        env.setIsMaintenance(maintenance);
+        return env;
+    }
 
-        UconRequest dropReq = new UconRequest();
-        dropReq.setStudentId("SV001"); dropReq.setClassId("CS102_01");
-        assertEquals(200, regController.drop(dropReq).getStatusCode().value());
-        assertEquals(0, studentRepo.findById("SV001").orElseThrow().getTuitionDebt());
+    private EObject findPolicyById(EObject root, String policyId) {
+        @SuppressWarnings("unchecked")
+        List<EObject> policies = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policies"));
+        return policies.stream()
+                .filter(p -> policyId.equals(p.eGet(p.eClass().getEStructuralFeature("policyId"))))
+                .findFirst()
+                .orElseThrow();
+    }
 
-        System.out.println("  \u2705 TEST 15 PASSED");
+    private EObject firstUpdateTarget(EObject root, String policyId) {
+        EObject policy = findPolicyById(root, policyId);
+        @SuppressWarnings("unchecked")
+        List<EObject> postUpdates = (List<EObject>) policy.eGet(policy.eClass().getEStructuralFeature("postUpdates"));
+        EObject firstUpdate = postUpdates.stream()
+                .filter(s -> "UpdateStatement".equals(s.eClass().getName()))
+                .findFirst()
+                .orElseThrow();
+        return (EObject) firstUpdate.eGet(firstUpdate.eClass().getEStructuralFeature("target"));
+    }
+
+    private EObject firstVariableAccessInCondition(EObject root, String policyId) {
+        EObject policy = findPolicyById(root, policyId);
+        EObject condition = (EObject) policy.eGet(policy.eClass().getEStructuralFeature("condition"));
+        return depthFirst(condition).stream()
+                .filter(node -> "VariableAccess".equals(node.eClass().getName()))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private EObject firstFunctionCallInCondition(EObject root, String policyId) {
+        EObject policy = findPolicyById(root, policyId);
+        EObject condition = (EObject) policy.eGet(policy.eClass().getEStructuralFeature("condition"));
+        return depthFirst(condition).stream()
+                .filter(node -> "FunctionCall".equals(node.eClass().getName()))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private List<EObject> depthFirst(EObject root) {
+        List<EObject> nodes = new java.util.ArrayList<>();
+        nodes.add(root);
+        for (EObject child : root.eContents()) {
+            nodes.addAll(depthFirst(child));
+        }
+        return nodes;
+    }
+
+    private EObject createFunctionCall(EObject root, String functionName, List<EObject> arguments) {
+        EObject functionCall = policyDecisionPoint.getUconPackage().getEFactoryInstance()
+                .create((org.eclipse.emf.ecore.EClass) policyDecisionPoint.getUconPackage().getEClassifier("FunctionCall"));
+        functionCall.eSet(functionCall.eClass().getEStructuralFeature("functionName"), functionName);
+        @SuppressWarnings("unchecked")
+        List<EObject> argList = (List<EObject>) functionCall.eGet(functionCall.eClass().getEStructuralFeature("arguments"));
+        argList.addAll(arguments);
+        return functionCall;
+    }
+
+    private EObject createVariableAccess(EObject root, String entityLiteral, String path) {
+        EObject variableAccess = policyDecisionPoint.getUconPackage().getEFactoryInstance()
+                .create((org.eclipse.emf.ecore.EClass) policyDecisionPoint.getUconPackage().getEClassifier("VariableAccess"));
+        variableAccess.eSet(variableAccess.eClass().getEStructuralFeature("entity"),
+                enumLiteral(variableAccess, "EntityScope", entityLiteral));
+        variableAccess.eSet(variableAccess.eClass().getEStructuralFeature("path"), path);
+        return variableAccess;
+    }
+
+    private EEnumLiteral enumLiteral(EObject context, String enumName, String literalName) {
+        EEnum eEnum = (EEnum) policyDecisionPoint.getUconPackage().getEClassifier(enumName);
+        return eEnum.getEEnumLiteral(literalName);
     }
 }

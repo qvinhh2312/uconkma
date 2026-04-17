@@ -21,9 +21,14 @@ import org.springframework.stereotype.Service;
 public class PolicyDecisionPoint {
 
     private static final Logger log = LoggerFactory.getLogger(PolicyDecisionPoint.class);
+    private final PolicyModelSemanticValidator semanticValidator;
     
     private EObject policyModelRoot;
     private EPackage uconPackage;
+
+    public PolicyDecisionPoint(PolicyModelSemanticValidator semanticValidator) {
+        this.semanticValidator = semanticValidator;
+    }
 
     @PostConstruct
     public void init() {
@@ -48,6 +53,7 @@ public class PolicyDecisionPoint {
             if (!xmiFile.exists()) xmiFile = new File(System.getProperty("user.dir"), "xmi/ucon_policy.xmi");
             Resource xmiResource = resSet.getResource(URI.createFileURI(xmiFile.getAbsolutePath()), true);
             this.policyModelRoot = xmiResource.getContents().get(0);
+            semanticValidator.validate(policyModelRoot);
 
             @SuppressWarnings("unchecked")
             List<EObject> policies = (List<EObject>) policyModelRoot.eGet(((org.eclipse.emf.ecore.EClass) uconPackage.getEClassifier("PolicyModel")).getEStructuralFeature("policies"));
@@ -55,6 +61,7 @@ public class PolicyDecisionPoint {
             
         } catch (Exception e) {
             log.error("Failed to load UCON Policy Engine files!", e);
+            throw new IllegalStateException("UCON PDP startup failed because metamodel, policy model, or semantic validation is invalid.", e);
         }
     }
 
