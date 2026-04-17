@@ -64,8 +64,6 @@ public class ExpressionEvaluator {
         }
     }
 
-
-
     private Object evaluateNode(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         String className = node.eClass().getName();
 
@@ -164,7 +162,6 @@ public class ExpressionEvaluator {
                 }
                 return false;
             case "SUBSET_OF":
-
                 if (leftVal.toString().trim().isEmpty()) return true;
                 Collection<?> subset = asListOptimized(leftVal);
                 Collection<?> superset = asListOptimized(rightVal);
@@ -188,8 +185,6 @@ public class ExpressionEvaluator {
 
         Object leftValObj = evaluateNode(leftNode, subject, obj, env, req);
         Object rightValObj = evaluateNode(rightNode, subject, obj, env, req);
-
-
         Integer leftVal = leftValObj instanceof Integer ? (Integer) leftValObj : 0;
         Integer rightVal = rightValObj instanceof Integer ? (Integer) rightValObj : 0;
 
@@ -209,7 +204,6 @@ public class ExpressionEvaluator {
         }
 
         if ("checkExistsRegistration".equals(funcName)) {
-
             Object classIdObj = evaluateNode((EObject) args.get(1), subject, obj, env, req);
             if (classIdObj != null && subject != null && subject.getRegisteredClassIds() != null) {
                 return asListOptimized(subject.getRegisteredClassIds()).contains(classIdObj.toString().trim());
@@ -219,9 +213,6 @@ public class ExpressionEvaluator {
 
         throw new UnsupportedOperationException("Unknown function in DSL condition: " + funcName);
     }
-
-
-
 
     private void executeStandardUpdate(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         EObject targetNode = (EObject) node.eGet(node.eClass().getEStructuralFeature("target"));
@@ -270,7 +261,6 @@ public class ExpressionEvaluator {
                 }
                 break;
             case "APPEND": {
-
                 String currentStr = (currentValue == null) ? "" : currentValue.toString();
                 String appendStr  = (value == null) ? "" : value.toString();
                 if (appendStr.isEmpty()) {
@@ -302,7 +292,6 @@ public class ExpressionEvaluator {
         }
     }
 
-
     private void executeCreateTransaction(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         List<?> args = (List<?>) node.eGet(node.eClass().getEStructuralFeature("arguments"));
         if (args == null || args.size() < 4) {
@@ -331,7 +320,6 @@ public class ExpressionEvaluator {
         registrationRepository.deleteByStudentIdAndClassIdAndSemester(studentId, classId, semester);
     }
 
-
     private void executeAuditLog(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         List<?> args = (List<?>) node.eGet(node.eClass().getEStructuralFeature("arguments"));
         if (args == null || args.size() < 5) {
@@ -353,13 +341,10 @@ public class ExpressionEvaluator {
         auditLogRepository.save(al);
     }
 
-
     private String resolveArg(List<?> args, int index, Student subject, ClassSection obj, Environment env, UconRequest req) {
         Object val = evaluateNode((EObject) args.get(index), subject, obj, env, req);
         return val == null ? null : val.toString();
     }
-
-
 
     private Object resolveVariable(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         EEnumLiteral entity = (EEnumLiteral) node.eGet(node.eClass().getEStructuralFeature("entity"));
@@ -398,8 +383,6 @@ public class ExpressionEvaluator {
         return (List<String>) node.eGet(node.eClass().getEStructuralFeature("values"));
     }
 
-
-
     private Object getProperty(Object instance, String propName) {
         try {
             String getterName = "get" + propName.substring(0, 1).toUpperCase() + propName.substring(1);
@@ -407,7 +390,6 @@ public class ExpressionEvaluator {
             try {
                 method = instance.getClass().getMethod(getterName);
             } catch (NoSuchMethodException e) {
-
                 String isName = "is" + propName.substring(0, 1).toUpperCase() + propName.substring(1);
                 method = instance.getClass().getMethod(isName);
             }
