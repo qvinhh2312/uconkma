@@ -123,8 +123,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[Register] FULL POST behavior: state + billing + transaction + audit")
-    void test01_Register_Success_FullPostBehavior() {
+    @DisplayName("Register succeeds with full state, billing, transaction, and audit updates")
+    void test01_RegisterSuccess_UpdatesStateBillingTransactionAndAudit() {
         UconRequest req = new UconRequest();
         req.setStudentId("SV001");
         req.setClassId("CS102_01");
@@ -151,8 +151,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P01] TuitionPaid - unpaid student must be denied")
-    void test02_P01_TuitionNotPaid_ShouldDeny() {
+    @DisplayName("Register is denied when tuition has not been paid")
+    void test02_RegisterDenied_WhenTuitionNotPaid() {
         Student sv002 = new Student();
         sv002.setStudentId("SV002");
         sv002.setTuitionPaid(false);
@@ -175,8 +175,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P02] Registration window - outside window must be denied")
-    void test03_P02_OutsideRegistrationWindow_ShouldDeny() {
+    @DisplayName("Register is denied outside the allowed transaction window")
+    void test03_RegisterDenied_OutsideTransactionWindow() {
         Environment env = new Environment("ADJUSTMENT", "2025-01-01");
         env.setOpenTime("2026-01-01");
         env.setCloseTime("2026-12-31");
@@ -197,8 +197,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P03 + P09] Class status changes between PRE and ONGOING")
-    void test04_ClassStatus_ChangeBetweenPhases() {
+    @DisplayName("Class locked between phases is denied at the ongoing check")
+    void test04_RegisterDenied_WhenClassLocksBetweenPhases() {
         Student student = studentRepo.findById("SV001").orElseThrow();
         ClassSection openCls = classRepo.findById("CS102_01").orElseThrow();
 
@@ -218,8 +218,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P04] Duplicate check must use RegistrationRepository")
-    void test05_P04_ShouldUseRegistrationRepositoryAsSourceOfTruth() {
+    @DisplayName("Duplicate registration is denied based on repository data")
+    void test05_RegisterDenied_WhenRepositoryShowsExistingRegistration() {
         registrationRepo.save(new Registration("SV001", "CS102_01", "2026_FALL", "REGISTER"));
 
         Student student = studentRepo.findById("SV001").orElseThrow();
@@ -234,8 +234,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P05] Credit limit - over limit must be denied")
-    void test06_P05_MaxCreditLimit_ShouldDeny() {
+    @DisplayName("Register is denied when the credit limit is exceeded")
+    void test06_RegisterDenied_WhenCreditLimitExceeded() {
         Student s = studentRepo.findById("SV001").orElseThrow();
         s.setCurrentCredits(12);
         studentRepo.save(s);
@@ -246,8 +246,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P06] Prerequisite - missing prerequisite must be denied")
-    void test07_P06_Prerequisite_ShouldDeny() {
+    @DisplayName("Register is denied when a prerequisite is missing")
+    void test07_RegisterDenied_WhenPrerequisiteMissing() {
         Student s = studentRepo.findById("SV001").orElseThrow();
         s.setCompletedCourses("");
         studentRepo.save(s);
@@ -258,8 +258,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P07] Schedule conflict - overlapping schedule must be denied")
-    void test08_P07_ScheduleConflict_ShouldDeny() {
+    @DisplayName("Register is denied when the schedule overlaps existing classes")
+    void test08_RegisterDenied_WhenScheduleConflicts() {
         Student s = studentRepo.findById("SV001").orElseThrow();
         s.setRegisteredScheduleSlots("T3_1-3");
         studentRepo.save(s);
@@ -270,8 +270,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P10] Hold - student hold must deny REGISTER at ONGOING")
-    void test09_P10_StudentOnHold_ShouldDenyRegister() {
+    @DisplayName("Register is denied when the student is on hold")
+    void test09_RegisterDenied_WhenStudentOnHold() {
         Student s = studentRepo.findById("SV001").orElseThrow();
         s.setHolds("DISCIPLINARY_HOLD");
         studentRepo.save(s);
@@ -283,8 +283,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P08] Race condition - two students compete for the last slot")
-    void test10_P08_RaceCondition_OptimisticLocking() throws InterruptedException {
+    @DisplayName("Only one student can claim the last remaining seat")
+    void test10_OnlyOneStudentCanClaimLastSeat() throws InterruptedException {
         Student sv002 = new Student();
         sv002.setStudentId("SV002");
         sv002.setTuitionPaid(true);
@@ -316,8 +316,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[P13] Maintenance continuity + no mutation + audit")
-    void test11_Maintenance_Continuity_And_NoMutation() {
+    @DisplayName("Maintenance blocks the request and leaves state unchanged")
+    void test11_MaintenanceBlocksRequest_AndPreservesState() {
         Student student = studentRepo.findById("SV001").orElseThrow();
         ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
 
@@ -345,8 +345,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[DROP] Full revert + refund + allowed when unpaid")
-    void test12_Drop_Success_FullRevert_Refund_AllowedWhenUnpaid() {
+    @DisplayName("Drop restores state, removes the transaction, and refunds tuition debt")
+    void test12_DropRestoresState_RemovesTransaction_AndRefundsDebt() {
         ResponseEntity<String> regResponse = regController.register(registerRequest());
         assertEquals(200, regResponse.getStatusCode().value());
         assertEquals(1, registrationRepo.count());
@@ -372,8 +372,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[Validator] REQUEST update must be rejected")
-    void test13_Validator_ShouldRejectRequestUpdateStatement() {
+    @DisplayName("Validator rejects updates to request-managed fields")
+    void test13_ValidatorRejectsRequestManagedFieldUpdates() {
         EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
         EObject target = firstUpdateTarget(copiedRoot, "P11_RegisterStateUpdate_Post");
         target.eSet(target.eClass().getEStructuralFeature("entity"), enumLiteral(target, "EntityScope", "REQUEST"));
@@ -384,8 +384,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[Validator] AuditLog statement must match expected schema")
-    void test14_Validator_ShouldRejectInvalidAuditLogArguments() {
+    @DisplayName("Validator rejects malformed audit log statements")
+    void test14_ValidatorRejectsMalformedAuditLogStatements() {
         EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
         EObject auditStmt = findPolicyById(copiedRoot, "P12_AuditAndTrace_Post")
                 .eContents()
@@ -403,8 +403,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[PDP] Startup must fail fast when semantic validation fails")
-    void test15_PolicyDecisionPoint_ShouldFailFastWhenValidatorFails() {
+    @DisplayName("Policy decision point startup fails when semantic validation fails")
+    void test15_PolicyDecisionPointFailsFast_WhenValidationFails() {
         PolicyDecisionPoint pdp = new PolicyDecisionPoint(new PolicyModelSemanticValidator(functionRegistry) {
             @Override
             public void validate(EObject policyModelRoot) {
@@ -419,8 +419,8 @@ class UconEngineApplicationTests {
     }
 
     @Test
-    @DisplayName("[Validator] Invalid condition path, arity, and phase must be rejected")
-    void test16_Validator_ShouldRejectInvalidPath_Arity_And_Phase() {
+    @DisplayName("Validator rejects invalid condition paths, function arity, and function phase")
+    void test16_ValidatorRejectsInvalidPath_Arity_AndPhase() {
         EObject invalidPathRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
         EObject badPath = firstVariableAccessInCondition(invalidPathRoot, "P05_CreditLimit_Pre");
         badPath.eSet(badPath.eClass().getEStructuralFeature("path"), "maxCreditEffecitve");
