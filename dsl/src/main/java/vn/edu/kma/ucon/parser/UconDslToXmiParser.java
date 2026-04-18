@@ -94,7 +94,7 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
     @Override
     public EObject visitPolicy(UconPolicyParser.PolicyContext ctx) {
         EObject policy = factory.create(getCls("Policy"));
-        policy.eSet(getCls("Policy").getEStructuralFeature("policyId"), ctx.ID().getText());
+        policy.eSet(getCls("Policy").getEStructuralFeature("policyId"), ctx.ID(0).getText());
         policy.eSet(getCls("Policy").getEStructuralFeature("type"), getEnumVal("PolicyType", ctx.policyType().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("targetAction"), getEnumVal("ActionType", ctx.actionType().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("effect"), getEnumVal("PolicyEffect", ctx.policyEffect().getText()));

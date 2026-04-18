@@ -4,6 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * Persistence entity for a Registration transaction.
@@ -12,6 +14,10 @@ import jakarta.persistence.Id;
  * We name it Registration here to avoid collision with JTA's javax.transaction.Transaction.
  */
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "uk_registration_student_class_semester",
+        columnNames = {"studentId", "classId", "semester"}
+))
 public class Registration {
 
     @Id

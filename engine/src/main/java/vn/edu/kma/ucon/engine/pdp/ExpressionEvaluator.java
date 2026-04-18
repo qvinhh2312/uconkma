@@ -440,7 +440,8 @@ public class ExpressionEvaluator {
             return leftDate.compareTo(rightDate);
         }
 
-        return left.compareTo(right);
+        throw new IllegalArgumentException(
+                "String ordering requires ISO-8601 date/time values, but got '" + left + "' and '" + right + "'.");
     }
 
     private LocalDateTime tryParseDateTime(String value) {

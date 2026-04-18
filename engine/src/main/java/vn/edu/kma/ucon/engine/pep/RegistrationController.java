@@ -1,5 +1,8 @@
 package vn.edu.kma.ucon.engine.pep;
 
+import java.util.UUID;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +21,6 @@ import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 import vn.edu.kma.ucon.engine.pip.repository.ClassSectionRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -46,10 +47,9 @@ public class RegistrationController {
     @PostMapping("/register")
     @Transactional
     public ResponseEntity<String> register(@RequestBody UconRequest req) {
-        req.setRequestId(UUID.randomUUID().toString());
-        req.setActionType("REGISTER");
+        initializeRequest(req, "REGISTER");
 
-        if (req.getStudentId() == null || req.getClassId() == null) {
+        if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
             return ResponseEntity.badRequest().body("studentId and classId are required.");
         }
 
@@ -69,6 +69,7 @@ public class RegistrationController {
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
+        entityManager.refresh(student);
         entityManager.refresh(cls);
 
         AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
@@ -86,16 +87,15 @@ public class RegistrationController {
         classRepo.save(cls);
         studentRepo.save(student);
 
-        return ResponseEntity.ok("Successfully Enrolled.");
+        return ResponseEntity.ok("Successfully enrolled.");
     }
 
     @PostMapping("/drop")
     @Transactional
     public ResponseEntity<String> drop(@RequestBody UconRequest req) {
-        req.setRequestId(UUID.randomUUID().toString());
-        req.setActionType("DROP");
+        initializeRequest(req, "DROP");
 
-        if (req.getStudentId() == null || req.getClassId() == null) {
+        if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
             return ResponseEntity.badRequest().body("studentId and classId are required.");
         }
 
@@ -115,6 +115,7 @@ public class RegistrationController {
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
+        entityManager.refresh(student);
         entityManager.refresh(cls);
 
         AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
@@ -132,13 +133,41 @@ public class RegistrationController {
         classRepo.save(cls);
         studentRepo.save(student);
 
-        return ResponseEntity.ok("Successfully Dropped.");
+        return ResponseEntity.ok("Successfully dropped.");
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<String> handleOptimisticLockException(ObjectOptimisticLockingFailureException ex) {
-        return ResponseEntity.status(409).body(
-            "DENIED_RACE_CONDITION: Hệ thống phát hiện xung đột ghi đè lớp học (Race Condition ngăn chặn thành công).");
+        return ResponseEntity.status(409)
+                .body("DENIED_RACE_CONDITION: concurrent enrollment update was detected.");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<String> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(409)
+                .body("DENIED_DUPLICATE_REGISTRATION: active registration already exists.");
+    }
+
+    private void initializeRequest(UconRequest req, String actionType) {
+        req.setActionType(actionType);
+        req.setStudentId(trimToNull(req.getStudentId()));
+        req.setClassId(trimToNull(req.getClassId()));
+        req.setRequestId(normalizeRequestId(req.getRequestId()));
+    }
+
+    private String normalizeRequestId(String requestId) {
+        String normalized = trimToNull(requestId);
+        return normalized != null ? normalized : UUID.randomUUID().toString();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private Environment buildEnvironment() {

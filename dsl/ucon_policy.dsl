@@ -28,7 +28,7 @@ policy P13a_EmergencyMaintenance_Pre {
     condition: environment.isMaintenance == false
 }
 
-policy P02_RegistrationWindow_Pre {
+policy P02_TransactionWindow_Pre {
     type: PRE_AUTHORIZATION
     targetAction: ANY
     effect: PERMIT
@@ -37,7 +37,7 @@ policy P02_RegistrationWindow_Pre {
     subjectType: "Student"
     objectType: "ClassSection"
     ruleFamily: AUTHORIZATION
-    denyReason: "OUTSIDE_REGISTRATION_WINDOW"
+    denyReason: "OUTSIDE_TRANSACTION_WINDOW"
 
     condition: environment.registrationPhase IN ["NORMAL", "LATE"]
                AND environment.currentDateTime >= environment.openTime

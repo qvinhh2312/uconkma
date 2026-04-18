@@ -193,7 +193,7 @@ class UconEngineApplicationTests {
 
         AuthDecision decision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
         assertFalse(decision.isPermit());
-        assertEquals("OUTSIDE_REGISTRATION_WINDOW", decision.getFailedCode());
+        assertEquals("OUTSIDE_TRANSACTION_WINDOW", decision.getFailedCode());
     }
 
     @Test
@@ -445,6 +445,13 @@ class UconEngineApplicationTests {
         postPolicy.eSet(postPolicy.eClass().getEStructuralFeature("condition"), replacement);
         IllegalStateException phaseEx = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(invalidPhaseRoot));
         assertTrue(phaseEx.getMessage().contains("disallowed phase POST_UPDATE"));
+
+        EObject overlappingPriorityRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject registerOnlyPolicy = findPolicyById(overlappingPriorityRoot, "P01_TuitionPaid_Pre");
+        registerOnlyPolicy.eSet(registerOnlyPolicy.eClass().getEStructuralFeature("priority"), 95);
+        IllegalStateException priorityEx = assertThrows(IllegalStateException.class,
+                () -> semanticValidator.validate(overlappingPriorityRoot));
+        assertTrue(priorityEx.getMessage().contains("overlapping priority 95"));
     }
 
     private void runConcurrentRegister(String studentId,
@@ -454,9 +461,8 @@ class UconEngineApplicationTests {
                                        CountDownLatch doneLatch) {
         try {
             startLatch.await();
-            UconRequest req = new UconRequest();
+            UconRequest req = registerRequest();
             req.setStudentId(studentId);
-            req.setClassId("CS102_01");
             if (regController.register(req).getStatusCode().value() == 200) {
                 successCount.incrementAndGet();
             } else {

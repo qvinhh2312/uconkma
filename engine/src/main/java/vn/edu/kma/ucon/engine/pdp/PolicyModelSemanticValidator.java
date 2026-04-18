@@ -86,12 +86,7 @@ public class PolicyModelSemanticValidator {
         ensureBindingPresent(policyId, policy, "ruleFamily", ALLOWED_RULE_FAMILIES);
         validateRuleFamily(policyId, type, ruleFamily);
 
-        String priorityKey = type + "|" + targetAction + "|" + priority;
-        String existingPolicyId = prioritiesPerPhaseAction.putIfAbsent(priorityKey, policyId);
-        if (existingPolicyId != null) {
-            throw new IllegalStateException("Policies " + existingPolicyId + " and " + policyId
-                    + " share the same priority " + priority + " for " + type + "/" + targetAction + ".");
-        }
+        validatePriorityUniqueness(policyId, type, targetAction, priority, prioritiesPerPhaseAction);
 
         @SuppressWarnings("unchecked")
         List<EObject> postUpdates = (List<EObject>) policy.eGet(policy.eClass().getEStructuralFeature("postUpdates"));
@@ -109,6 +104,39 @@ public class PolicyModelSemanticValidator {
             }
             validatePostUpdates(policyId, postUpdates);
         }
+    }
+
+    private void validatePriorityUniqueness(String policyId,
+                                            String type,
+                                            String targetAction,
+                                            Integer priority,
+                                            Map<String, String> prioritiesPerPhaseAction) {
+        String baseKey = type + "|" + priority + "|";
+
+        if ("ANY".equals(targetAction)) {
+            for (String action : Set.of("ANY", "REGISTER", "DROP")) {
+                String existingPolicyId = prioritiesPerPhaseAction.get(baseKey + action);
+                if (existingPolicyId != null) {
+                    throw new IllegalStateException("Policies " + existingPolicyId + " and " + policyId
+                            + " share overlapping priority " + priority + " for " + type + " with action scope ANY.");
+                }
+            }
+        } else {
+            String sameActionPolicyId = prioritiesPerPhaseAction.get(baseKey + targetAction);
+            if (sameActionPolicyId != null) {
+                throw new IllegalStateException("Policies " + sameActionPolicyId + " and " + policyId
+                        + " share the same priority " + priority + " for " + type + "/" + targetAction + ".");
+            }
+
+            String anyPolicyId = prioritiesPerPhaseAction.get(baseKey + "ANY");
+            if (anyPolicyId != null) {
+                throw new IllegalStateException("Policies " + anyPolicyId + " and " + policyId
+                        + " share overlapping priority " + priority + " for " + type + " because ANY overlaps "
+                        + targetAction + ".");
+            }
+        }
+
+        prioritiesPerPhaseAction.put(baseKey + targetAction, policyId);
     }
 
     private void validateRuleFamily(String policyId, String type, String ruleFamily) {

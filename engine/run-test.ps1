@@ -4,60 +4,58 @@ $mvn = ".\apache-maven-3.9.6\bin\mvn.cmd"
 $cls = "UconEngineApplicationTests"
 
 $map = @{
-    "T01"  = "test02_P01_TuitionNotPaid_ShouldDeny"
-    "T02"  = "test10_P02_OutsideRegistrationWindow_ShouldDeny"
-    "T03"  = "test03_P03_ClassNotOpen_ShouldDeny"
-    "T04"  = "test04_P04_AlreadyRegistered_ShouldDeny"
-    "T05"  = "test05_P05_MaxCreditLimit_ShouldDeny"
-    "T06"  = "test06_P06_Prerequisite_ShouldDeny"
-    "T07"  = "test07_P07_ScheduleConflict_ShouldDeny"
-    "T08"  = "test09_P08_RaceCondition_OptimisticLocking"
-    "T09"  = "test11_P09_ClassStatusChangedOngoing_ShouldDeny"
-    "T10"  = "test08_P10_StudentOnHold_ShouldDeny"
-    "T11"  = "test01_HappyPath_SuccessfulRegistration"
-    "T12"  = "test12_P13_EmergencyMaintenance_ShouldDeny"
-    "T13"  = "test13_P14_DropStateRevert_Success"
-    "T14"  = "test14_P15a_RegisterBilling"
-    "T15"  = "test15_P15b_DropRefund"
-    "P01"  = "test02_P01_TuitionNotPaid_ShouldDeny"
-    "P02"  = "test10_P02_OutsideRegistrationWindow_ShouldDeny"
-    "P03"  = "test03_P03_ClassNotOpen_ShouldDeny"
-    "P04"  = "test04_P04_AlreadyRegistered_ShouldDeny"
-    "P05"  = "test05_P05_MaxCreditLimit_ShouldDeny"
-    "P06"  = "test06_P06_Prerequisite_ShouldDeny"
-    "P07"  = "test07_P07_ScheduleConflict_ShouldDeny"
-    "P08"  = "test09_P08_RaceCondition_OptimisticLocking"
-    "P09"  = "test11_P09_ClassStatusChangedOngoing_ShouldDeny"
-    "P10"  = "test08_P10_StudentOnHold_ShouldDeny"
-    "P11"  = "test01_HappyPath_SuccessfulRegistration"
-    "P12"  = "test01_HappyPath_SuccessfulRegistration"
-    "P13"  = "test12_P13_EmergencyMaintenance_ShouldDeny"
-    "P14"  = "test13_P14_DropStateRevert_Success"
-    "P15A" = "test14_P15a_RegisterBilling"
-    "P15B" = "test15_P15b_DropRefund"
+    "T01" = "test01_RegisterSuccess_UpdatesStateBillingTransactionAndAudit"
+    "T02" = "test02_RegisterDenied_WhenTuitionNotPaid"
+    "T03" = "test03_RegisterDenied_OutsideTransactionWindow"
+    "T04" = "test04_RegisterDenied_WhenClassLocksBetweenPhases"
+    "T05" = "test05_RegisterDenied_WhenRepositoryShowsExistingRegistration"
+    "T06" = "test06_RegisterDenied_WhenCreditLimitExceeded"
+    "T07" = "test07_RegisterDenied_WhenPrerequisiteMissing"
+    "T08" = "test08_RegisterDenied_WhenScheduleConflicts"
+    "T09" = "test09_RegisterDenied_WhenStudentOnHold"
+    "T10" = "test10_OnlyOneStudentCanClaimLastSeat"
+    "T11" = "test11_MaintenanceBlocksRequest_AndPreservesState"
+    "T12" = "test12_DropRestoresState_RemovesTransaction_AndRefundsDebt"
+    "T13" = "test13_ValidatorRejectsRequestManagedFieldUpdates"
+    "T14" = "test14_ValidatorRejectsMalformedAuditLogStatements"
+    "T15" = "test15_PolicyDecisionPointFailsFast_WhenValidationFails"
+    "T16" = "test16_ValidatorRejectsInvalidPath_Arity_AndPhase"
+    "P01" = "test02_RegisterDenied_WhenTuitionNotPaid"
+    "P02" = "test03_RegisterDenied_OutsideTransactionWindow"
+    "P03" = "test04_RegisterDenied_WhenClassLocksBetweenPhases"
+    "P04" = "test05_RegisterDenied_WhenRepositoryShowsExistingRegistration"
+    "P05" = "test06_RegisterDenied_WhenCreditLimitExceeded"
+    "P06" = "test07_RegisterDenied_WhenPrerequisiteMissing"
+    "P07" = "test08_RegisterDenied_WhenScheduleConflicts"
+    "P08" = "test10_OnlyOneStudentCanClaimLastSeat"
+    "P09" = "test04_RegisterDenied_WhenClassLocksBetweenPhases"
+    "P10" = "test09_RegisterDenied_WhenStudentOnHold"
+    "P11" = "test01_RegisterSuccess_UpdatesStateBillingTransactionAndAudit"
+    "P12" = "test01_RegisterSuccess_UpdatesStateBillingTransactionAndAudit"
+    "P13" = "test11_MaintenanceBlocksRequest_AndPreservesState"
+    "P13A" = "test11_MaintenanceBlocksRequest_AndPreservesState"
+    "P14" = "test12_DropRestoresState_RemovesTransaction_AndRefundsDebt"
+    "P16" = "test12_DropRestoresState_RemovesTransaction_AndRefundsDebt"
 }
 
 $id = $id.ToUpper()
 
 if ($id -eq "ALL") {
-    Write-Host "`n>> Running ALL 15 tests...`n" -ForegroundColor Cyan
-    & $mvn clean test 2>&1 | Select-String "TEST 0|TEST 1|->|PASSED|Tests run|BUILD"
+    Write-Host "`n>> Running ALL 16 tests...`n" -ForegroundColor Cyan
+    & $mvn clean test 2>&1 | Select-String "Tests run|BUILD SUCCESS|BUILD FAILURE"
 }
 elseif ($map.ContainsKey($id)) {
     $method = $map[$id]
     Write-Host "`n>> Running [$id] -> $method`n" -ForegroundColor Cyan
-    & $mvn test "-Dtest=${cls}#${method}" 2>&1 | Select-String "TEST 0|TEST 1|->|PASSED|FAILED|Tests run|BUILD"
+    & $mvn test "-Dtest=${cls}#${method}" 2>&1 | Select-String "Tests run|BUILD SUCCESS|BUILD FAILURE"
 }
 else {
     Write-Host "`n[X] Khong tim thay ID '$id'" -ForegroundColor Red
     Write-Host @"
 
-Cach dung: .\run.bat <ID>
+Cach dung: .\run-test.ps1 <ID>
 
-  T01=P01  T02=P02  T03=P03  T04=P04
-  T05=P05  T06=P06  T07=P07  T08=P08
-  T09=P09  T10=P10  T11=P11+P12
-  T12=P13  T13=P14  T14=P15A  T15=P15B
-  all  (chay toan bo 15 tests)
+  T01..T16  hoac  P01..P16
+  all       (chay toan bo 16 tests)
 "@
 }

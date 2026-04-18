@@ -26,11 +26,11 @@ public class PolicyFunctionExecutor {
         if (studentId == null || classId == null || semester == null) {
             return false;
         }
-        return registrationRepository.findByStudentIdAndClassIdAndSemester(
+        return registrationRepository.existsByStudentIdAndClassIdAndSemester(
                 studentId.trim(),
                 classId.trim(),
                 semester.trim()
-        ).isPresent();
+        );
     }
 
     public Collection<?> asList(Object val) {

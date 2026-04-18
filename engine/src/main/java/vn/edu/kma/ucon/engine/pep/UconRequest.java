@@ -10,9 +10,6 @@ public class UconRequest {
 
     public UconRequest() {}
 
-    public String getId() { return requestId; }
-    public void setId(String id) { this.requestId = id; }
-
     public String getRequestId() { return requestId; }
     public void setRequestId(String requestId) { this.requestId = requestId; }
 

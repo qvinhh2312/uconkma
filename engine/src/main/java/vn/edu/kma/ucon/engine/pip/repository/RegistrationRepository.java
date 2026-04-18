@@ -7,5 +7,6 @@ import vn.edu.kma.ucon.engine.pip.entity.Registration;
 
 public interface RegistrationRepository extends JpaRepository<Registration, Long> {
     Optional<Registration> findByStudentIdAndClassIdAndSemester(String studentId, String classId, String semester);
+    boolean existsByStudentIdAndClassIdAndSemester(String studentId, String classId, String semester);
     void deleteByStudentIdAndClassIdAndSemester(String studentId, String classId, String semester);
 }
