@@ -8,9 +8,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
- * Persistence entity for a Registration transaction.
- * Maps to the "create Transaction(...)" statement in P11 of ucon_policy.dsl.
- * In the DSL pseudo-code (chapter_3_logic.md), this entity is called "Transaction".
+ * Persistence entity for a registration record.
+ * Maps to the DSL abstraction "Transaction" used in the policy model.
+ * It is created by P11 and removed by P14 in ucon_policy.dsl.
  * We name it Registration here to avoid collision with JTA's javax.transaction.Transaction.
  */
 @Entity

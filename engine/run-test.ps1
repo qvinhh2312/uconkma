@@ -55,7 +55,8 @@ else {
 
 Cach dung: .\run-test.ps1 <ID>
 
-  T01..T16  hoac  P01..P16
+  T01..T16
+  P01..P14, P13A, P16
   all       (chay toan bo 16 tests)
 "@
 }

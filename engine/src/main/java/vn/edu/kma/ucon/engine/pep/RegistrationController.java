@@ -47,13 +47,16 @@ public class RegistrationController {
     @PostMapping("/register")
     @Transactional
     public ResponseEntity<String> register(@RequestBody UconRequest req) {
+        if (req == null) {
+            return ResponseEntity.badRequest().body("Request body is required.");
+        }
         initializeRequest(req, "REGISTER");
 
         if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
             return ResponseEntity.badRequest().body("studentId and classId are required.");
         }
 
-        Environment env = buildEnvironment();
+        Environment preEnv = buildEnvironment();
         Student student = studentRepo.findById(req.getStudentId()).orElse(null);
         ClassSection cls = classRepo.findById(req.getClassId()).orElse(null);
 
@@ -61,28 +64,29 @@ public class RegistrationController {
             return ResponseEntity.badRequest().body("Student or ClassSection not found.");
         }
 
-        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
+        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, preEnv, req);
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(preDecision.getFailedCode());
-            policyEngine.executeAuditLogOnly(student, cls, env, req);
+            policyEngine.executeAuditLogOnly(student, cls, preEnv, req);
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
         entityManager.refresh(student);
         entityManager.refresh(cls);
 
-        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
+        Environment ongoingEnv = buildEnvironment();
+        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, ongoingEnv, req);
         if (!ongoingDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(ongoingDecision.getFailedCode());
-            policyEngine.executeAuditLogOnly(student, cls, env, req);
+            policyEngine.executeAuditLogOnly(student, cls, ongoingEnv, req);
             return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
         }
 
         req.setDecision("ALLOW");
         req.setFailedPolicyCodes("NONE");
-        policyEngine.executePostUpdates(student, cls, env, req);
+        policyEngine.executePostUpdates(student, cls, ongoingEnv, req);
 
         classRepo.save(cls);
         studentRepo.save(student);
@@ -93,13 +97,16 @@ public class RegistrationController {
     @PostMapping("/drop")
     @Transactional
     public ResponseEntity<String> drop(@RequestBody UconRequest req) {
+        if (req == null) {
+            return ResponseEntity.badRequest().body("Request body is required.");
+        }
         initializeRequest(req, "DROP");
 
         if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
             return ResponseEntity.badRequest().body("studentId and classId are required.");
         }
 
-        Environment env = buildEnvironment();
+        Environment preEnv = buildEnvironment();
         Student student = studentRepo.findById(req.getStudentId()).orElse(null);
         ClassSection cls = classRepo.findById(req.getClassId()).orElse(null);
 
@@ -107,28 +114,29 @@ public class RegistrationController {
             return ResponseEntity.badRequest().body("Student or ClassSection not found.");
         }
 
-        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
+        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, preEnv, req);
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(preDecision.getFailedCode());
-            policyEngine.executeAuditLogOnly(student, cls, env, req);
+            policyEngine.executeAuditLogOnly(student, cls, preEnv, req);
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
         entityManager.refresh(student);
         entityManager.refresh(cls);
 
-        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, env, req);
+        Environment ongoingEnv = buildEnvironment();
+        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, ongoingEnv, req);
         if (!ongoingDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(ongoingDecision.getFailedCode());
-            policyEngine.executeAuditLogOnly(student, cls, env, req);
+            policyEngine.executeAuditLogOnly(student, cls, ongoingEnv, req);
             return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
         }
 
         req.setDecision("ALLOW");
         req.setFailedPolicyCodes("NONE");
-        policyEngine.executePostUpdates(student, cls, env, req);
+        policyEngine.executePostUpdates(student, cls, ongoingEnv, req);
 
         classRepo.save(cls);
         studentRepo.save(student);

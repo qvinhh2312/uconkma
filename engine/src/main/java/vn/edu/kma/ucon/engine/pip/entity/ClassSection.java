@@ -18,7 +18,7 @@ public class ClassSection {
     
     private int capacity;
     private int enrolled;
-    private String status; // e.g. "OPEN", "CLOSED", "CANCELLED"
+    private String status; // e.g. "OPEN", "LOCKED", "CANCELLED"
     
     // Comma-separated slots e.g. "T2_1-3,T4_4-6"
     private String scheduleSlots;

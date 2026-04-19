@@ -1,54 +1,117 @@
-# Chương 1 & 2: Cơ sở Lý thuyết & Phân tích bài toán KMA theo mô hình UCON
+# Chuong 1 va 2: Co so ly thuyet va phan tich bai toan KMA theo UCON
 
-## 1. Giới hạn của RBAC và Giải pháp từ UCON
-Mô hình RBAC (Role-Based Access Control) truyền thống chỉ cấp quyền dựa trên Role (sinh viên, giảng viên). Tuy nhiên, bài toán đăng ký học phần tại KMA có những đặc thù động:
-- Quyền đăng ký thay đổi liên tục theo trạng thái hệ thống: Số chỗ trống của lớp (sĩ số), số tín chỉ đã đăng ký, hoặc tình trạng học phí.
-- Quyền đòi hỏi cập nhật tức thời (Post-updates): Ngay khi đăng ký thành công, sĩ số lớp phải tăng lên để giảm quota cho request cạnh tranh tiếp theo.
+## 1. Vi sao UCON phu hop voi dang ky hoc phan
+RBAC truyen thong phu hop voi viec gan quyen theo vai tro, nhung bai toan dang ky hoc phan tai KMA phu thuoc manh vao trang thai dong:
 
-UCON (Usage Control) cung cấp kiểm soát dựa trên **Attributes** biến thiên (mutable) và hỗ trợ kiểm soát cả trước, trong và sau tiến trình. Do đó, UCON là mô hình lý tưởng để áp dụng vào KMA.
+- si so lop thay doi theo tung giao dich
+- tin chi hien tai cua sinh vien thay doi sau moi lan dang ky hoac huy
+- trang thai hold, hoc phi, bao tri he thong co the thay doi giua luc request bat dau va luc commit
+- trang thai sau khi cap quyen phai duoc cap nhat ngay de anh huong toi cac request tiep theo
 
-## 2. Phân tích 4 thành phần UCON cho KMA Registration
+Vi vay, mo hinh phu hop hon la UCON, noi quyet dinh duoc danh gia theo thuoc tinh va co the bi tu choi o nhieu pha:
 
-Ánh xạ bài toán Đăng ký học phần KMA sang 4 nguyên hàm lõi của UCON để phục vụ 12 policies hạt nhân của hệ thống.
+- `PRE_AUTHORIZATION`
+- `ONGOING_AUTHORIZATION`
+- `POST_UPDATE`
 
-### 2.1. SUBJECT (Chủ thể thao tác)
-Đại diện cho Sinh viên (Student) đang thực hiện request. Gồm các Mutable Attributes:
-- `studentId`: Mã sinh viên (Identifier).
-- `currentCredits`: Tổng số tín chỉ đang bảo lưu/đã đăng ký trong học kỳ hiện tại (Integer).
-- `maxCreditsEffective`: Hạn mức tín chỉ tối đa thực tế (Sau khi áp dụng rules cảnh cáo học vụ).
-- `tuitionPaid`: Tình trạng tài chính/học phí (Boolean: true = đã đóng).
-- `holds`: Danh sách các lệnh chặn hành chính, kỷ luật đang mắc phải (List<String> - rỗng là hợp lệ).
-- `completedCourses`: Danh sách các mã học phần đã tích lũy điểm đạt (List<String>).
-- `registeredScheduleSlots`: Danh sách lịch học đã đăng ký trong học kỳ để check trùng lịch (List<String>).
+Trong project nay, UCON duoc hien thuc hoa theo kien truc:
 
-### 2.2. OBJECT (Đối tượng chịu tác động)
-Đại diện cho Lớp học phần (ClassSection). Gồm các Attributes:
-- `classId`: Mã lớp học phần duy nhất (Identifier).
-- `courseId`: Mã môn học để đối chiếu môn tiên quyết (Identifier).
-- `capacity`: Định mức tối đa của lớp / Sĩ số tối đa (Integer).
-- `enrolled`: Số sinh viên hiện đã có trong lớp (Integer).
-- `scheduleSlots`: Khung giờ của lớp học (List<String>).
-- `status`: Trạng thái của lớp (Enum: OPEN, LOCKED, CANCELLED).
-- `course.prerequisites`: Danh sách học phần tiên quyết yêu cầu của môn học (List<String>).
+- DSL chinh sach trong `dsl/ucon_policy.dsl`
+- metamodel EMF trong `metamodel/ucon.ecore`
+- XMI thuc thi trong `xmi/ucon_policy.xmi`
+- runtime engine theo mo hinh `PEP/PDP/PIP`
 
-### 2.3. RIGHT (Quyền thi hành)
-Quyền truy xuất và sử dụng hệ thống của Subject lên Object.
-- `Register`: Đăng ký chọn lớp.
-- `Drop`: Hủy chọn lớp.
+## 2. Anh xa bai toan KMA sang cac thanh phan UCON
 
-### 2.4. ENVIRONMENT (Môi trường hệ thống)
-Ngữ cảnh độc lập với cả Subject và Object nhưng đóng vai trò quan trọng trong việc chặn rule biên.
-- `registrationPhase`: Giai đoạn hiện hành (Enum: NORMAL, LATE, ADJUSTMENT).
-- `currentDateTime`: Ngày giờ thực thi transaction thực tế.
-- `openTime`, `closeTime`: Khung băng thông thời gian cho phép của đợt đăng ký.
-- `semester`: Học kỳ tác nghiệp (String).
+### 2.1 Subject
+`Student` la chu the thuc hien giao dich. Cac thuoc tinh chinh dang duoc dung trong policy:
 
-## 3. Các quy tắc (Rule Types) trong UCON KMA
-Kiến trúc UCON đánh giá các Rules dựa trên cấu trúc Logical của Predicates, phân loại thành 3 tập bắt buộc để hoàn thiện quy trình vòng lặp UCON:
-1. **preAuthorization (Tiền kiểm tra - 7 Policies):** Đánh giá các thuộc tính tĩnh trước hành động (Như Tuittion, Prerequisite, Schedule, v.v.).
-2. **ongoingAuthorization (Đánh giá liên tục/Re-check - 3 Policies):** Mô phỏng kiểm soát ở sát thời gian thực hiện db-commit đê chặn biến đổi thay đổi trạng thái (Như Hold, Capacity ở slot cuối, trạng thái khóa của Class).
-3. **postUpdate
-*Kết luận Step 1:* Ta đã bóc tách rõ ràng hệ thống Metadata làm nền tảng cho việc khởi tạo UML Domain Model và Domain-Specific Language (DSL) ở các bước tiếp theo đê hiện thực hóa hệ 12 Policy Rules đặc thù này.
- (Hậu cập nhật - 2 Policies):** Đảm nhận vai trò chuyển đổi trạng thái của model (Mutate state) và lưu log kiểm toán vào DB sau mọi quyết định.
+- `studentId`
+- `tuitionPaid`
+- `currentCredits`
+- `maxCreditsEffective`
+- `completedCourses`
+- `registeredScheduleSlots`
+- `registeredClassIds`
+- `holds`
+- `tuitionDebt`
 
----
+### 2.2 Object
+`ClassSection` la doi tuong bi tac dong. Cac thuoc tinh chinh:
+
+- `classId`
+- `capacity`
+- `enrolled`
+- `status`
+- `scheduleSlots`
+- `course.credits`
+- `course.prerequisites`
+- `course.tuitionFee`
+
+### 2.3 Right / Action
+Project hien thuc quyen duoi dang `targetAction` trong policy:
+
+- `REGISTER`
+- `DROP`
+- `ANY`
+
+`ANY` duoc dung cho cac policy ap dung chung cho ca hai luong, vi du maintenance hoac transaction window.
+
+### 2.4 Environment
+`Environment` mo ta ngu canh he thong:
+
+- `registrationPhase`
+- `currentDateTime`
+- `openTime`
+- `closeTime`
+- `semester`
+- `isMaintenance`
+
+Gia tri thoi gian hien duoc bieu dien bang chuoi ISO-8601 va runtime chi cho phep so sanh khi parse duoc thanh `LocalDate` hoac `LocalDateTime`.
+
+## 3. Cau truc policy dang dung trong project
+Project hien tai co 16 policy, chia thanh 3 nhom:
+
+### 3.1 PRE_AUTHORIZATION
+- `P01_TuitionPaid_Pre`
+- `P13a_EmergencyMaintenance_Pre`
+- `P02_TransactionWindow_Pre`
+- `P03_ClassStatusOpen_Pre`
+- `P04_NotAlreadyRegistered_Pre`
+- `P16_DropOnlyIfRegistered_Pre`
+- `P05_CreditLimit_Pre`
+- `P06_Prerequisite_Pre`
+- `P07_ScheduleConflict_Pre`
+
+### 3.2 ONGOING_AUTHORIZATION
+- `P08_CapacityRecheck_On`
+- `P09_ClassStatusRecheck_On`
+- `P10_StudentHoldRecheck_On`
+- `P13_EmergencyMaintenance_On`
+
+### 3.3 POST_UPDATE
+- `P11_RegisterStateUpdate_Post`
+- `P14_DropStateRevert_Post`
+- `P12_AuditAndTrace_Post`
+
+Luu y: project hien khong con tach rieng `P15a/P15b`. Phan billing va refund da duoc gop vao:
+
+- `P11_RegisterStateUpdate_Post`
+- `P14_DropStateRevert_Post`
+
+## 4. Tinh than UCON duoc giu trong do an
+Project khong co gang hien thuc toan bo taxonomy cua paper, nhung giu dung cac diem co gia tri nhat cho domain dang ky hoc phan:
+
+- quyet dinh khong chi xay ra mot lan o dau request
+- trang thai duoc re-check o pha ongoing
+- quyet dinh duoc gan voi mutation state ngay sau khi cho phep
+- audit duoc ghi lai nhu mot concern rieng
+
+## 5. Pham vi hien tai cua do an
+Day la mot he UCON chuyen biet cho dang ky hoc phan KMA, khong phai framework UCON tong quat cho moi mien nghiep vu. Vi vay:
+
+- policy model duoc thiet ke xoay quanh `Student`, `ClassSection`, `Environment`
+- function registry hien chi chua cac ham can cho domain hien tai
+- semantic constraints duoc hien thuc bang Java validator thay vi OCL/WFR thuan tuy
+
+Pham vi nay phu hop voi muc tieu do an: nghien cuu va xay dung chinh sach UCON cho quy trinh dang ky hoc phan.

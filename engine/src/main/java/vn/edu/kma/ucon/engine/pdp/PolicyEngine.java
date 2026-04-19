@@ -45,7 +45,13 @@ public class PolicyEngine {
             .sorted((p1, p2) -> {
                 Integer prio1 = (Integer) p1.eGet(p1.eClass().getEStructuralFeature("priority"));
                 Integer prio2 = (Integer) p2.eGet(p2.eClass().getEStructuralFeature("priority"));
-                return prio2.compareTo(prio1);
+                int byPriority = prio2.compareTo(prio1);
+                if (byPriority != 0) {
+                    return byPriority;
+                }
+                String id1 = (String) p1.eGet(p1.eClass().getEStructuralFeature("policyId"));
+                String id2 = (String) p2.eGet(p2.eClass().getEStructuralFeature("policyId"));
+                return id1.compareTo(id2);
             })
             .collect(Collectors.toList());
 
@@ -96,7 +102,13 @@ public class PolicyEngine {
             .sorted((p1, p2) -> {
                 Integer prio1 = (Integer) p1.eGet(p1.eClass().getEStructuralFeature("priority"));
                 Integer prio2 = (Integer) p2.eGet(p2.eClass().getEStructuralFeature("priority"));
-                return prio2.compareTo(prio1);
+                int byPriority = prio2.compareTo(prio1);
+                if (byPriority != 0) {
+                    return byPriority;
+                }
+                String id1 = (String) p1.eGet(p1.eClass().getEStructuralFeature("policyId"));
+                String id2 = (String) p2.eGet(p2.eClass().getEStructuralFeature("policyId"));
+                return id1.compareTo(id2);
             })
             .collect(Collectors.toList());
 

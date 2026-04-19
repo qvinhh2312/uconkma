@@ -1,314 +1,221 @@
-# Chương 3: Thiết kế Mô hình Logic Toán và 12 Chính sách UCON
+# Chuong 3: Mo hinh logic nghiep vu va tap policy UCON hien tai
 
-Chương này trình bày cách trừu tượng hóa các thực thể của KMA thành mô hình khái niệm tĩnh (Domain Model) để làm nền tảng sinh mã XMI Schema, đồng thời phát biểu **12 quy tắc nghiệp vụ** theo ngôn ngữ giả mã (Pseudo-logic) mang các đặc tính chuyên biệt của UCON (`preAuthorization`, `ongoingAuthorization`, `postUpdate`).
+Chuong nay mo ta domain model va tap chinh sach dang thuc su duoc dung trong project. Noi dung da duoc dong bo voi:
 
-## 1. Thiết kế UML Domain Model (Bước 2)
+- `dsl/ucon_policy.dsl`
+- `metamodel/ucon.ecore`
+- `xmi/ucon_policy.xmi`
+- runtime engine trong module `engine`
 
-Dưới đây là thiết kế tĩnh của các Subject, Object và quan hệ giữa chúng. Thiết kế này đặc biệt ánh xạ trực tiếp sang các kiểu dữ liệu của EMF Ecore (`EString`, `EInt`, `EBoolean`, `EList`) dùng cho việc khởi tạo Metamodel.
+## 1. Domain model o muc nghiep vu
 
-### 1.1 Sơ đồ lớp (Class Diagram)
+### 1.1 Student
+Thuoc tinh chinh:
 
-```plantuml
-@startuml
-skinparam classAttributeIconSize 0
+- `studentId`
+- `tuitionPaid`
+- `currentCredits`
+- `maxCreditsEffective`
+- `completedCourses`
+- `registeredScheduleSlots`
+- `registeredClassIds`
+- `holds`
+- `tuitionDebt`
 
-class Student <<Subject>> {
-  + String studentId
-  + int currentCredits
-  + int maxCreditsEffective
-  + boolean tuitionPaid
-  + List<String> holds
-  + List<String> completedCourses
-  + List<String> registeredScheduleSlots
-}
+### 1.2 Course
+Thuoc tinh chinh:
 
-class Course <<Entity>> {
-  + String courseId
-  + int credits
-  + List<String> prerequisites
-}
+- `courseId`
+- `credits`
+- `prerequisites`
+- `tuitionFee`
 
-class ClassSection <<Object>> {
-  + String classId
-  + String courseId
-  + int capacity
-  + int enrolled
-  + List<String> scheduleSlots
-  + ClassStatus status
-}
+### 1.3 ClassSection
+Thuoc tinh chinh:
 
-enum ClassStatus {
-  OPEN
-  LOCKED
-  CANCELLED
-}
+- `classId`
+- `course`
+- `capacity`
+- `enrolled`
+- `status`
+- `scheduleSlots`
 
-class Registration <<Transaction>> {
-  + String registrationId
-  + String studentId
-  + String classId
-  + String semester
-  + DateTime createdAt
-  + ActionType action
-}
+Trang thai lop hien dung trong policy la:
 
-enum ActionType <<Right>> {
-  REGISTER
-  DROP
-}
+- `OPEN`
+- `LOCKED`
+- `CANCELLED`
 
-class Environment <<Environment>> {
-  + RegistrationPhase registrationPhase
-  + DateTime currentDateTime
-  + DateTime openTime
-  + DateTime closeTime
-  + String semester
-}
+### 1.4 Registration
+Trong DSL, entity tru tuong duoc goi la `Transaction`. Trong persistence layer, project luu bang entity `Registration` de tranh dung ten voi transaction cua framework.
 
-enum RegistrationPhase {
-  NORMAL
-  LATE
-  ADJUSTMENT
-}
+Thuoc tinh chinh:
 
-Student "1" -- "0..*" Registration : requests >
-ClassSection "1" -- "0..*" Registration : targeted_by >
-Course "1" *-- "0..*" ClassSection : offers >
+- `studentId`
+- `classId`
+- `semester`
+- `actionType`
 
-@enduml
-```
+Project hien co unique constraint theo bo:
 
-### 1.2 Định nghĩa Quan hệ (Relationships)
+- `(studentId, classId, semester)`
 
-1. **Course `1` *-- `0..*` ClassSection (Composition):**
-   - Một Môn học (Course) chứa danh sách các Lớp học phần (ClassSection) được mở trong học kỳ đó.
-   - Khi Môn học không còn tồn tại, mọi Lớp học phần thuộc về nó cũng không còn ý nghĩa.
-   - Quan hệ này đảm bảo `class.courseId` trỏ trực tiếp đến Môn học gốc để lấy tổng `credits` đem đi validation.
+### 1.5 Environment
+Thuoc tinh chinh:
 
-2. **Student `1` -- `0..*` Registration (Association):**
-   - Một Sinh viên có thể tạo ra nhiều giao dịch Đăng ký (Register/Drop).
-   - Chiều liên kết này giúp traceback xem user nào tạo request.
+- `registrationPhase`
+- `currentDateTime`
+- `openTime`
+- `closeTime`
+- `semester`
+- `isMaintenance`
 
-3. **ClassSection `1` -- `0..*` Registration (Association):**
-   - Mỗi Lớp học phần ghi nhận danh sách các giao dịch giáng xuống nó.
-   - Cho phép system tính toán dòng lịch sử của biến đổi `enrolled`.
+## 2. Tap policy hien hanh
+Project hien co 16 policy. Ma policy khong lien tuc tuyet doi vi tap chinh sach da duoc mo rong va tai cau truc theo qua trinh phat trien.
 
-### 1.3 Định nghĩa Kiểu dữ liệu tương thích Ecore (Data Types Mapping)
+## 3. PRE_AUTHORIZATION
 
-Vì toàn bộ model này sau đó sẽ được rập khuôn lại bằng EMF Ecore XML Schema (`ucon.ecore`), nên kiểu dữ liệu phải được chuẩn hóa 1-1:
+### P01_TuitionPaid_Pre
+- Muc dich: chan dang ky moi neu sinh vien chua hoan tat hoc phi.
+- Pham vi: chi ap cho `REGISTER`.
+- Dieu kien: `subject.tuitionPaid == true`
 
-| Kiểu Java/UML | Kiểu EMF Ecore Tương đương | Giải thích cho UCON Engine |
-| :--- | :--- | :--- |
-| `String` | `EString` | Dùng cho dạng Text/Identifier (VD: `studentId`, `classId`). |
-| `int` | `EInt` | Dùng cho Phép toán số học (VD: tính tổng Tín chỉ, capacity, enrolled). |
-| `boolean` | `EBoolean` | Dùng cho Logic Pass/Fail trực tiếp (VD: `tuitionPaid`). |
-| `List<String>` | `EString` (với `upperBound="-1"`) | Dùng cho Toán tử tập hợp `⊆`, `CONTAINS` (VD: `completedCourses`, `holds`, `scheduleSlots`). |
-| `Enum` | `EEnum` | Dùng quy hoạch Trạng thái cố định (VD: `ClassStatus.OPEN`, `RegistrationPhase.NORMAL`). |
-| `DateTime` | `EDate` (hoặc `EString` parse logic) | Dùng cho toán tử so sánh Khoảng lồng nhau của TimeWindow. |
+### P13a_EmergencyMaintenance_Pre
+- Muc dich: fail-fast ngay tu dau neu he thong dang bao tri.
+- Pham vi: ap cho `ANY`.
+- Dieu kien: `environment.isMaintenance == false`
 
----
+### P02_TransactionWindow_Pre
+- Muc dich: chi cho phep giao dich trong dot va khung gio hop le.
+- Pham vi: ap cho `ANY`.
+- Deny code: `OUTSIDE_TRANSACTION_WINDOW`
+- Dieu kien:
+  - `registrationPhase IN ["NORMAL", "LATE"]`
+  - `currentDateTime >= openTime`
+  - `currentDateTime <= closeTime`
 
-## 2. Đặc tả 12 Chính sách UCON bằng Giả mã DSL (Bước 3)
-Hệ thống điều khiển (UCON) tại KMA quy định rõ 12 bộ Policy chặt chẽ phủ kín toàn bộ vòng đời của một Request Đăng ký (Register/Drop). Thuật toán biểu diễn (Giả mã) dưới đây được thiết kế ánh xạ 1-1 với Abstract Syntax Tree (AST) của `ucon.ecore` để chuẩn bị cho giai đoạn xây dựng Parsers (Bước 4 & 5).
+### P03_ClassStatusOpen_Pre
+- Muc dich: chi cho dang ky vao lop dang mo.
+- Pham vi: `REGISTER`
+- Dieu kien: `object.status == "OPEN"`
 
-### A. PRE-AUTHORIZATION (7 policies)
-Thực thi chốt chặn ngay từ cửa vòng ngoài dựa trên các thuộc tính tĩnh hoặc lịch sử. Các rules được evaluate theo thứ tự priority giảm dần.
+### P04_NotAlreadyRegistered_Pre
+- Muc dich: chan dang ky trung.
+- Pham vi: `REGISTER`
+- Dieu kien: `NOT checkExistsRegistration(subject.studentId, object.classId, environment.semester)`
+- Ghi chu: project hien dung `RegistrationRepository` lam nguon su that, khong dua vao chuoi `registeredClassIds`.
 
-**1) P01_TuitionPaid_Pre**
-- **Cần thiết vì:** Đây là ràng buộc hành chính cốt lõi nhất. Tránh việc sinh viên nợ học phí tiếp tục đăng ký.
-```dsl
-policy P01_TuitionPaid_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: ANY
-    effect: PERMIT
-    priority: 100
-    description: "Chỉ cho phép SV đã hoàn tất học phí"
-    denyReason: "TUITION_NOT_PAID"
-    
-    condition: subject.tuitionPaid == true
-}
-```
+### P16_DropOnlyIfRegistered_Pre
+- Muc dich: chi cho phep huy lop khi sinh vien thuc su da co dang ky hop le.
+- Pham vi: `DROP`
+- Dieu kien: `checkExistsRegistration(subject.studentId, object.classId, environment.semester)`
 
-**2) P02_RegistrationWindow_Pre**
-- **Cần thiết vì:** Ràng buộc môi trường (Environment) ép giao dịch phải nằm trong khung thời gian quy định.
-```dsl
-policy P02_RegistrationWindow_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: ANY
-    effect: PERMIT
-    priority: 90
-    description: "Chỉ cho đăng ký trong đợt và giờ hợp lệ"
-    denyReason: "OUTSIDE_REGISTRATION_WINDOW"
-    
-    condition: environment.registrationPhase IN ["NORMAL", "LATE"] 
-               AND environment.currentDateTime >= environment.openTime 
-               AND environment.currentDateTime <= environment.closeTime
-}
-```
+### P05_CreditLimit_Pre
+- Muc dich: chan vuot tran tin chi.
+- Pham vi: `REGISTER`
+- Dieu kien: `(subject.currentCredits + object.course.credits) <= subject.maxCreditsEffective`
 
-**3) P03_ClassStatusOpen_Pre**
-- **Cần thiết vì:** Tránh lọt request vào các lớp đang bị khóa/hủy tạm thời.
-```dsl
-policy P03_ClassStatusOpen_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 80
-    description: "Chỉ lớp đang mở thực sự mới được đăng ký"
-    denyReason: "CLASS_NOT_OPEN"
-    
-    condition: object.status == "OPEN"
-}
-```
+### P06_Prerequisite_Pre
+- Muc dich: kiem tra mon tien quyet.
+- Pham vi: `REGISTER`
+- Dieu kien: `object.course.prerequisites SUBSET_OF subject.completedCourses`
 
-**4) P04_NotAlreadyRegistered_Pre**
-- **Cần thiết vì:** Bảo toàn tính nhất quán dữ liệu ở mức Database (Chống duplicate).
-```dsl
-policy P04_NotAlreadyRegistered_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 70
-    description: "Không cho đăng ký trùng cùng lớp"
-    denyReason: "ALREADY_REGISTERED"
-    
-    condition: NOT checkExistsRegistration(subject.studentId, object.classId, environment.semester)
-}
-```
+### P07_ScheduleConflict_Pre
+- Muc dich: chan trung lich hoc.
+- Pham vi: `REGISTER`
+- Dieu kien: `NOT (object.scheduleSlots OVERLAPS subject.registeredScheduleSlots)`
 
-**5) P05_CreditLimit_Pre**
-- **Cần thiết vì:** Kiểm soát trần tín chỉ. `maxCreditsEffective` linh động phụ thuộc vào án cảnh cáo học vụ. Sử dụng nested path `object.course.credits`.
-```dsl
-policy P05_CreditLimit_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 60
-    description: "Không vượt trần hạn mức tín chỉ thực tế"
-    denyReason: "CREDIT_LIMIT_EXCEEDED"
-    
-    condition: (subject.currentCredits + object.course.credits) <= subject.maxCreditsEffective
-}
-```
+## 4. ONGOING_AUTHORIZATION
 
-**6) P06_Prerequisite_Pre**
-- **Cần thiết vì:** Đảm bảo tính tuần tự của chương trình đào tạo. Môn tiên quyết phải nằm trong tập học phần đã hoàn thành.
-```dsl
-policy P06_Prerequisite_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 50
-    description: "Đảm bảo đã hoàn tất môn học tiên quyết"
-    denyReason: "PREREQUISITE_NOT_MET"
-    
-    condition: object.course.prerequisites SUBSET_OF subject.completedCourses
-}
-```
+### P08_CapacityRecheck_On
+- Muc dich: chong race condition o suat cuoi.
+- Pham vi: `REGISTER`
+- Dieu kien: `object.enrolled < object.capacity`
 
-**7) P07_ScheduleConflict_Pre**
-- **Cần thiết vì:** Chống xếp trùng lịch học trên thời khóa biểu. Sử dụng toán tử `OVERLAPS`.
-```dsl
-policy P07_ScheduleConflict_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 40
-    description: "Tránh trùng lịch học với các môn đã chọn"
-    denyReason: "SCHEDULE_CONFLICT"
-    
-    condition: NOT (object.scheduleSlots OVERLAPS subject.registeredScheduleSlots)
-}
-```
+### P09_ClassStatusRecheck_On
+- Muc dich: re-check trang thai lop o sat thoi diem commit.
+- Pham vi: `REGISTER`
+- Dieu kien: `object.status == "OPEN"`
 
----
+### P10_StudentHoldRecheck_On
+- Muc dich: chan sinh vien dang bi hold o pha ongoing.
+- Pham vi: `REGISTER`
+- Dieu kien: `isEmpty(subject.holds)`
 
-### B. ONGOING-AUTHORIZATION (3 policies)
-Thực thi chốt chặn biến động sát nút thời gian DB ghi vào hệ thống (Pre-Commit Check). Giải quyết bài toán Concurrency cốt lõi của UCON.
+### P13_EmergencyMaintenance_On
+- Muc dich: ngat giao dich dang lo lung neu he thong chuyen sang trang thai bao tri giua chung.
+- Pham vi: `ANY`
+- Dieu kien: `environment.isMaintenance == false`
 
-**8) P08_CapacityRecheck_On**
-- **Cần thiết vì:** Chặn race condition. Policy này yêu cầu DB level lock (Optimistic/Pessimistic) lúc re-read.
-```dsl
-policy P08_CapacityRecheck_On {
-    type: ONGOING_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 30
-    description: "Chống race condition ở slot cuối cùng"
-    denyReason: "CLASS_FULL_ON_COMMIT"
-    
-    condition: object.enrolled < object.capacity
-}
-```
+## 5. POST_UPDATE
 
-**9) P09_ClassStatusRecheck_On**
-- **Cần thiết vì:** Trạng thái lớp là thuộc tính biến thiên độc lập. Admin có quyền Lock lớp trong khi request đang xử lý lơ lửng.
-```dsl
-policy P09_ClassStatusRecheck_On {
-    type: ONGOING_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 20
-    description: "Kiểm tra lại trạng thái lớp phòng khi Admin khóa đột xuất"
-    denyReason: "CLASS_STATUS_CHANGED"
-    
-    condition: object.status == "OPEN"
-}
-```
+### P11_RegisterStateUpdate_Post
+- Muc dich: commit toan bo hau qua cua mot lan dang ky thanh cong.
+- Pham vi: `REGISTER`
+- Rule family: `MUTATION`
+- Hanh dong:
+  - tao `Transaction`
+  - tang `object.enrolled`
+  - tang `subject.currentCredits`
+  - them `scheduleSlots`
+  - them `classId`
+  - tang `subject.tuitionDebt`
 
-**10) P10_StudentHoldRecheck_On**
-- **Cần thiết vì:** Sinh viên có thể bị thêm cấm thi/cấm học vụ (Hold) bởi một thread khác đổ dữ liệu vào hệ thống.
-```dsl
-policy P10_StudentHoldRecheck_On {
-    type: ONGOING_AUTHORIZATION
-    targetAction: ANY
-    effect: PERMIT
-    priority: 10
-    description: "Kiểm tra tình trạng cầm chân kỷ luật của SV trước khi tạo mốc"
-    denyReason: "STUDENT_ON_HOLD"
-    
-    condition: isEmpty(subject.holds)
-}
-```
+### P14_DropStateRevert_Post
+- Muc dich: hoan tac trang thai khi huy lop.
+- Pham vi: `DROP`
+- Rule family: `MUTATION`
+- Hanh dong:
+  - xoa `Transaction`
+  - giam `object.enrolled`
+  - giam `subject.currentCredits`
+  - xoa `scheduleSlots`
+  - xoa `classId`
+  - giam `subject.tuitionDebt`
 
----
+### P12_AuditAndTrace_Post
+- Muc dich: ghi audit log cho moi request.
+- Pham vi: `ANY`
+- Rule family: `TRACE`
+- Hanh dong:
+  - `create AuditLog(request.requestId, subject.studentId, object.classId, request.decision, request.failedPolicyCodes)`
 
-### C. POST-UPDATE (2 policies)
-Các chính sách thay đổi trạng thái Subject/Object ngay trong cùng khối Transaction (Atomic), giúp vòng lặp UCON duy trì biến đổi dữ liệu.
+## 6. Phan nhom theo muc tieu kiem soat
 
-**11) P11_RegisterStateUpdate_Post**
-- **Cần thiết vì:** Khả năng tự cập nhật (Mutate state) là điểm khác biệt lớn nhất giữa UCON và RBAC tĩnh. Nếu 1 step vỡ thì Rollback tắt toàn bộ khối.
-```dsl
-policy P11_RegisterStateUpdate_Post {
-    type: POST_UPDATE
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 2
-    description: "Atomic Update trạng thái Object và Subject sau khi Đăng ký"
-    
-    condition: true // Luôn chạy nếu request pass toàn bộ cấp trước
-    
-    postUpdates:
-       create Transaction(subject.studentId, object.classId, environment.semester, "REGISTER")
-       object.enrolled ADD_ASSIGN 1
-       subject.currentCredits ADD_ASSIGN object.course.credits
-       subject.registeredScheduleSlots APPEND object.scheduleSlots
-}
-```
+### 6.1 Nhom kiem soat dieu kien nghiep vu
+- `P01`
+- `P02`
+- `P03`
+- `P05`
+- `P06`
+- `P07`
+- `P10`
 
-**12) P12_AuditAndTrace_Post**
-- **Cần thiết vì:** Ghi log phục vụ Traceability. Ở node này, toán tử tạo log được ánh xạ từ AuditLogStatement.
-```dsl
-policy P12_AuditAndTrace_Post {
-    type: POST_UPDATE
-    targetAction: ANY
-    effect: PERMIT
-    priority: 1
-    description: "Ghi dấu vết Audit Log cho bất kỳ request nào"
-    
-    condition: true 
-    
-    postUpdates:
-       create AuditLog(request.id, subject.studentId, object.classId, request.decision, request.failedPolicyCodes)
-}
-```
+### 6.2 Nhom kiem soat tinh nhat quan va an toan giao dich
+- `P04`
+- `P08`
+- `P09`
+- `P13a`
+- `P13`
+- `P16`
+
+### 6.3 Nhom cap nhat trang thai va truy vet
+- `P11`
+- `P12`
+- `P14`
+
+## 7. Diem dang chu y cua tap policy hien tai
+- `P02` da duoc doi nghia thanh transaction window chung, khong con chi la registration window.
+- `P01` chi chan `REGISTER`, khong chan `DROP`.
+- `P10` chi chan `REGISTER`, khong chan `DROP`.
+- `P11` va `P14` da hap thu phan billing/refund thay cho cap `P15a/P15b` truoc day.
+- `P13a` va `P13` tao thanh cap kiem soat maintenance o ca dau request va ongoing.
+- `P16` lam luong `DROP` doi xung hon voi `P04`.
+
+## 8. Ket luan
+Tap policy hien tai phan anh dung pham vi do an o thoi diem chot:
+
+- 16 policy dang hoat dong thuc te
+- co day du `PRE`, `ONGOING`, `POST`
+- co mutation state, audit, kiem soat race condition va maintenance
+- co semantic binding ro cho `subjectType`, `objectType`, `ruleFamily`

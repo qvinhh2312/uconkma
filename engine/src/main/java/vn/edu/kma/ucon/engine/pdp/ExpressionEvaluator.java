@@ -116,7 +116,7 @@ public class ExpressionEvaluator {
             if (leftVal) return true; // Short-circuit
             return Boolean.TRUE.equals(evaluateNode(rightNode, subject, obj, env, req));
         }
-        return false;
+        throw new UnsupportedOperationException("Unknown logical op: " + op);
     }
 
     private boolean evalRelationalOp(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
@@ -194,12 +194,16 @@ public class ExpressionEvaluator {
 
         Object leftValObj = evaluateNode(leftNode, subject, obj, env, req);
         Object rightValObj = evaluateNode(rightNode, subject, obj, env, req);
-        Integer leftVal = leftValObj instanceof Integer ? (Integer) leftValObj : 0;
-        Integer rightVal = rightValObj instanceof Integer ? (Integer) rightValObj : 0;
+        if (!(leftValObj instanceof Integer) || !(rightValObj instanceof Integer)) {
+            throw new IllegalArgumentException("Arithmetic operands must be integers, got: "
+                    + leftValObj + " and " + rightValObj);
+        }
+        Integer leftVal = (Integer) leftValObj;
+        Integer rightVal = (Integer) rightValObj;
 
         if (operator.getName().equals("ADD")) return leftVal + rightVal;
         if (operator.getName().equals("SUBTRACT")) return leftVal - rightVal;
-        return 0;
+        throw new UnsupportedOperationException("Unknown arithmetic op: " + operator.getName());
     }
 
     private Object evalFunctionCall(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
@@ -236,17 +240,20 @@ public class ExpressionEvaluator {
         switch (entityScope.getName()) {
             case "SUBJECT":     targetInstance = subject; break;
             case "OBJECT":      targetInstance = obj; break;
-            case "ENVIRONMENT": targetInstance = env; break;
-            case "REQUEST":     targetInstance = req; break;
+            case "ENVIRONMENT":
+                throw new IllegalStateException("Runtime update to ENVIRONMENT is not allowed.");
+            case "REQUEST":
+                throw new IllegalStateException("Runtime update to REQUEST is not allowed.");
+            default:
+                throw new IllegalStateException("Unsupported update target entity: " + entityScope.getName());
         }
-
-        if (targetInstance == null) return;
-
 
         String[] props = pathOrig.split("\\.");
         for (int i = 0; i < props.length - 1; i++) {
             targetInstance = getProperty(targetInstance, props[i]);
-            if (targetInstance == null) return;
+            if (targetInstance == null) {
+                throw new IllegalStateException("Cannot resolve nested update target path: " + pathOrig);
+            }
         }
 
         String finalProp = props[props.length - 1];
@@ -261,11 +268,15 @@ public class ExpressionEvaluator {
             case "ADD_ASSIGN":
                 if (currentValue instanceof Integer && value instanceof Integer) {
                     newValue = (Integer) currentValue + (Integer) value;
+                } else {
+                    throw new IllegalStateException("ADD_ASSIGN requires integer operands for path " + pathOrig);
                 }
                 break;
             case "SUB_ASSIGN":
                 if (currentValue instanceof Integer && value instanceof Integer) {
                     newValue = (Integer) currentValue - (Integer) value;
+                } else {
+                    throw new IllegalStateException("SUB_ASSIGN requires integer operands for path " + pathOrig);
                 }
                 break;
             case "APPEND": {
@@ -295,9 +306,10 @@ public class ExpressionEvaluator {
                 throw new UnsupportedOperationException("Unknown assignment operator: " + opName);
         }
 
-        if (newValue != null) {
-            setProperty(targetInstance, finalProp, newValue);
+        if (newValue == null) {
+            throw new IllegalStateException("Update produced null value for path " + pathOrig + " with operator " + opName);
         }
+        setProperty(targetInstance, finalProp, newValue);
     }
 
     private void executeCreateTransaction(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
@@ -364,6 +376,8 @@ public class ExpressionEvaluator {
             case "OBJECT":      current = obj; break;
             case "ENVIRONMENT": current = env; break;
             case "REQUEST":     current = req; break;
+            default:
+                throw new IllegalStateException("Unsupported variable scope: " + entity.getName());
         }
 
         if (current == null) return null;

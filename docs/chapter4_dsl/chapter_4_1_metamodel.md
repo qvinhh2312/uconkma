@@ -1,44 +1,209 @@
-# Chương 4: Đặc tả Ngôn ngữ Chính sách (DSL & XMI Metamodel)
+# Chuong 4.1: Metamodel EMF cua DSL UCON
 
-Mục tiêu của chương này là triển khai lý thuyết Model-Driven Engineering (MDE) để xây dựng lược đồ dữ liệu cơ sở (Metamodel) biểu diễn các quy tắc kiểm soát truy cập Usage Control (UCON).
+Muc tieu cua metamodel trong `metamodel/ucon.ecore` la mo ta chinh xac cau truc du lieu ma parser tao ra va runtime engine tieu thu. Ban hien tai khong con la phien ban toi gian ban dau; no da duoc mo rong de phan anh tot hon binding cua policy va semantic validation o runtime.
 
-## 1. Thiết kế Metamodel Abstract Syntax (`ucon.ecore`) (Bước 4)
+## 1. Root model
 
-Lược đồ (Schema) Ecore là khung sườn "Abstract Syntax Tree (AST)" bắt buộc mà bất kỳ Parser nào khi đọc mã nguồn Text DSL cũng phải tuần tự dịch ra.
+### PolicyModel
+`PolicyModel` la root cua file XMI, chua danh sach:
 
-File thiết kế `ucon.ecore` được cấu trúc bao gồm 4 khối (Domains) chính đê khớp hoàn toàn với 12 logic của Bước 3:
+- `policies: Policy[*]`
 
-### 1.1 Khối Core Policy (Gốc)
+## 2. Lop Policy
+`Policy` la thuc the trung tam cua metamodel. Cac truong chinh:
 
-- **`PolicyModel`**: Gốc của toàn bộ file XMI (root node). Chứa một tập danh sách các Policies.
-- **`Policy`**: Node biểu diễn một chính sách độc lập. Gồm các thuộc tính tĩnh:
-  - `policyId`, `description`, `denyReason` (String)
-  - `priority`: Độ ưu tiên của luật khi System có nhiều luật (Integer). Evaluate từ priority cao xuống thấp.
-  - `type`: Enum `PolicyType` (PRE_AUTHORIZATION, ONGOING_AUTHORIZATION, POST_UPDATE)
-  - `targetAction`: Enum `ActionType` (REGISTER, DROP, ANY)
-  - `effect`: Enum `PolicyEffect` (PERMIT, DENY) quản lý quyết định ngầm định.
-  - Hai nhánh con đệ quy: `condition` (chỉ chứa 1 Expression Tree gốc) và `postUpdates` (danh sách các hành động state-mutation).
+- `policyId`
+- `name`
+- `description`
+- `subjectType`
+- `objectType`
+- `ruleFamily`
+- `type`
+- `targetAction`
+- `priority`
+- `effect`
+- `denyReason`
+- `condition`
+- `postUpdates`
 
-### 1.2 Khối Abstract Expression (Điều kiện)
+Ba truong moi co y nghia quan trong voi ban hien tai:
 
-Bất kỳ biểu thức điều kiện nào (`subject.tuitionPaid == true`, hay `size(holds) == 0`) cũng là một `Expression`.
-- **`LogicalOperator`**: Node cho toán tử logic `AND`, `OR`, và `NOT`. (VD: P02 Registration Window). `NOT` là toán tử một ngôi nên `right` node có thể null (`lowerBound="0"`).
-- **`RelationalOperator`**: Node toán tử so sánh (`EQUALS`, `GREATER_THAN`, `LESS_THAN`, `IN`, `SUBSET_OF`, `OVERLAPS` v.v.). Đặc biệt `SUBSET_OF` dùng cho P06 (Môn tiên quyết).
-- **`ArithmeticOperator`**: Node tính toán (`ADD`, `SUBTRACT`). Dùng cho P05 (`subject.currentCredits + object.course.credits`).
+- `subjectType`
+- `objectType`
+- `ruleFamily`
 
-### 1.3 Khối Values (Giá trị đầu cuối)
+Chung giup policy noi ro:
 
-- **`VariableAccess`**: Trỏ vào bộ nhớ của PDP Engine. Định vị bằng `EntityScope` (SUBJECT/OBJECT/ENVIRONMENT) gắn với `path` (Nested Path, ví dụ: `currentCredits` hoặc `course.credits`). Việc sử dụng chuỗi nested path giúp dễ dàng phản ánh logic sang hàm getter Reflection dưới Backend.
-- **`Constant`**: Chứa giá trị Hard-coded (VD: `24`, `true`).
-- **`ListConstant`**: Chứa Array/List giá trị Hard-coded đi kèm với `elementType` (VD: `["NORMAL", "LATE"]` kiểu Enum). Note: Nếu ở DSL grammar không quy định type thì `elementType` sẽ được Engine tự gán ngầm định lúc Parse.
-- **`FunctionCall`**: Đại diện cho các hàm ngoại lệ phải được Engine gọi nội bộ như `checkExistsRegistration()`, `isEmpty()`.
+- dang kiem soat loai subject nao
+- dang tac dong toi loai object nao
+- thuoc ho rule nao: `AUTHORIZATION`, `MUTATION`, `TRACE`
 
-### 1.4 Khối Update & Post Action (Hậu cập nhật)
+Nho do, validator co the kiem tra chat hon thay vi chi nhin `type`.
 
-Dùng cho mảng `postUpdates` trong Policy để khai báo các hành động sửa đổi sau cấp phép. Có một class trừu tượng gốc là **`Statement`**.
-- **`UpdateStatement`**: Kế thừa từ `Statement`. Khối gán dữ liệu. Yêu cầu có 3 field: `target` (VariableAccess), `operator` (VD: `ADD_ASSIGN`), và `value` (Expression).
-- **`CreateTransactionStatement`**: Kế thừa từ `Statement`. Chứa `entityName` và mảng `arguments` (Expressions). Yêu cầu engine tạo một entity mới.
-- **`AuditLogStatement`**: Kế thừa từ `Statement`. Chứa mảng `arguments` (Expressions) lưu thông số log. Yêu cầu engine tạo Audit trace-log.
+## 3. Enum chinh
 
----
-*Kết luận Bước 4:* Metamodel này đảm bảo bất kỳ logic nào theo cấu trúc 12 policies của UCON ở KMA đều có thể được ép vào khuôn XML Object. Cấu trúc Ecore này là khung sườn đê tiến hành thiết kế ngữ pháp Text-based (DSL Grammar) ở Bước 5.
+### PolicyType
+- `PRE_AUTHORIZATION`
+- `ONGOING_AUTHORIZATION`
+- `POST_UPDATE`
+
+### ActionType
+- `REGISTER`
+- `DROP`
+- `ANY`
+
+### PolicyEffect
+- `PERMIT`
+- `DENY`
+
+### EntityScope
+- `SUBJECT`
+- `OBJECT`
+- `ENVIRONMENT`
+- `REQUEST`
+
+### DataType
+- `STRING`
+- `INTEGER`
+- `BOOLEAN`
+- `ENUM`
+
+### LogicalOp
+- `AND`
+- `OR`
+- `NOT`
+
+### RelationalOp
+- `EQUALS`
+- `NOT_EQUALS`
+- `GREATER_THAN`
+- `LESS_THAN`
+- `GREATER_OR_EQUALS`
+- `LESS_OR_EQUALS`
+- `IN`
+- `CONTAINS`
+- `NOT_CONTAINS`
+- `SUBSET_OF`
+- `OVERLAPS`
+
+### ArithmeticOp
+- `ADD`
+- `SUBTRACT`
+
+### AssignmentOp
+- `ASSIGN`
+- `ADD_ASSIGN`
+- `SUB_ASSIGN`
+- `APPEND`
+- `REMOVE`
+
+## 4. Khoi Expression
+Metamodel bieu dien dieu kien policy bang cay bieu thuc.
+
+### Expression
+Lop tru tuong goc.
+
+### LogicalOperator
+Bieu dien `AND`, `OR`, `NOT`.
+
+### RelationalOperator
+Bieu dien cac phep so sanh va tap hop nhu:
+
+- `==`
+- `!=`
+- `>`
+- `>=`
+- `<`
+- `<=`
+- `IN`
+- `SUBSET_OF`
+- `OVERLAPS`
+
+### ArithmeticOperator
+Bieu dien:
+
+- cong
+- tru
+
+### VariableAccess
+Moi `VariableAccess` gom:
+
+- `entity`
+- `path`
+
+Vi du:
+
+- `subject.currentCredits`
+- `object.course.credits`
+- `environment.semester`
+- `request.requestId`
+
+### Constant
+Bieu dien hang so don.
+
+### ListConstant
+Bieu dien danh sach hang so, vi du:
+
+- `["NORMAL", "LATE"]`
+
+### FunctionCall
+Bieu dien loi goi ham DSL, hien duoc runtime ho tro qua function registry:
+
+- `isEmpty(...)`
+- `checkExistsRegistration(...)`
+
+## 5. Khoi Statement cho POST_UPDATE
+
+### Statement
+Lop tru tuong goc cho cac hau lenh.
+
+### UpdateStatement
+Mo ta cap nhat trang thai:
+
+- `target`
+- `operator`
+- `value`
+
+### CreateTransactionStatement
+Dung de sinh ban ghi giao dich tru tuong `Transaction`.
+
+### DeleteTransactionStatement
+Dung de xoa ban ghi giao dich tru tuong `Transaction`.
+
+### AuditLogStatement
+Dung de tao audit log o cuoi request.
+
+## 6. Y nghia cua metamodel hien tai doi voi runtime
+Metamodel dang dong dung vai tro nguon su that cho engine:
+
+- DSL duoc parse sang EObject theo `ucon.ecore`
+- XMI duoc sinh ra tu cung cau truc do
+- PDP load lai XMI
+- semantic validator kiem tra policy model truoc khi engine cho phep khoi dong
+
+Vi vay, `ucon.ecore` khong chi la so do tai lieu, ma la schema thuc thi cua project.
+
+## 7. Semantic constraints gan voi metamodel
+Project khong dung OCL thuan tuy, nhung dang hien thuc semantic constraints bang Java validator theo dung tinh than WFR:
+
+- binding invariants:
+  - `subjectType`, `objectType`, `ruleFamily` phai ton tai va thuoc allowlist
+- compatibility invariants:
+  - `PRE/ONGOING` phai di voi `AUTHORIZATION`
+  - `POST_UPDATE` phai di voi `MUTATION` hoac `TRACE`
+- mutability invariants:
+  - `ENVIRONMENT` va `REQUEST` khong duoc update
+  - chi mot so path cua `SUBJECT` va `OBJECT` duoc phep mutate
+- statement-schema invariants:
+  - `Transaction` va `AuditLog` phai co dung arity va dung scope
+- path invariants:
+  - `VariableAccess` trong condition va update phai tro toi getter hop le
+- startup invariants:
+  - neu model sai semantic thi PDP fail-fast
+
+## 8. Ket luan
+Metamodel hien tai da tien them mot buoc so voi ban dau:
+
+- khong chi mo hinh hoa expression tree
+- ma con mo ta ro binding cua policy
+- va ho tro semantic validation du chat de dung truc tiep trong runtime
