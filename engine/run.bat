@@ -1,2 +1,4 @@
 @echo off
-powershell -ExecutionPolicy Bypass -File "%~dp0run-test.ps1" %1
+setlocal
+powershell -ExecutionPolicy Bypass -File "%~dp0run-test.ps1" %*
+endlocal

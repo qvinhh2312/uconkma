@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.persistence.EntityManager;
 import vn.edu.kma.ucon.engine.pdp.AuthDecision;
@@ -25,6 +27,8 @@ import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
 @RestController
 @RequestMapping("/api")
 public class RegistrationController {
+
+    private static final Logger log = LoggerFactory.getLogger(RegistrationController.class);
 
     private final StudentRepository studentRepo;
     private final ClassSectionRepository classRepo;
@@ -51,6 +55,8 @@ public class RegistrationController {
             return ResponseEntity.badRequest().body("Request body is required.");
         }
         initializeRequest(req, "REGISTER");
+        log.info("[REQUEST] action={} requestId={} studentId={} classId={}",
+                req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId());
 
         if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
             return ResponseEntity.badRequest().body("studentId and classId are required.");
@@ -63,24 +69,36 @@ public class RegistrationController {
         if (student == null || cls == null) {
             return ResponseEntity.badRequest().body("Student or ClassSection not found.");
         }
+        log.info("[STATE BEFORE] student={} class={}", studentSnapshot(student), classSnapshot(cls));
+        log.info("[ENV PRE] {}", environmentSnapshot(preEnv));
 
         AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, preEnv, req);
+        log.info("[PHASE RESULT] phase=PRE_AUTHORIZATION permit={} failedCode={}",
+                preDecision.isPermit(), preDecision.getFailedCode());
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(preDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, preEnv, req);
+            log.warn("[REQUEST DENIED] action={} phase=PRE_AUTHORIZATION requestId={} failedCode={}",
+                    req.getActionType(), req.getRequestId(), preDecision.getFailedCode());
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
         entityManager.refresh(student);
         entityManager.refresh(cls);
+        log.info("[STATE REFRESHED] student={} class={}", studentSnapshot(student), classSnapshot(cls));
 
         Environment ongoingEnv = buildEnvironment();
+        log.info("[ENV ONGOING] {}", environmentSnapshot(ongoingEnv));
         AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, ongoingEnv, req);
+        log.info("[PHASE RESULT] phase=ONGOING_AUTHORIZATION permit={} failedCode={}",
+                ongoingDecision.isPermit(), ongoingDecision.getFailedCode());
         if (!ongoingDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(ongoingDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, ongoingEnv, req);
+            log.warn("[REQUEST DENIED] action={} phase=ONGOING_AUTHORIZATION requestId={} failedCode={}",
+                    req.getActionType(), req.getRequestId(), ongoingDecision.getFailedCode());
             return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
         }
 
@@ -90,6 +108,9 @@ public class RegistrationController {
 
         classRepo.save(cls);
         studentRepo.save(student);
+        log.info("[STATE AFTER] student={} class={}", studentSnapshot(student), classSnapshot(cls));
+        log.info("[REQUEST SUCCESS] action={} requestId={} decision={} response=\"Successfully enrolled.\"",
+                req.getActionType(), req.getRequestId(), req.getDecision());
 
         return ResponseEntity.ok("Successfully enrolled.");
     }
@@ -101,6 +122,8 @@ public class RegistrationController {
             return ResponseEntity.badRequest().body("Request body is required.");
         }
         initializeRequest(req, "DROP");
+        log.info("[REQUEST] action={} requestId={} studentId={} classId={}",
+                req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId());
 
         if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
             return ResponseEntity.badRequest().body("studentId and classId are required.");
@@ -113,24 +136,36 @@ public class RegistrationController {
         if (student == null || cls == null) {
             return ResponseEntity.badRequest().body("Student or ClassSection not found.");
         }
+        log.info("[STATE BEFORE] student={} class={}", studentSnapshot(student), classSnapshot(cls));
+        log.info("[ENV PRE] {}", environmentSnapshot(preEnv));
 
         AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, preEnv, req);
+        log.info("[PHASE RESULT] phase=PRE_AUTHORIZATION permit={} failedCode={}",
+                preDecision.isPermit(), preDecision.getFailedCode());
         if (!preDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(preDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, preEnv, req);
+            log.warn("[REQUEST DENIED] action={} phase=PRE_AUTHORIZATION requestId={} failedCode={}",
+                    req.getActionType(), req.getRequestId(), preDecision.getFailedCode());
             return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
         }
 
         entityManager.refresh(student);
         entityManager.refresh(cls);
+        log.info("[STATE REFRESHED] student={} class={}", studentSnapshot(student), classSnapshot(cls));
 
         Environment ongoingEnv = buildEnvironment();
+        log.info("[ENV ONGOING] {}", environmentSnapshot(ongoingEnv));
         AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, ongoingEnv, req);
+        log.info("[PHASE RESULT] phase=ONGOING_AUTHORIZATION permit={} failedCode={}",
+                ongoingDecision.isPermit(), ongoingDecision.getFailedCode());
         if (!ongoingDecision.isPermit()) {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(ongoingDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, ongoingEnv, req);
+            log.warn("[REQUEST DENIED] action={} phase=ONGOING_AUTHORIZATION requestId={} failedCode={}",
+                    req.getActionType(), req.getRequestId(), ongoingDecision.getFailedCode());
             return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
         }
 
@@ -140,6 +175,9 @@ public class RegistrationController {
 
         classRepo.save(cls);
         studentRepo.save(student);
+        log.info("[STATE AFTER] student={} class={}", studentSnapshot(student), classSnapshot(cls));
+        log.info("[REQUEST SUCCESS] action={} requestId={} decision={} response=\"Successfully dropped.\"",
+                req.getActionType(), req.getRequestId(), req.getDecision());
 
         return ResponseEntity.ok("Successfully dropped.");
     }
@@ -185,5 +223,43 @@ public class RegistrationController {
         env.setSemester("2026_FALL");
         env.setIsMaintenance(maintenanceFlag.isActive());
         return env;
+    }
+
+    private String studentSnapshot(Student student) {
+        return String.format(
+                "{id=%s,currentCredits=%d,tuitionPaid=%s,tuitionDebt=%d,holds=%s,registeredClassIds=%s,registeredScheduleSlots=%s}",
+                student.getStudentId(),
+                student.getCurrentCredits(),
+                student.isTuitionPaid(),
+                student.getTuitionDebt(),
+                safe(student.getHolds()),
+                safe(student.getRegisteredClassIds()),
+                safe(student.getRegisteredScheduleSlots()));
+    }
+
+    private String classSnapshot(ClassSection cls) {
+        return String.format(
+                "{id=%s,status=%s,enrolled=%d,capacity=%d,scheduleSlots=%s,courseId=%s}",
+                cls.getClassId(),
+                safe(cls.getStatus()),
+                cls.getEnrolled(),
+                cls.getCapacity(),
+                safe(cls.getScheduleSlots()),
+                cls.getCourse() != null ? safe(cls.getCourse().getCourseId()) : "null");
+    }
+
+    private String environmentSnapshot(Environment env) {
+        return String.format(
+                "{phase=%s,currentDateTime=%s,openTime=%s,closeTime=%s,semester=%s,isMaintenance=%s}",
+                safe(env.getRegistrationPhase()),
+                safe(env.getCurrentDateTime()),
+                safe(env.getOpenTime()),
+                safe(env.getCloseTime()),
+                safe(env.getSemester()),
+                env.getIsMaintenance());
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "<empty>" : value;
     }
 }

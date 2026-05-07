@@ -10,6 +10,7 @@ target/
 
 # Maven wrapper cache
 .mvn/
+.m2/
 
 # Maven binary (đừng commit vào git)
 **/apache-maven-3.9.6/
@@ -17,6 +18,7 @@ target/
 
 # ANTLR generated cache (auto-regenerated khi build)
 dsl/.antlr/
+dsl/bin/
 
 # IntelliJ IDEA
 .idea/

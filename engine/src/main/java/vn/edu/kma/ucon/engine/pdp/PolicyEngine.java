@@ -55,6 +55,9 @@ public class PolicyEngine {
             })
             .collect(Collectors.toList());
 
+        log.info("[PHASE START] phase={} action={} requestId={} policies={}",
+                phase, req.getActionType(), req.getRequestId(), phasePolicies.size());
+
         for (EObject policy : phasePolicies) {
             String ruleId = (String) policy.eGet(policy.eClass().getEStructuralFeature("policyId"));
             EObject condition = (EObject) policy.eGet(policy.eClass().getEStructuralFeature("condition"));
@@ -62,16 +65,21 @@ public class PolicyEngine {
             String denyReason = (String) policy.eGet(policy.eClass().getEStructuralFeature("denyReason"));
 
             boolean match = evaluator.evaluateCondition(condition, subject, obj, env, req);
+            log.info("[POLICY CHECK] phase={} policy={} effect={} matched={} denyReason={}",
+                    phase, ruleId, effect.getName(), match, denyReason);
 
             if (match && "DENY".equals(effect.getName())) {
                 log.warn("Policy {} blocked request.", ruleId);
                 return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
             }
             if (!match && "PERMIT".equals(effect.getName())) {
+                log.warn("[POLICY BLOCK] phase={} policy={} failedCode={}",
+                        phase, ruleId, denyReason != null ? denyReason : ruleId);
                 return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
             }
         }
 
+        log.info("[PHASE PASS] phase={} action={} requestId={}", phase, req.getActionType(), req.getRequestId());
         return new AuthDecision(true, null);
     }
 
@@ -125,10 +133,13 @@ public class PolicyEngine {
                         .filter(s -> "AuditLogStatement".equals(s.eClass().getName()))
                         .collect(Collectors.toList());
                     if (!auditOnly.isEmpty()) {
+                        log.info("[POST UPDATE] mode=AUDIT_ONLY action={} requestId={} policy={} statements={}",
+                                req.getActionType(), req.getRequestId(), ruleId, auditOnly.size());
                         evaluator.executePostUpdates(auditOnly, subject, obj, env, req);
                     }
                 } else {
-                    log.debug("Executing postUpdates for policy: {}", ruleId);
+                    log.info("[POST UPDATE] mode=FULL action={} requestId={} policy={} statements={}",
+                            req.getActionType(), req.getRequestId(), ruleId, postUpdates.size());
                     evaluator.executePostUpdates(postUpdates, subject, obj, env, req);
                 }
             }
