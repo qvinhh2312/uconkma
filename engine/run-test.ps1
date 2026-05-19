@@ -10,7 +10,7 @@ $cases = @{
         Title = "Dang ky hoc phan thanh cong"
         Goal = "Chung minh request REGISTER hop le duoc permit va post-update chay day du."
         Phase = "PRE -> ONGOING -> POST_UPDATE"
-        Policies = "P11, P12, P15A"
+        Policies = "P11, P12"
         Checks = @(
             "Gui request REGISTER hop le cho SV001 vao lop CS102_01"
             "Kiem tra enrolled tang len 5"
@@ -202,7 +202,7 @@ $cases = @{
         Title = "DROP hoan tra state va hoan no hoc phi"
         Goal = "Chung minh post-update co the cap nhat va dao nguoc trang thai sau khi huy lop."
         Phase = "POST_UPDATE"
-        Policies = "P14, P15B, P16"
+        Policies = "P14, P16"
         Checks = @(
             "Dang ky thanh cong mot lop truoc khi DROP"
             "Dat tuitionPaid = false de xac nhan DROP van duoc phep"
@@ -303,8 +303,6 @@ $aliases = @{
     "P13" = "T11"
     "P13A" = "T11"
     "P14" = "T12"
-    "P15A" = "T01"
-    "P15B" = "T12"
     "P16" = "T12"
 }
 
