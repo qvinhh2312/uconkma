@@ -1,40 +1,64 @@
 # HUONG DAN CHAY CHI TIET UCON_KMA
 
-## 1. Muc tieu tai lieu
+## 1. Muc tieu
 
-Tai lieu nay la ban huong dan chay cuoi cung cho project `UCON_KMA`, da duoc dong bo voi:
+Tai lieu nay la huong dan chay cuoi cung cho nhanh `master`, dong bo voi:
 
-- code hien tai tren nhanh `master`
-- bo policy trong `dsl/ucon_policy.dsl`
-- bo test trong `engine/src/test/java/.../UconEngineApplicationTests.java`
-- runtime H2 in-memory da co seed data qua `engine/src/main/resources/data.sql`
-
-Tai lieu nay thay cho cac huong dan cu bi lech runtime hoac loi ma hoa.
-
----
+- `dsl/ucon_policy.dsl`
+- `xmi/ucon_policy.xmi`
+- `engine/src/test/java/vn/edu/kma/ucon/engine/UconEngineApplicationTests.java`
+- runtime REST API tra ve JSON co traceability
 
 ## 2. Cau truc project
 
 ```text
 UCON_KMA/
-├─ dsl/          Parser va DSL policy
-├─ engine/       Spring Boot app + policy engine + tests
-├─ docs/         Tai lieu ly thuyet
-├─ metamodel/    Ecore metamodel
-├─ xmi/          Policy model dang XMI
-├─ HUONG_DAN_REST_API_CHUAN.md
-└─ HƯỚNG_DẪN_CHẠY_CHI_TIẾT.md
+|- dsl/         Grammar ANTLR, parser, transformer DSL -> XMI
+|- engine/      Spring Boot app, policy engine, REST API, tests
+|- metamodel/   Ecore metamodel
+|- xmi/         Policy model runtime
+|- docs/        Tai lieu ly thuyet va huong dan
 ```
 
----
+## 3. Kien truc can nam khi chay
 
-## 3. Yeu cau moi truong
+```text
+PAP
+  dsl/ucon_policy.dsl
+  -> parser / transformer
+  -> xmi/ucon_policy.xmi
+
+PEP
+  RegistrationController
+
+PDP
+  PolicyDecisionPoint + PolicyEngine
+
+PIP
+  StudentRepository, ClassSectionRepository, RegistrationRepository, AuditLogRepository
+
+Runtime executor
+  ExpressionEvaluator
+```
+
+Y nghia:
+
+- `PEP` nhan request va chan request
+- `PDP` chon policy theo phase/action va tra decision
+- `PIP` cap du lieu cho subject/object/environment
+- `ExpressionEvaluator` danh gia condition va thuc thi post-update
+
+Luu y quan trong:
+
+- `ONGOING_AUTHORIZATION` trong project hien tai la `transaction-level re-check`
+- nghia la request duoc kiem tra lai sat luc commit
+- no khong phai monitor lien tuc suot mot session dai han
+
+## 4. Yeu cau moi truong
 
 - Java 17+ hoac 21
 - Windows PowerShell
-- Maven bundled trong project:
-  - `dsl/apache-maven-3.9.6/bin/mvn.cmd`
-  - `engine/apache-maven-3.9.6/bin/mvn.cmd`
+- Maven bundled trong project
 
 Kiem tra nhanh:
 
@@ -42,9 +66,7 @@ Kiem tra nhanh:
 java -version
 ```
 
----
-
-## 4. Build DSL
+## 5. Build DSL
 
 ```powershell
 cd e:\UCON_KMA\dsl
@@ -57,15 +79,7 @@ Ket qua mong doi:
 BUILD SUCCESS
 ```
 
-Y nghia:
-
-- ANTLR generate parser tu `UconPolicy.g4`
-- compile module DSL
-- tao artifact parser
-
----
-
-## 5. Build va test engine
+## 6. Build va test engine
 
 ```powershell
 cd e:\UCON_KMA\engine
@@ -79,7 +93,7 @@ Tests run: 16, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Neu muon chay nhanh theo test ID hoac policy ID:
+## 7. Chay theo test ID / policy ID
 
 ```powershell
 cd e:\UCON_KMA\engine
@@ -89,60 +103,13 @@ cd e:\UCON_KMA\engine
 .\run.bat ALL
 ```
 
----
+`run.bat` dung de chung minh:
 
-## 6. Cach doc bo test
+- policy nao dang duoc test
+- test dang kiem tra dieu gi
+- ket qua mong doi cua policy/test do
 
-### 6.1. Test case goc
-
-Bo test chinh nam o:
-
-- `engine/src/test/java/vn/edu/kma/ucon/engine/UconEngineApplicationTests.java`
-
-Co 16 test:
-
-- `T01` den `T12`: business flow va UCON flow
-- `T13` den `T16`: validator va startup trust
-
-### 6.2. Mapping policy -> test
-
-Script:
-
-- `engine/run-test.ps1`
-
-giu metadata cho tung test:
-
-- title
-- muc tieu
-- pha UCON
-- policy lien quan
-- running checks
-- ket qua mong doi
-
-Vi du:
-
-- `P01` -> `T02`
-- `P02` -> `T03`
-- `P03` -> `T04`
-- `P08` -> `T10`
-- `P14` -> `T12`
-
-### 6.3. Bao cao tong hop tren PowerShell
-
-```powershell
-cd e:\UCON_KMA\engine
-.\run.bat REPORT
-```
-
-Report hien:
-
-- Bang 1: test case goc
-- Bang 2: policy -> test mapping
-- Bang 3: noi dung kiem thu day du cho tung policy
-
----
-
-## 7. Policy UCON dang co
+## 8. Policy UCON dang co
 
 File nguon:
 
@@ -173,55 +140,30 @@ File nguon:
 - `P14_DropStateRevert_Post`
 - `P12_AuditAndTrace_Post`
 
----
+## 9. Runtime database
 
-## 8. Runtime database
-
-Ung dung dung:
+App dung:
 
 ```text
 jdbc:h2:mem:ucondb
 ```
 
-Cau hinh nam trong:
-
-- `engine/src/main/resources/application.properties`
-
-Dong quan trong:
-
-```properties
-spring.jpa.defer-datasource-initialization=true
-```
-
-Dong nay dam bao `data.sql` duoc nap sau khi Hibernate tao bang.
-
-### Seed data runtime
-
-File:
+Runtime seed tu:
 
 - `engine/src/main/resources/data.sql`
 
-Du lieu co san khi app khoi dong:
+Cau hinh quan trong:
 
-- Students:
-  - `SV001`: hop le, da hoc `CS101`, da dong hoc phi
-  - `SV002`: chua dong hoc phi
-- Courses:
-  - `CS101`
-  - `CS102`
-- Class sections:
-  - `CS101_01`
-  - `CS102_01`
+- `spring.jpa.defer-datasource-initialization=true`
 
-Neu khong co `data.sql`, REST API se loi:
+Du lieu mau co san:
 
-```text
-Student or ClassSection not found.
-```
+- `SV001`: hop le, da dong hoc phi, da hoan thanh `CS101`
+- `SV002`: chua dong hoc phi
+- `CS101_01`
+- `CS102_01`
 
----
-
-## 9. Chay Spring Boot app
+## 10. Chay Spring Boot app
 
 ```powershell
 cd e:\UCON_KMA\engine
@@ -235,58 +177,9 @@ Tomcat started on port(s): 8080
 Started UconEngineApplication
 ```
 
-Khi app dang chay, console khong chi hien `Successfully enrolled.` hoac `Successfully dropped.` trong phan response.
-App hien tai da log them chi tiet theo tung request va tung pha UCON, vi du:
+## 11. Log runtime can nhin
 
-```text
-[REQUEST] action=REGISTER requestId=... studentId=SV001 classId=CS102_01
-[STATE BEFORE] student={...} class={...}
-[ENV PRE] {phase=NORMAL,currentDateTime=2026-03-27,openTime=2026-01-01,closeTime=2026-12-31,semester=2026_FALL,isMaintenance=false}
-[PHASE START] phase=PRE_AUTHORIZATION action=REGISTER requestId=... policies=8
-[POLICY CHECK] phase=PRE_AUTHORIZATION policy=P01_TuitionPaid_Pre effect=PERMIT matched=true denyReason=TUITION_NOT_PAID
-[PHASE RESULT] phase=PRE_AUTHORIZATION permit=true failedCode=null
-[ENV ONGOING] {...}
-[PHASE RESULT] phase=ONGOING_AUTHORIZATION permit=true failedCode=null
-[POST UPDATE] mode=FULL action=REGISTER requestId=... policy=P11_RegisterStateUpdate_Post statements=6
-[STATE AFTER] student={...} class={...}
-[REQUEST SUCCESS] action=REGISTER requestId=... decision=ALLOW response="Successfully enrolled."
-```
-
-Neu request bi tu choi, log se hien ro:
-
-```text
-[PHASE RESULT] phase=PRE_AUTHORIZATION permit=false failedCode=TUITION_NOT_PAID
-[REQUEST DENIED] action=REGISTER phase=PRE_AUTHORIZATION requestId=... failedCode=TUITION_NOT_PAID
-```
-
-Sau khi app len, co the mo:
-
-```text
-http://localhost:8080/h2-console
-```
-
-JDBC URL:
-
-```text
-jdbc:h2:mem:ucondb
-```
-
-### 9.1. Neu muon xem log gon hon tren PowerShell
-
-Console mac dinh se co ca:
-
-- log Spring Boot
-- log Hibernate SQL
-- log UCON chi tiet vua bo sung
-
-Neu ban redirect output cua `spring-boot:run` vao file, co the loc ra cac dong quan trong de demo bang:
-
-```powershell
-Get-Content .\target\spring-demo.log -Wait |
-  Select-String "\[REQUEST\]|\[STATE|\[ENV|\[PHASE|\[POLICY|\[POST UPDATE\]"
-```
-
-Neu ban chay app truc tiep trong cung console, thi chi can nhin cac dong bat dau bang:
+Console app se hien cac nhom log:
 
 - `[REQUEST]`
 - `[STATE BEFORE]`
@@ -299,16 +192,17 @@ Neu ban chay app truc tiep trong cung console, thi chi can nhin cac dong bat dau
 - `[REQUEST SUCCESS]`
 - `[REQUEST DENIED]`
 
----
+Day la noi thay ro request di qua cac pha UCON nhu the nao.
 
-## 10. Test REST API chuan
+## 12. Test REST API
 
-Mo terminal moi de khong dong app dang chay.
+Mo them mot terminal moi.
 
-### 10.1. Dang ky thanh cong
+### 12.1. REGISTER thanh cong
 
 ```powershell
 $body = @{
+    requestId = "demo-register-success"
     studentId = "SV001"
     classId = "CS102_01"
 } | ConvertTo-Json
@@ -317,42 +211,47 @@ Invoke-RestMethod `
   -Uri "http://localhost:8080/api/register" `
   -Method POST `
   -Body $body `
-  -ContentType "application/json"
+  -ContentType "application/json" | ConvertTo-Json -Depth 6
 ```
 
 Ket qua mong doi:
 
-```text
-Successfully enrolled.
-```
+- `decision = ALLOW`
+- `phase = POST_UPDATE`
+- `message = Successfully enrolled.`
 
-### 10.2. Dang ky bi tu choi do chua dong hoc phi
+### 12.2. REGISTER bi tu choi do hoc phi
 
 ```powershell
 $body = @{
+    requestId = "demo-register-deny-tuition"
     studentId = "SV002"
     classId = "CS102_01"
 } | ConvertTo-Json
 
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/register" `
-  -Method POST `
-  -Body $body `
-  -ContentType "application/json"
+try {
+    Invoke-RestMethod `
+      -Uri "http://localhost:8080/api/register" `
+      -Method POST `
+      -Body $body `
+      -ContentType "application/json" | ConvertTo-Json -Depth 6
+} catch {
+    $_.ErrorDetails.Message
+}
 ```
 
 Ket qua mong doi:
 
-```text
-DENIED_PREAUTH: TUITION_NOT_PAID
-```
+- `decision = DENY`
+- `phase = PRE_AUTHORIZATION`
+- `failedPolicy = P01_TuitionPaid_Pre`
+- `denyReason = TUITION_NOT_PAID`
 
-### 10.3. Dang ky trung
-
-Goi 2 lan voi cung `SV001` va `CS102_01`:
+### 12.3. DROP thanh cong
 
 ```powershell
 $body = @{
+    requestId = "demo-register-before-drop"
     studentId = "SV001"
     classId = "CS102_01"
 } | ConvertTo-Json
@@ -361,33 +260,10 @@ Invoke-RestMethod `
   -Uri "http://localhost:8080/api/register" `
   -Method POST `
   -Body $body `
-  -ContentType "application/json"
+  -ContentType "application/json" | ConvertTo-Json -Depth 6
 
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/register" `
-  -Method POST `
-  -Body $body `
-  -ContentType "application/json"
-```
-
-Ket qua lan 2 mong doi:
-
-```text
-DENIED_PREAUTH: ALREADY_REGISTERED
-```
-
-Hoac neu race/collision o tang DB:
-
-```text
-DENIED_DUPLICATE_REGISTRATION: active registration already exists.
-```
-
-### 10.4. Huy dang ky
-
-Dang ky truoc, roi goi:
-
-```powershell
 $body = @{
+    requestId = "demo-drop-success"
     studentId = "SV001"
     classId = "CS102_01"
 } | ConvertTo-Json
@@ -396,190 +272,52 @@ Invoke-RestMethod `
   -Uri "http://localhost:8080/api/drop" `
   -Method POST `
   -Body $body `
-  -ContentType "application/json"
+  -ContentType "application/json" | ConvertTo-Json -Depth 6
 ```
 
 Ket qua mong doi:
 
-```text
-Successfully dropped.
+- `decision = ALLOW`
+- `phase = POST_UPDATE`
+- `message = Successfully dropped.`
+
+## 13. Mau response runtime
+
+### Dang ky bi tu choi
+
+```json
+{
+  "requestId": "demo-register-deny-tuition",
+  "action": "REGISTER",
+  "decision": "DENY",
+  "phase": "PRE_AUTHORIZATION",
+  "studentId": "SV002",
+  "classId": "CS102_01",
+  "failedPolicy": "P01_TuitionPaid_Pre",
+  "denyReason": "TUITION_NOT_PAID",
+  "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra.",
+  "message": "DENIED_PREAUTH: TUITION_NOT_PAID"
+}
 ```
 
-### 10.5. Vi du sai thuong gap: dung nham ID runtime
+### Dang ky thanh cong
 
-Doan sau la vi du sai:
-
-```powershell
-$body = @{
-    studentId = "2"
-    classId = "102"
-} | ConvertTo-Json
+```json
+{
+  "requestId": "demo-register-success",
+  "action": "REGISTER",
+  "decision": "ALLOW",
+  "phase": "POST_UPDATE",
+  "studentId": "SV001",
+  "classId": "CS102_01",
+  "failedPolicy": null,
+  "denyReason": null,
+  "explanation": "Request da vuot qua PRE_AUTHORIZATION, ONGOING_AUTHORIZATION va da thuc thi POST_UPDATE thanh cong.",
+  "message": "Successfully enrolled."
+}
 ```
 
-Ly do sai:
-
-- runtime DB seed bang `data.sql` khong co student `"2"`
-- runtime DB seed bang `data.sql` khong co class `"102"`
-- runtime chi co:
-  - `SV001`, `SV002`
-  - `CS101_01`, `CS102_01`
-
-Neu goi sai ID nhu tren, app se tra:
-
-```text
-Student or ClassSection not found.
-```
-
-Vi vay, de test `P01` bang REST API dung runtime that, phai dung:
-
-```powershell
-$body = @{
-    studentId = "SV002"
-    classId = "CS102_01"
-} | ConvertTo-Json
-```
-
-### 10.6. Them mot so vi du REST chay duoc that
-
-#### Vi du A: request body thieu field
-
-```powershell
-$body = @{
-    studentId = "SV001"
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/register" `
-  -Method POST `
-  -Body $body `
-  -ContentType "application/json"
-```
-
-Ket qua mong doi:
-
-```text
-studentId and classId are required.
-```
-
-#### Vi du B: dang ky trung sau khi da dang ky thanh cong
-
-```powershell
-$body = @{
-    studentId = "SV001"
-    classId = "CS102_01"
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/register" `
-  -Method POST `
-  -Body $body `
-  -ContentType "application/json"
-
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/register" `
-  -Method POST `
-  -Body $body `
-  -ContentType "application/json"
-```
-
-Ket qua mong doi o lan goi thu 2:
-
-```text
-DENIED_PREAUTH: ALREADY_REGISTERED
-```
-
-Hoac trong tinh huong collision o DB:
-
-```text
-DENIED_DUPLICATE_REGISTRATION: active registration already exists.
-```
-
-#### Vi du C: huy lop khi chua co dang ky
-
-```powershell
-$body = @{
-    studentId = "SV001"
-    classId = "CS102_01"
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/drop" `
-  -Method POST `
-  -Body $body `
-  -ContentType "application/json"
-```
-
-Ket qua mong doi neu truoc do chua REGISTER:
-
-```text
-DENIED_PREAUTH: NOT_REGISTERED
-```
-
-### 10.7. Nhung policy nao khong nen demo bang REST truc tiep
-
-Co nhung policy rat phu hop de demo bang `run.bat`, nhung khong phai luc nao cung hop de demo bang REST:
-
-- `P02`:
-  - vi `Environment` dang duoc build co dinh trong controller
-  - muon thay doi transaction window phai sua environment hoac sua code
-- `P08`:
-  - can co 2 request dong thoi tranh 1 suat cuoi cung
-- `P09`:
-  - can thay doi status lop giua PRE va ONGOING
-- `P13`:
-  - can bat maintenance dung thoi diem giua request
-
-Voi cac policy nhu tren, `run.bat Pxx` la cach demo ro rang va on dinh hon REST thu cong.
-
-### 10.8. Script tu dong ban 3 request mau
-
-Neu muon demo runtime that ro rang hon, co the dung script:
-
-```powershell
-cd e:\UCON_KMA\engine
-.\run-rest-demo.bat all
-```
-
-Hoac chay tung luong:
-
-```powershell
-.\run-rest-demo.bat 1
-.\run-rest-demo.bat 2
-.\run-rest-demo.bat 3
-```
-
-Y nghia:
-
-- `1`: REGISTER thanh cong
-- `2`: REGISTER bi tu choi do `TUITION_NOT_PAID`
-- `3`: DROP thanh cong
-- `all`: chay lien tiep ca 3 case
-
-Script nay se tu dong:
-
-- goi endpoint `GET /api/demo/state` truoc request
-- gui request REST that
-- in response HTTP
-- goi lai `GET /api/demo/state` sau request
-
-Nhu vay ban nhin thay ro:
-
-- response tra ve
-- state cua `Student`
-- state cua `ClassSection`
-- `Registration` co duoc tao/xoa hay khong
-- `AuditLog` moi nhat
-- tong so ban ghi dang co
-
-### 10.9. Endpoint xem state DB de demo
-
-Endpoint:
-
-```text
-GET /api/demo/state?studentId=SV001&classId=CS102_01
-```
-
-Vi du:
+## 14. Xem snapshot state runtime
 
 ```powershell
 Invoke-RestMethod `
@@ -587,7 +325,7 @@ Invoke-RestMethod `
   -Method GET | ConvertTo-Json -Depth 6
 ```
 
-No se tra ve JSON gom:
+Snapshot tra ve:
 
 - `environment`
 - `student`
@@ -596,13 +334,26 @@ No se tra ve JSON gom:
 - `latestAudit`
 - `totals`
 
-Day la noi de nhin ro thay doi DB khi demo, thay vi chi nhin chuoi:
+Day la cach nhin thay doi state de demo ro hon response chuoi don le.
 
-- `Successfully enrolled.`
-- `Successfully dropped.`
-- `DENIED_PREAUTH: ...`
+## 15. Chay script demo runtime
 
-### 10.10. Neu muon xem thang DB trong H2 Console
+```powershell
+cd e:\UCON_KMA\engine
+.\run-rest-demo.bat 1
+.\run-rest-demo.bat 2
+.\run-rest-demo.bat 3
+.\run-rest-demo.bat all
+```
+
+Script nay tu dong:
+
+- lay state truoc request
+- gui request runtime that
+- in JSON response
+- lay state sau request
+
+## 16. H2 console
 
 Mo:
 
@@ -616,373 +367,37 @@ JDBC URL:
 jdbc:h2:mem:ucondb
 ```
 
-Co the chay cac cau SQL sau:
-
-```sql
-select * from student;
-select * from class_section;
-select * from registration;
-select * from audit_log;
-```
-
-Neu muon tap trung vao case demo `SV001` va `CS102_01`:
+SQL de quan sat thay doi:
 
 ```sql
 select * from student where student_id = 'SV001';
 select * from class_section where class_id = 'CS102_01';
 select * from registration where student_id = 'SV001' and class_id = 'CS102_01';
-select * from audit_log where student_id = 'SV001' and class_id = 'CS102_01' order by id desc;
+select * from audit_log where student_id in ('SV001', 'SV002') order by id desc;
 ```
 
-Day la noi thay DB doi ro nhat:
+## 17. Phan biet `run.bat P01` va `spring-boot:run`
 
-- `student.current_credits`
-- `student.tuition_debt`
-- `student.registered_class_ids`
-- `student.registered_schedule_slots`
-- `class_section.enrolled`
-- bang `registration`
-- bang `audit_log`
+### `.\run.bat P01`
 
----
+- la test JUnit da co san
+- dung de chung minh policy nao dang duoc kiem tra
+- phu hop cho bao ve logic policy
 
-## 11. Response thuc te cua API
+### `spring-boot:run`
 
-### `/api/register`
+- la app runtime that tren localhost
+- dung de chung minh he thong chay end-to-end
+- phu hop cho demo tich hop REST + DB + policy engine
 
-- Thanh cong:
+Khuyen nghi khi bao ve:
 
-```text
-Successfully enrolled.
-```
+1. show `.\run.bat P01` hoac `.\run.bat REPORT`
+2. show `spring-boot:run`
+3. goi 1 request pass va 1 request deny
+4. mo H2 hoac endpoint snapshot de cho thay DB thay doi
 
-- That bai PRE:
-
-```text
-DENIED_PREAUTH: <FAILED_CODE>
-```
-
-- That bai ONGOING:
-
-```text
-DENIED_ONGOING: <FAILED_CODE>
-```
-
-- Race condition:
-
-```text
-DENIED_RACE_CONDITION: concurrent enrollment update was detected.
-```
-
-- Duplicate registration:
-
-```text
-DENIED_DUPLICATE_REGISTRATION: active registration already exists.
-```
-
-### `/api/drop`
-
-- Thanh cong:
-
-```text
-Successfully dropped.
-```
-
-- That bai PRE:
-
-```text
-DENIED_PREAUTH: <FAILED_CODE>
-```
-
-- That bai ONGOING:
-
-```text
-DENIED_ONGOING: <FAILED_CODE>
-```
-
-### Cac loi 400
-
-```text
-Request body is required.
-studentId and classId are required.
-Student or ClassSection not found.
-```
-
----
-
-## 12. Quy trinh xu ly trong code
-
-Controller:
-
-- `engine/src/main/java/vn/edu/kma/ucon/engine/pep/RegistrationController.java`
-
-Flow:
-
-```text
-REQUEST
-  -> validate body
-  -> load Student va ClassSection
-  -> build Environment
-  -> PRE_AUTHORIZATION
-  -> refresh entity
-  -> ONGOING_AUTHORIZATION
-  -> POST_UPDATE
-  -> save entity
-  -> RESPONSE
-```
-
-Policy engine:
-
-- `PolicyDecisionPoint`
-- `PolicyEngine`
-- `ExpressionEvaluator`
-
-Policy source of truth:
-
-- `xmi/ucon_policy.xmi`
-- duoc sinh tu `dsl/ucon_policy.dsl`
-
----
-
-## 13. Phan biet `run.bat P01` va chay `spring-boot:run`
-
-Day la 2 cach kiem chung khac nhau, khong trung nhau.
-
-### 13.1. `.\run.bat P01` la gi
-
-Lenh:
-
-```powershell
-cd e:\UCON_KMA\engine
-.\run.bat P01
-```
-
-Y nghia:
-
-- day la cach chay test JUnit da duoc viet san
-- script map `P01` -> `T02` -> `test02_RegisterDenied_WhenTuitionNotPaid`
-- test tu dong tao du lieu, goi controller/test engine, assert ket qua, va in metadata mo ta test
-
-No kiem tra:
-
-- policy `P01` co chan request hay khong
-- failed code co dung la `TUITION_NOT_PAID` hay khong
-- co tao `Registration` sai hay khong
-- audit log co ghi `DENY` hay khong
-
-No phu hop de:
-
-- chung minh logic policy
-- chung minh test case chuan
-- bao ve ve mat ky thuat va tinh dung dan
-
-### 13.2. `spring-boot:run` la gi
-
-Lenh:
-
-```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
-```
-
-Y nghia:
-
-- day la cach chay ung dung that
-- app mo REST API tren port `8080`
-- ban tu gui HTTP request bang PowerShell hoac Postman
-
-No kiem tra:
-
-- controller co nhan request that hay khong
-- database runtime co du seed data hay khong
-- luong `register/drop` co chay end-to-end hay khong
-- response HTTP tra ve co dung khong
-
-No phu hop de:
-
-- demo he thong dang chay
-- show tich hop controller + DB + policy engine
-- mo ta kha nang trien khai thuc te
-
-### 13.3. Khac nhau o dau
-
-`run.bat P01`:
-
-- la test tu dong
-- du lieu va assert da duoc co dinh
-- tap trung vao tinh dung dan cua policy/test case
-- de lap lai va de bao ve ky thuat
-
-`spring-boot:run` + `Invoke-RestMethod`:
-
-- la chay ung dung that
-- nguoi dung tu gui request
-- tap trung vao luong tich hop end-to-end
-- de demo he thong thuc thi ngoai test framework
-
-### 13.4. Co can ca 2 khong
-
-Co.
-
-Can `run.bat P01` vi:
-
-- no la bang chung kiem thu chinh xac cho tung policy
-- no cho thay test case duoc dac ta ro rang
-- no giai thich duoc "policy nay dang test dieu gi"
-
-Can `spring-boot:run` vi:
-
-- no cho thay he thong khong chi dung trong test ma con chay duoc that
-- no chung minh REST API, DB runtime, va policy engine da noi voi nhau
-
-### 13.5. Cai nao nen show cuoi cung
-
-Neu chi duoc chon mot kieu de bao ve logic policy:
-
-- uu tien `.\run.bat P01`, `.\run.bat P05`, `.\run.bat P10`, ...
-
-vi:
-
-- gon
-- on dinh
-- mo ta ro test dang kiem tra gi
-- de gan voi tung policy trong DSL
-
-Neu muon show mot man "he thong chay that":
-
-- mo app bang `spring-boot:run`
-- sau do goi 1 request PASS va 1 request DENY bang REST
-
-Khuyen nghi cach show cuoi cung:
-
-1. Show `run.bat P01` hoac `run.bat REPORT` de giai thich policy va test mapping
-2. Show `spring-boot:run` + 1 request `REGISTER` thanh cong
-3. Show tiep 1 request `REGISTER` bi tu choi, vi du `SV002` -> `TUITION_NOT_PAID`
-
-Nhu vay ban co ca:
-
-- chung cu kiem thu
-- va demo runtime that
-
----
-
-## 14. Cach tao va dac ta policy UCON bang DSL
-
-File:
-
-- `dsl/ucon_policy.dsl`
-
-Mot policy co dang tong quat:
-
-```text
-policy <PolicyName> {
-    type: PRE_AUTHORIZATION | ONGOING_AUTHORIZATION | POST_UPDATE
-    targetAction: REGISTER | DROP | ANY
-    effect: PERMIT
-    priority: <so>
-    description: "<mo ta>"
-    subjectType: "Student"
-    objectType: "ClassSection"
-    ruleFamily: AUTHORIZATION | MUTATION | TRACE
-    denyReason: "<ma loi>"
-
-    condition: <bieu thuc DSL>
-
-    postUpdates:
-       <update statements>
-}
-```
-
-### Cach viet policy
-
-1. Xac dinh bai toan nghiep vu
-- vi du: "Sinh vien chua dong hoc phi thi khong duoc dang ky"
-
-2. Chon pha UCON
-- truoc hanh dong -> `PRE_AUTHORIZATION`
-- gan commit -> `ONGOING_AUTHORIZATION`
-- sau khi permit -> `POST_UPDATE`
-
-3. Chon target action
-- `REGISTER`
-- `DROP`
-- `ANY`
-
-4. Viet `condition`
-- vi du:
-
-```text
-condition: subject.tuitionPaid == true
-```
-
-5. Neu la `POST_UPDATE`, viet `postUpdates`
-- vi du:
-
-```text
-postUpdates:
-   object.enrolled ADD_ASSIGN 1
-   subject.currentCredits ADD_ASSIGN object.course.credits
-```
-
-### Vi du cu the
-
-```text
-policy P01_TuitionPaid_Pre {
-    type: PRE_AUTHORIZATION
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 100
-    description: "Chi cho phep SV da hoan tat hoc phi"
-    subjectType: "Student"
-    objectType: "ClassSection"
-    ruleFamily: AUTHORIZATION
-    denyReason: "TUITION_NOT_PAID"
-
-    condition: subject.tuitionPaid == true
-}
-```
-
-Y nghia:
-
-- neu `subject.tuitionPaid` la `false`
-- request bi tu choi
-- failed code se la `TUITION_NOT_PAID`
-
----
-
-## 14. Ket qua xac minh thuc te cua ban chot
-
-Ban chot hien tai da duoc xac minh:
-
-- `mvn test` pass:
-
-```text
-Tests run: 16, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
-```
-
-- `spring-boot:run` start thanh cong
-- REST runtime pass voi:
-  - `SV001` -> `Successfully enrolled.`
-- REST runtime deny dung voi:
-  - `SV002` -> `DENIED_PREAUTH: TUITION_NOT_PAID`
-
-Bug da duoc sua:
-
-- app runtime truoc day khong co seed data, gay loi:
-
-```text
-Student or ClassSection not found.
-```
-
-Da fix bang:
-
-- `engine/src/main/resources/data.sql`
-- `spring.jpa.defer-datasource-initialization=true`
-
----
-
-## 15. Dung app
+## 18. Dung app
 
 Trong terminal dang chay app:
 
@@ -997,12 +412,12 @@ Get-Process | Where-Object {$_.ProcessName -match "java"}
 Stop-Process -Name java -Force
 ```
 
----
+## 19. Tai lieu lien quan
 
-## 16. Tai lieu lien quan
-
-- `HUONG_DAN_REST_API_CHUAN.md`
+- [README.md](../../README.md)
+- [HUONG_DAN_REST_API_CHUAN.md](./HUONG_DAN_REST_API_CHUAN.md)
 - `dsl/ucon_policy.dsl`
 - `xmi/ucon_policy.xmi`
-- `engine/src/test/java/vn/edu/kma/ucon/engine/UconEngineApplicationTests.java`
-- `engine/run-test.ps1`
+- `engine/src/main/java/vn/edu/kma/ucon/engine/pep/RegistrationController.java`
+- `engine/src/main/java/vn/edu/kma/ucon/engine/pdp/PolicyEngine.java`
+- `engine/src/main/java/vn/edu/kma/ucon/engine/pdp/ExpressionEvaluator.java`

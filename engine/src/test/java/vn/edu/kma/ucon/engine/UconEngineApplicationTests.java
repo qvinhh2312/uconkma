@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 
+import vn.edu.kma.ucon.engine.pep.ApiDecisionResponse;
 import vn.edu.kma.ucon.engine.pep.RegistrationController;
 import vn.edu.kma.ucon.engine.pep.UconRequest;
 import vn.edu.kma.ucon.engine.pdp.AuthDecision;
@@ -129,8 +130,9 @@ class UconEngineApplicationTests {
         req.setStudentId("SV001");
         req.setClassId("CS102_01");
 
-        ResponseEntity<String> response = regController.register(req);
+        ResponseEntity<ApiDecisionResponse> response = regController.register(req);
         assertEquals(200, response.getStatusCode().value());
+        assertEquals("Successfully enrolled.", response.getBody().getMessage());
 
         Student s = studentRepo.findById("SV001").orElseThrow();
         assertEquals(4, s.getCurrentCredits());
@@ -167,9 +169,10 @@ class UconEngineApplicationTests {
         req.setStudentId("SV002");
         req.setClassId("CS102_01");
 
-        ResponseEntity<String> response = regController.register(req);
+        ResponseEntity<ApiDecisionResponse> response = regController.register(req);
         assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("TUITION_NOT_PAID"));
+        assertEquals("TUITION_NOT_PAID", response.getBody().getDenyReason());
+        assertEquals("P01_TuitionPaid_Pre", response.getBody().getFailedPolicy());
         assertEquals("DENY", auditRepo.findAll().get(0).getDecision());
         assertEquals(0, registrationRepo.count());
     }
@@ -227,10 +230,10 @@ class UconEngineApplicationTests {
         studentRepo.save(student);
 
         UconRequest req = registerRequest();
-        ResponseEntity<String> response = regController.register(req);
+        ResponseEntity<ApiDecisionResponse> response = regController.register(req);
 
         assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("ALREADY_REGISTERED"));
+        assertEquals("ALREADY_REGISTERED", response.getBody().getDenyReason());
     }
 
     @Test
@@ -240,9 +243,9 @@ class UconEngineApplicationTests {
         s.setCurrentCredits(12);
         studentRepo.save(s);
 
-        ResponseEntity<String> response = regController.register(registerRequest());
+        ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
         assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("CREDIT_LIMIT_EXCEEDED"));
+        assertEquals("CREDIT_LIMIT_EXCEEDED", response.getBody().getDenyReason());
     }
 
     @Test
@@ -252,9 +255,9 @@ class UconEngineApplicationTests {
         s.setCompletedCourses("");
         studentRepo.save(s);
 
-        ResponseEntity<String> response = regController.register(registerRequest());
+        ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
         assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("PREREQUISITE_NOT_MET"));
+        assertEquals("PREREQUISITE_NOT_MET", response.getBody().getDenyReason());
     }
 
     @Test
@@ -264,9 +267,9 @@ class UconEngineApplicationTests {
         s.setRegisteredScheduleSlots("T3_1-3");
         studentRepo.save(s);
 
-        ResponseEntity<String> response = regController.register(registerRequest());
+        ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
         assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("SCHEDULE_CONFLICT"));
+        assertEquals("SCHEDULE_CONFLICT", response.getBody().getDenyReason());
     }
 
     @Test
@@ -276,9 +279,9 @@ class UconEngineApplicationTests {
         s.setHolds("DISCIPLINARY_HOLD");
         studentRepo.save(s);
 
-        ResponseEntity<String> response = regController.register(registerRequest());
+        ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
         assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("STUDENT_ON_HOLD"));
+        assertEquals("STUDENT_ON_HOLD", response.getBody().getDenyReason());
         assertEquals(0, registrationRepo.count());
     }
 
@@ -331,9 +334,9 @@ class UconEngineApplicationTests {
         assertEquals("SYSTEM_UNDER_MAINTENANCE", ongoingDecision.getFailedCode());
 
         maintenanceFlag.setActive(true);
-        ResponseEntity<String> response = regController.register(registerRequest());
+        ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
         assertEquals(403, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("SYSTEM_UNDER_MAINTENANCE"));
+        assertEquals("SYSTEM_UNDER_MAINTENANCE", response.getBody().getDenyReason());
 
         Student unchanged = studentRepo.findById("SV001").orElseThrow();
         assertEquals(0, unchanged.getCurrentCredits());
@@ -347,7 +350,7 @@ class UconEngineApplicationTests {
     @Test
     @DisplayName("Drop restores state, removes the transaction, and refunds tuition debt")
     void test12_DropRestoresState_RemovesTransaction_AndRefundsDebt() {
-        ResponseEntity<String> regResponse = regController.register(registerRequest());
+        ResponseEntity<ApiDecisionResponse> regResponse = regController.register(registerRequest());
         assertEquals(200, regResponse.getStatusCode().value());
         assertEquals(1, registrationRepo.count());
         assertEquals(4000000, studentRepo.findById("SV001").orElseThrow().getTuitionDebt());
@@ -357,8 +360,9 @@ class UconEngineApplicationTests {
         studentRepo.save(student);
 
         UconRequest dropReq = dropRequest();
-        ResponseEntity<String> dropResponse = regController.drop(dropReq);
+        ResponseEntity<ApiDecisionResponse> dropResponse = regController.drop(dropReq);
         assertEquals(200, dropResponse.getStatusCode().value());
+        assertEquals("Successfully dropped.", dropResponse.getBody().getMessage());
 
         Student afterDrop = studentRepo.findById("SV001").orElseThrow();
         ClassSection afterDropCls = classRepo.findById("CS102_01").orElseThrow();

@@ -29,7 +29,7 @@ public class PolicyEngine {
     @SuppressWarnings("unchecked")
     public AuthDecision evaluatePhase(String phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
         EObject root = pdp.getPolicyModelRoot();
-        if (root == null) return new AuthDecision(true, null);
+        if (root == null) return new AuthDecision(true, null, null);
 
         List<EObject> policies = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policies"));
 
@@ -70,17 +70,17 @@ public class PolicyEngine {
 
             if (match && "DENY".equals(effect.getName())) {
                 log.warn("Policy {} blocked request.", ruleId);
-                return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
+                return new AuthDecision(false, denyReason != null ? denyReason : ruleId, ruleId);
             }
             if (!match && "PERMIT".equals(effect.getName())) {
                 log.warn("[POLICY BLOCK] phase={} policy={} failedCode={}",
                         phase, ruleId, denyReason != null ? denyReason : ruleId);
-                return new AuthDecision(false, denyReason != null ? denyReason : ruleId);
+                return new AuthDecision(false, denyReason != null ? denyReason : ruleId, ruleId);
             }
         }
 
         log.info("[PHASE PASS] phase={} action={} requestId={}", phase, req.getActionType(), req.getRequestId());
-        return new AuthDecision(true, null);
+        return new AuthDecision(true, null, null);
     }
 
     public void executePostUpdates(Student subject, ClassSection obj, Environment env, UconRequest req) {

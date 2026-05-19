@@ -1,5 +1,9 @@
 # TAI LIEU UCON_KMA
 
+Neu can tong quan ngan gon ve kien truc va cach chay, doc truoc:
+
+- [README.md](../README.md)
+
 Thu muc `docs/` duoc chia thanh 2 nhom chinh:
 
 ## 1. Tai lieu ly thuyet va mo hinh
@@ -29,6 +33,8 @@ Nhom nay dung cho:
 - huong dan build, test, run
 - huong dan REST API runtime
 - kich ban demo 3 case tren localhost
+- ghi chu ve response JSON traceability
+- ghi chu ongoing authorization o muc transaction-level re-check
 
 ## 3. Thu tu nen dung
 

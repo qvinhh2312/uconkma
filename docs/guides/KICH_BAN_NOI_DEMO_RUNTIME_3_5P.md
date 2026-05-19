@@ -1,24 +1,24 @@
-Chuẩn bị
+Chuan bi
 
-Mở terminal 1:
+Mo terminal 1:
 
 ```powershell
 cd e:\UCON_KMA\engine
 .\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
 ```
 
-Chờ app lên, thấy các dòng kiểu:
+Cho app len, thay cac dong:
 
 ```text
 Tomcat started on port(s): 8080
 Started UconEngineApplication
 ```
 
-Mở terminal 2 để gửi request và xem state.
+Mo terminal 2 de gui request va xem state.
 
-Case 1: REGISTER thành công
+Case 1: REGISTER thanh cong
 
-Bước 1. Xem state trước khi gửi request
+Buoc 1. Xem state truoc khi gui request
 
 ```powershell
 Invoke-RestMethod `
@@ -26,7 +26,7 @@ Invoke-RestMethod `
   -Method GET | ConvertTo-Json -Depth 6
 ```
 
-Điểm cần nhìn:
+Diem can nhin:
 
 - `student.currentCredits = 0`
 - `student.tuitionDebt = 0`
@@ -35,7 +35,7 @@ Invoke-RestMethod `
 - `registration.exists = false`
 - `latestAudit.exists = false`
 
-Bước 2. Gửi request REGISTER
+Buoc 2. Gui request REGISTER
 
 ```powershell
 $body = @{
@@ -48,18 +48,18 @@ Invoke-RestMethod `
   -Uri "http://localhost:8080/api/register" `
   -Method POST `
   -Body $body `
-  -ContentType "application/json"
+  -ContentType "application/json" | ConvertTo-Json -Depth 6
 ```
 
-Kết quả mong đợi:
+Ket qua mong doi:
 
-```text
-Successfully enrolled.
-```
+- `decision = ALLOW`
+- `phase = POST_UPDATE`
+- `message = Successfully enrolled.`
 
-Bước 3. Xem log runtime ở terminal 1
+Buoc 3. Xem log runtime o terminal 1
 
-Các dòng nên chỉ:
+Can chi vao:
 
 - `[REQUEST]`
 - `[STATE BEFORE]`
@@ -71,13 +71,13 @@ Các dòng nên chỉ:
 - `[STATE AFTER]`
 - `[REQUEST SUCCESS]`
 
-Ý nghĩa:
+Y nghia:
 
 - `PRE` pass
 - `ONGOING` pass
-- `POST_UPDATE` chạy
+- `POST_UPDATE` chay
 
-Bước 4. Xem state sau request
+Buoc 4. Xem state sau request
 
 ```powershell
 Invoke-RestMethod `
@@ -85,7 +85,7 @@ Invoke-RestMethod `
   -Method GET | ConvertTo-Json -Depth 6
 ```
 
-Điểm cần nhìn:
+Diem can nhin:
 
 - `student.currentCredits = 4`
 - `student.tuitionDebt = 4000000`
@@ -96,9 +96,9 @@ Invoke-RestMethod `
 - `latestAudit.decision = ALLOW`
 - `latestAudit.failedPolicyCodes = NONE`
 
-Bước 5. Check DB trong H2
+Buoc 5. Check DB trong H2
 
-Mở:
+Mo:
 
 ```text
 http://localhost:8080/h2-console
@@ -110,7 +110,7 @@ JDBC:
 jdbc:h2:mem:ucondb
 ```
 
-Chạy:
+Chay:
 
 ```sql
 select * from student where student_id = 'SV001';
@@ -119,16 +119,16 @@ select * from registration where student_id = 'SV001' and class_id = 'CS102_01';
 select * from audit_log where request_id = 'demo-register-success';
 ```
 
-Điểm cần trình bày:
+Diem can trinh bay:
 
-- `student.current_credits` tăng
-- `student.tuition_debt` tăng
-- có bản ghi trong `registration`
-- có bản ghi `ALLOW` trong `audit_log`
+- `student.current_credits` tang
+- `student.tuition_debt` tang
+- co ban ghi trong `registration`
+- co ban ghi `ALLOW` trong `audit_log`
 
-Case 2: REGISTER bị từ chối do chưa đóng học phí
+Case 2: REGISTER bi tu choi do chua dong hoc phi
 
-Bước 1. Xem state trước request
+Buoc 1. Xem state truoc request
 
 ```powershell
 Invoke-RestMethod `
@@ -136,13 +136,13 @@ Invoke-RestMethod `
   -Method GET | ConvertTo-Json -Depth 6
 ```
 
-Điểm cần nhìn:
+Diem can nhin:
 
 - `student.tuitionPaid = false`
 - `student.currentCredits = 0`
 - `registration.exists = false`
 
-Bước 2. Gửi request REGISTER
+Buoc 2. Gui request REGISTER
 
 ```powershell
 $body = @{
@@ -151,46 +151,37 @@ $body = @{
     classId = "CS102_01"
 } | ConvertTo-Json
 
-Invoke-RestMethod `
-  -Uri "http://localhost:8080/api/register" `
-  -Method POST `
-  -Body $body `
-  -ContentType "application/json"
-```
-
-Nếu PowerShell quăng exception vì 403, dùng:
-
-```powershell
 try {
     Invoke-RestMethod `
       -Uri "http://localhost:8080/api/register" `
       -Method POST `
       -Body $body `
-      -ContentType "application/json"
+      -ContentType "application/json" | ConvertTo-Json -Depth 6
 } catch {
     $_.ErrorDetails.Message
 }
 ```
 
-Kết quả mong đợi:
+Ket qua mong doi:
 
-```text
-DENIED_PREAUTH: TUITION_NOT_PAID
-```
+- `decision = DENY`
+- `phase = PRE_AUTHORIZATION`
+- `failedPolicy = P01_TuitionPaid_Pre`
+- `denyReason = TUITION_NOT_PAID`
 
-Bước 3. Xem log runtime
+Buoc 3. Xem log runtime
 
-Điểm cần nhìn:
+Diem can nhin:
 
 - `[PHASE RESULT] phase=PRE_AUTHORIZATION permit=false failedCode=TUITION_NOT_PAID`
 - `[REQUEST DENIED] action=REGISTER phase=PRE_AUTHORIZATION ...`
 
-Ý nghĩa:
+Y nghia:
 
-- request bị chặn ở `PRE`
-- hành động chưa được phép xảy ra
+- request bi chan o `PRE`
+- hanh dong chua duoc phep xay ra
 
-Bước 4. Xem state sau request
+Buoc 4. Xem state sau request
 
 ```powershell
 Invoke-RestMethod `
@@ -198,16 +189,16 @@ Invoke-RestMethod `
   -Method GET | ConvertTo-Json -Depth 6
 ```
 
-Điểm cần nhìn:
+Diem can nhin:
 
-- `student.currentCredits` không đổi
-- `student.tuitionDebt` không đổi
-- `classSection.enrolled` không đổi
+- `student.currentCredits` khong doi
+- `student.tuitionDebt` khong doi
+- `classSection.enrolled` khong doi
 - `registration.exists = false`
 - `latestAudit.decision = DENY`
 - `latestAudit.failedPolicyCodes = TUITION_NOT_PAID`
 
-Bước 5. Check DB trong H2
+Buoc 5. Check DB trong H2
 
 ```sql
 select * from student where student_id = 'SV002';
@@ -216,17 +207,17 @@ select * from registration where student_id = 'SV002' and class_id = 'CS102_01';
 select * from audit_log where request_id = 'demo-register-deny-tuition';
 ```
 
-Điểm cần trình bày:
+Diem can trinh bay:
 
-- không có `registration`
-- không có mutation trên `student` hay `class_section`
-- nhưng vẫn có `audit_log` để truy vết
+- khong co `registration`
+- khong co mutation tren `student` hay `class_section`
+- nhung van co `audit_log` de truy vet
 
-Case 3: DROP thành công
+Case 3: DROP thanh cong
 
-Case này phải làm sau khi `SV001` đã đăng ký thành công, hoặc bạn chạy lại Case 1 trước.
+Case nay phai lam sau khi `SV001` da dang ky thanh cong, hoac ban chay lai Case 1 truoc.
 
-Bước 1. Xem state trước DROP
+Buoc 1. Xem state truoc DROP
 
 ```powershell
 Invoke-RestMethod `
@@ -234,14 +225,14 @@ Invoke-RestMethod `
   -Method GET | ConvertTo-Json -Depth 6
 ```
 
-Điểm cần nhìn:
+Diem can nhin:
 
 - `student.currentCredits = 4`
 - `student.tuitionDebt = 4000000`
 - `registration.exists = true`
 - `classSection.enrolled = 5`
 
-Bước 2. Gửi request DROP
+Buoc 2. Gui request DROP
 
 ```powershell
 $body = @{
@@ -254,25 +245,25 @@ Invoke-RestMethod `
   -Uri "http://localhost:8080/api/drop" `
   -Method POST `
   -Body $body `
-  -ContentType "application/json"
+  -ContentType "application/json" | ConvertTo-Json -Depth 6
 ```
 
-Kết quả mong đợi:
+Ket qua mong doi:
 
-```text
-Successfully dropped.
-```
+- `decision = ALLOW`
+- `phase = POST_UPDATE`
+- `message = Successfully dropped.`
 
-Bước 3. Xem log runtime
+Buoc 3. Xem log runtime
 
-Điểm cần nhìn:
+Diem can nhin:
 
 - `PRE` pass
 - `ONGOING` pass
-- `POST_UPDATE` chạy
+- `POST_UPDATE` chay
 - `[REQUEST SUCCESS] action=DROP ...`
 
-Bước 4. Xem state sau DROP
+Buoc 4. Xem state sau DROP
 
 ```powershell
 Invoke-RestMethod `
@@ -280,7 +271,7 @@ Invoke-RestMethod `
   -Method GET | ConvertTo-Json -Depth 6
 ```
 
-Điểm cần nhìn:
+Diem can nhin:
 
 - `student.currentCredits = 0`
 - `student.tuitionDebt = 0`
@@ -290,7 +281,7 @@ Invoke-RestMethod `
 - `registration.exists = false`
 - `latestAudit.decision = ALLOW`
 
-Bước 5. Check DB trong H2
+Buoc 5. Check DB trong H2
 
 ```sql
 select * from student where student_id = 'SV001';
@@ -299,63 +290,63 @@ select * from registration where student_id = 'SV001' and class_id = 'CS102_01';
 select * from audit_log where request_id = 'demo-drop-success';
 ```
 
-Điểm cần trình bày:
+Diem can trinh bay:
 
-- `registration` đã bị xóa
-- `current_credits` giảm
-- `tuition_debt` giảm
-- `enrolled` giảm
-- có `audit_log` mới cho request `DROP`
+- `registration` da bi xoa
+- `current_credits` giam
+- `tuition_debt` giam
+- `enrolled` giam
+- co `audit_log` moi cho request `DROP`
 
-Cách demo nhanh nhất bằng script
+Cach demo nhanh nhat bang script
 
-Nếu không muốn gõ từng request:
+Neu khong muon go tung request:
 
 ```powershell
 cd e:\UCON_KMA\engine
 .\run-rest-demo.bat all
 ```
 
-Nó sẽ tự:
+No se tu:
 
-- show state trước
-- bắn request
-- show response
+- show state truoc
+- ban request
+- show response JSON
 - show state sau
 
-Cho cả 3 case:
+Cho ca 3 case:
 
-- `REGISTER` thành công
-- `REGISTER` bị deny do học phí
-- `DROP` thành công
+- `REGISTER` thanh cong
+- `REGISTER` bi deny do hoc phi
+- `DROP` thanh cong
 
-Nên nói gì khi trình bày
+Nen noi gi khi trinh bay
 
 Case 1
 
-- request được cho phép
-- qua đủ `PRE`, `ONGOING`, `POST_UPDATE`
-- state hệ thống thay đổi
-- DB có `registration` và `audit`
+- request duoc cho phep
+- qua du `PRE`, `ONGOING`, `POST_UPDATE`
+- state he thong thay doi
+- DB co `registration` va `audit`
 
 Case 2
 
-- request bị chặn ở `PRE_AUTHORIZATION`
-- không có mutation state
-- nhưng `audit` vẫn ghi lại để truy vết
+- request bi chan o `PRE_AUTHORIZATION`
+- khong co mutation state
+- nhung `audit` van ghi lai de truy vet
 
 Case 3
 
-- `DROP` không chỉ trả success
-- mà còn hoàn tác toàn bộ state liên quan
-- thể hiện UCON có `post-update` thật sự
+- `DROP` khong chi tra success
+- ma con hoan tac toan bo state lien quan
+- the hien UCON co `post-update` that su
 
-Kết luận nên show
+Ket luan nen show
 
-Nếu demo đầy đủ, mỗi case nên có:
+Neu demo day du, moi case nen co:
 
 - request
-- response
+- response JSON
 - log UCON
 - snapshot before/after
-- H2 query xác nhận DB thật
+- H2 query xac nhan DB that

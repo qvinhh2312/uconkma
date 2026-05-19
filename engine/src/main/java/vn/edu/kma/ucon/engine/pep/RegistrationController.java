@@ -1,6 +1,7 @@
 package vn.edu.kma.ucon.engine.pep;
 
 import java.util.UUID;
+import java.util.Map;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
@@ -50,16 +51,17 @@ public class RegistrationController {
 
     @PostMapping("/register")
     @Transactional
-    public ResponseEntity<String> register(@RequestBody UconRequest req) {
+    public ResponseEntity<ApiDecisionResponse> register(@RequestBody UconRequest req) {
         if (req == null) {
-            return ResponseEntity.badRequest().body("Request body is required.");
+            return badRequest("REGISTER", null, null, null, "Request body is required.");
         }
         initializeRequest(req, "REGISTER");
         log.info("[REQUEST] action={} requestId={} studentId={} classId={}",
                 req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId());
 
         if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
-            return ResponseEntity.badRequest().body("studentId and classId are required.");
+            return badRequest(req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId(),
+                    "studentId and classId are required.");
         }
 
         Environment preEnv = buildEnvironment();
@@ -67,7 +69,8 @@ public class RegistrationController {
         ClassSection cls = classRepo.findById(req.getClassId()).orElse(null);
 
         if (student == null || cls == null) {
-            return ResponseEntity.badRequest().body("Student or ClassSection not found.");
+            return badRequest(req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId(),
+                    "Student or ClassSection not found.");
         }
         log.info("[STATE BEFORE] student={} class={}", studentSnapshot(student), classSnapshot(cls));
         log.info("[ENV PRE] {}", environmentSnapshot(preEnv));
@@ -79,9 +82,9 @@ public class RegistrationController {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(preDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, preEnv, req);
-            log.warn("[REQUEST DENIED] action={} phase=PRE_AUTHORIZATION requestId={} failedCode={}",
-                    req.getActionType(), req.getRequestId(), preDecision.getFailedCode());
-            return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
+            log.warn("[REQUEST DENIED] action={} phase=PRE_AUTHORIZATION requestId={} failedCode={} failedPolicy={}",
+                    req.getActionType(), req.getRequestId(), preDecision.getFailedCode(), preDecision.getFailedPolicy());
+            return denyResponse("PRE_AUTHORIZATION", req, preDecision);
         }
 
         entityManager.refresh(student);
@@ -97,9 +100,9 @@ public class RegistrationController {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(ongoingDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, ongoingEnv, req);
-            log.warn("[REQUEST DENIED] action={} phase=ONGOING_AUTHORIZATION requestId={} failedCode={}",
-                    req.getActionType(), req.getRequestId(), ongoingDecision.getFailedCode());
-            return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
+            log.warn("[REQUEST DENIED] action={} phase=ONGOING_AUTHORIZATION requestId={} failedCode={} failedPolicy={}",
+                    req.getActionType(), req.getRequestId(), ongoingDecision.getFailedCode(), ongoingDecision.getFailedPolicy());
+            return denyResponse("ONGOING_AUTHORIZATION", req, ongoingDecision);
         }
 
         req.setDecision("ALLOW");
@@ -109,24 +112,30 @@ public class RegistrationController {
         classRepo.save(cls);
         studentRepo.save(student);
         log.info("[STATE AFTER] student={} class={}", studentSnapshot(student), classSnapshot(cls));
-        log.info("[REQUEST SUCCESS] action={} requestId={} decision={} response=\"Successfully enrolled.\"",
-                req.getActionType(), req.getRequestId(), req.getDecision());
+        ApiDecisionResponse response = successResponse(
+                "POST_UPDATE",
+                req,
+                "Successfully enrolled.",
+                "Request da vuot qua PRE_AUTHORIZATION, ONGOING_AUTHORIZATION va da thuc thi POST_UPDATE thanh cong.");
+        log.info("[REQUEST SUCCESS] action={} requestId={} decision={} response=\"{}\"",
+                req.getActionType(), req.getRequestId(), req.getDecision(), response.getMessage());
 
-        return ResponseEntity.ok("Successfully enrolled.");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/drop")
     @Transactional
-    public ResponseEntity<String> drop(@RequestBody UconRequest req) {
+    public ResponseEntity<ApiDecisionResponse> drop(@RequestBody UconRequest req) {
         if (req == null) {
-            return ResponseEntity.badRequest().body("Request body is required.");
+            return badRequest("DROP", null, null, null, "Request body is required.");
         }
         initializeRequest(req, "DROP");
         log.info("[REQUEST] action={} requestId={} studentId={} classId={}",
                 req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId());
 
         if (!hasText(req.getStudentId()) || !hasText(req.getClassId())) {
-            return ResponseEntity.badRequest().body("studentId and classId are required.");
+            return badRequest(req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId(),
+                    "studentId and classId are required.");
         }
 
         Environment preEnv = buildEnvironment();
@@ -134,7 +143,8 @@ public class RegistrationController {
         ClassSection cls = classRepo.findById(req.getClassId()).orElse(null);
 
         if (student == null || cls == null) {
-            return ResponseEntity.badRequest().body("Student or ClassSection not found.");
+            return badRequest(req.getActionType(), req.getRequestId(), req.getStudentId(), req.getClassId(),
+                    "Student or ClassSection not found.");
         }
         log.info("[STATE BEFORE] student={} class={}", studentSnapshot(student), classSnapshot(cls));
         log.info("[ENV PRE] {}", environmentSnapshot(preEnv));
@@ -146,9 +156,9 @@ public class RegistrationController {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(preDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, preEnv, req);
-            log.warn("[REQUEST DENIED] action={} phase=PRE_AUTHORIZATION requestId={} failedCode={}",
-                    req.getActionType(), req.getRequestId(), preDecision.getFailedCode());
-            return ResponseEntity.status(403).body("DENIED_PREAUTH: " + preDecision.getFailedCode());
+            log.warn("[REQUEST DENIED] action={} phase=PRE_AUTHORIZATION requestId={} failedCode={} failedPolicy={}",
+                    req.getActionType(), req.getRequestId(), preDecision.getFailedCode(), preDecision.getFailedPolicy());
+            return denyResponse("PRE_AUTHORIZATION", req, preDecision);
         }
 
         entityManager.refresh(student);
@@ -164,9 +174,9 @@ public class RegistrationController {
             req.setDecision("DENY");
             req.setFailedPolicyCodes(ongoingDecision.getFailedCode());
             policyEngine.executeAuditLogOnly(student, cls, ongoingEnv, req);
-            log.warn("[REQUEST DENIED] action={} phase=ONGOING_AUTHORIZATION requestId={} failedCode={}",
-                    req.getActionType(), req.getRequestId(), ongoingDecision.getFailedCode());
-            return ResponseEntity.status(403).body("DENIED_ONGOING: " + ongoingDecision.getFailedCode());
+            log.warn("[REQUEST DENIED] action={} phase=ONGOING_AUTHORIZATION requestId={} failedCode={} failedPolicy={}",
+                    req.getActionType(), req.getRequestId(), ongoingDecision.getFailedCode(), ongoingDecision.getFailedPolicy());
+            return denyResponse("ONGOING_AUTHORIZATION", req, ongoingDecision);
         }
 
         req.setDecision("ALLOW");
@@ -176,22 +186,115 @@ public class RegistrationController {
         classRepo.save(cls);
         studentRepo.save(student);
         log.info("[STATE AFTER] student={} class={}", studentSnapshot(student), classSnapshot(cls));
-        log.info("[REQUEST SUCCESS] action={} requestId={} decision={} response=\"Successfully dropped.\"",
-                req.getActionType(), req.getRequestId(), req.getDecision());
+        ApiDecisionResponse response = successResponse(
+                "POST_UPDATE",
+                req,
+                "Successfully dropped.",
+                "Request da vuot qua PRE_AUTHORIZATION, ONGOING_AUTHORIZATION va da hoan tat POST_UPDATE de hoan tac state.");
+        log.info("[REQUEST SUCCESS] action={} requestId={} decision={} response=\"{}\"",
+                req.getActionType(), req.getRequestId(), req.getDecision(), response.getMessage());
 
-        return ResponseEntity.ok("Successfully dropped.");
+        return ResponseEntity.ok(response);
     }
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<String> handleOptimisticLockException(ObjectOptimisticLockingFailureException ex) {
-        return ResponseEntity.status(409)
-                .body("DENIED_RACE_CONDITION: concurrent enrollment update was detected.");
+    public ResponseEntity<ApiDecisionResponse> handleOptimisticLockException(ObjectOptimisticLockingFailureException ex) {
+        return ResponseEntity.status(409).body(new ApiDecisionResponse(
+                null,
+                null,
+                "DENY",
+                "COMMIT",
+                null,
+                null,
+                null,
+                "RACE_CONDITION",
+                "Co xung dot optimistic locking o buoc commit, nghia la state da thay doi do request dong thoi khac.",
+                "DENIED_RACE_CONDITION: concurrent enrollment update was detected."));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<String> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        return ResponseEntity.status(409)
-                .body("DENIED_DUPLICATE_REGISTRATION: active registration already exists.");
+    public ResponseEntity<ApiDecisionResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(409).body(new ApiDecisionResponse(
+                null,
+                null,
+                "DENY",
+                "COMMIT",
+                null,
+                null,
+                null,
+                "DUPLICATE_REGISTRATION",
+                "Database phat hien ban ghi dang ky trung lap tai buoc commit nen giao dich bi tu choi.",
+                "DENIED_DUPLICATE_REGISTRATION: active registration already exists."));
+    }
+
+    private ResponseEntity<ApiDecisionResponse> badRequest(String action,
+                                                           String requestId,
+                                                           String studentId,
+                                                           String classId,
+                                                           String message) {
+        return ResponseEntity.badRequest().body(new ApiDecisionResponse(
+                requestId,
+                action,
+                "DENY",
+                "VALIDATION",
+                studentId,
+                classId,
+                null,
+                "BAD_REQUEST",
+                message,
+                message));
+    }
+
+    private ResponseEntity<ApiDecisionResponse> denyResponse(String phase, UconRequest req, AuthDecision decision) {
+        return ResponseEntity.status(403).body(new ApiDecisionResponse(
+                req.getRequestId(),
+                req.getActionType(),
+                req.getDecision(),
+                phase,
+                req.getStudentId(),
+                req.getClassId(),
+                decision.getFailedPolicy(),
+                decision.getFailedCode(),
+                denyExplanation(decision.getFailedCode()),
+                messageForPhase(phase, decision.getFailedCode())));
+    }
+
+    private ApiDecisionResponse successResponse(String phase, UconRequest req, String message, String explanation) {
+        return new ApiDecisionResponse(
+                req.getRequestId(),
+                req.getActionType(),
+                req.getDecision(),
+                phase,
+                req.getStudentId(),
+                req.getClassId(),
+                null,
+                null,
+                explanation,
+                message);
+    }
+
+    private String messageForPhase(String phase, String failedCode) {
+        if ("ONGOING_AUTHORIZATION".equals(phase)) {
+            return "DENIED_ONGOING: " + failedCode;
+        }
+        return "DENIED_PREAUTH: " + failedCode;
+    }
+
+    private String denyExplanation(String failedCode) {
+        Map<String, String> explanations = Map.ofEntries(
+                Map.entry("TUITION_NOT_PAID", "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra."),
+                Map.entry("OUTSIDE_TRANSACTION_WINDOW", "Thoi diem hien tai nam ngoai khung giao dich hop le cua dot dang ky."),
+                Map.entry("CLASS_NOT_OPEN", "Lop hoc phan khong o trang thai OPEN nen khong the dang ky."),
+                Map.entry("ALREADY_REGISTERED", "Sinh vien da co giao dich dang ky hop le cho lop hoc phan nay."),
+                Map.entry("CREDIT_LIMIT_EXCEEDED", "Tong so tin chi sau khi dang ky vuot qua gioi han tin chi hieu luc."),
+                Map.entry("PREREQUISITE_NOT_MET", "Sinh vien chua hoan thanh day du mon tien quyet cua hoc phan."),
+                Map.entry("SCHEDULE_CONFLICT", "Lich hoc cua lop moi bi trung voi lich hoc da dang ky."),
+                Map.entry("CLASS_FULL_ON_COMMIT", "Tai thoi diem gan commit, lop da het cho nen request bi tu choi."),
+                Map.entry("CLASS_STATUS_CHANGED", "Trang thai lop da thay doi giua PRE va ONGOING nen request khong con hop le."),
+                Map.entry("STUDENT_ON_HOLD", "Sinh vien dang co hold hoc vu/ky luat nen khong duoc thuc hien giao dich."),
+                Map.entry("SYSTEM_UNDER_MAINTENANCE", "He thong da chuyen sang trang thai maintenance trong luc giao dich dang duoc xu ly."),
+                Map.entry("NOT_REGISTERED", "Khong ton tai giao dich dang ky hop le de thuc hien thao tac DROP."));
+        return explanations.getOrDefault(failedCode, "Policy da tu choi request o pha hien tai.");
     }
 
     private void initializeRequest(UconRequest req, String actionType) {

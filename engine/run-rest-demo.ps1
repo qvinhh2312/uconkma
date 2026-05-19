@@ -34,11 +34,13 @@ function Invoke-DemoRequest($label, $uri, $body) {
     Write-Host ($body | ConvertTo-Json -Depth 4)
     try {
         $response = Invoke-RestMethod -Uri $uri -Method POST -Body ($body | ConvertTo-Json) -ContentType "application/json"
-        Write-Host "[HTTP RESPONSE] $response" -ForegroundColor Green
+        Write-Host "[HTTP RESPONSE]" -ForegroundColor Green
+        $response | ConvertTo-Json -Depth 6
         return $response
     } catch {
         $errorBody = Read-ErrorBody $_
-        Write-Host "[HTTP RESPONSE] $errorBody" -ForegroundColor Yellow
+        Write-Host "[HTTP RESPONSE]" -ForegroundColor Yellow
+        Write-Host $errorBody
         return $errorBody
     }
 }
