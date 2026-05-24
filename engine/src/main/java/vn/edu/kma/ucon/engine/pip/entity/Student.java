@@ -16,6 +16,7 @@ public class Student {
     private boolean academicWarning;
     private int maxCreditsEffective;
     private int tuitionDebt;
+    private int registerAttemptCount;
 
     @Column(length = 1000)
     private String completedCourses;
@@ -63,6 +64,9 @@ public class Student {
 
     public int getTuitionDebt() { return tuitionDebt; }
     public void setTuitionDebt(int tuitionDebt) { this.tuitionDebt = tuitionDebt; }
+
+    public int getRegisterAttemptCount() { return registerAttemptCount; }
+    public void setRegisterAttemptCount(int registerAttemptCount) { this.registerAttemptCount = registerAttemptCount; }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }

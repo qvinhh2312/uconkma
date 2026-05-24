@@ -1,0 +1,109 @@
+subject:
+  studentId:
+    type: string
+    mutable: false
+  tuitionPaid:
+    type: boolean
+    mutable: false
+  currentCredits:
+    type: integer
+    mutable: true
+  maxCreditsEffective:
+    type: integer
+    mutable: false
+  completedCourses:
+    type: list
+    mutable: false
+  registeredClassIds:
+    type: list
+    mutable: true
+  registeredScheduleSlots:
+    type: list
+    mutable: true
+  tuitionDebt:
+    type: integer
+    mutable: true
+  holds:
+    type: list
+    mutable: false
+  registerAttemptCount:
+    type: integer
+    mutable: true
+
+object:
+  classId:
+    type: string
+    mutable: false
+  capacity:
+    type: integer
+    mutable: false
+  enrolled:
+    type: integer
+    mutable: true
+  reservedSeats:
+    type: integer
+    mutable: true
+  status:
+    type: string
+    mutable: true
+  scheduleSlots:
+    type: list
+    mutable: false
+  course.credits:
+    type: integer
+    mutable: false
+  course.prerequisites:
+    type: list
+    mutable: false
+  course.tuitionFee:
+    type: integer
+    mutable: false
+
+environment:
+  registrationPhase:
+    type: string
+    mutable: false
+  currentDateTime:
+    type: datetime
+    mutable: false
+  openTime:
+    type: datetime
+    mutable: false
+  closeTime:
+    type: datetime
+    mutable: false
+  semester:
+    type: string
+    mutable: false
+  isMaintenance:
+    type: boolean
+    mutable: false
+
+request:
+  requestId:
+    type: string
+    mutable: false
+  studentId:
+    type: string
+    mutable: false
+  classId:
+    type: string
+    mutable: false
+  actionType:
+    type: string
+    mutable: false
+  decision:
+    type: string
+    mutable: false
+  failedPolicyCodes:
+    type: string
+    mutable: false
+  confirmedRegistrationRule:
+    type: boolean
+    mutable: false
+  adminOverride:
+    type: boolean
+    mutable: false
+  overrideReason:
+    type: string
+    mutable: false

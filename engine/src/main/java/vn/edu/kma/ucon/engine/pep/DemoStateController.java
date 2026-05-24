@@ -81,6 +81,7 @@ public class DemoStateController {
         state.put("currentCredits", student.getCurrentCredits());
         state.put("tuitionPaid", student.isTuitionPaid());
         state.put("tuitionDebt", student.getTuitionDebt());
+        state.put("registerAttemptCount", student.getRegisterAttemptCount());
         state.put("holds", safe(student.getHolds()));
         state.put("completedCourses", safe(student.getCompletedCourses()));
         state.put("registeredClassIds", safe(student.getRegisteredClassIds()));
@@ -98,6 +99,7 @@ public class DemoStateController {
         state.put("classId", cls.getClassId());
         state.put("status", safe(cls.getStatus()));
         state.put("enrolled", cls.getEnrolled());
+        state.put("reservedSeats", cls.getReservedSeats());
         state.put("capacity", cls.getCapacity());
         state.put("scheduleSlots", safe(cls.getScheduleSlots()));
         state.put("courseId", cls.getCourse() != null ? safe(cls.getCourse().getCourseId()) : "null");

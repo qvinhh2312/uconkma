@@ -21,9 +21,9 @@ public class PolicyFunctionRegistry {
 
     public PolicyFunctionRegistry(PolicyFunctionExecutor executor) {
         this.functions = List.of(
-                new FunctionSpec("isEmpty", 1, ReturnType.BOOLEAN, Set.of("PRE_AUTHORIZATION", "ONGOING_AUTHORIZATION", "POST_UPDATE"),
+                new FunctionSpec("isEmpty", 1, ReturnType.BOOLEAN, Set.of("PRE", "ONGOING", "POST"),
                         args -> executor.isEmpty(args.get(0))),
-                new FunctionSpec("checkExistsRegistration", 3, ReturnType.BOOLEAN, Set.of("PRE_AUTHORIZATION", "ONGOING_AUTHORIZATION"),
+                new FunctionSpec("checkExistsRegistration", 3, ReturnType.BOOLEAN, Set.of("PRE", "ONGOING"),
                         args -> executor.checkExistsRegistration(
                                 stringArg(args.get(0)),
                                 stringArg(args.get(1)),

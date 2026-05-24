@@ -27,12 +27,14 @@ Nhom nay dung cho:
 - `guides/HUONG_DAN_CHAY_CHI_TIET.md`
 - `guides/HUONG_DAN_REST_API_CHUAN.md`
 - `guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md`
+- `guides/UCONABC_MAPPING.md`
 
 Nhom nay dung cho:
 
 - huong dan build, test, run
 - huong dan REST API runtime
 - kich ban demo 3 case tren localhost
+- bang mapping policy -> UCONABC -> test
 - ghi chu ve response JSON traceability
 - ghi chu ongoing authorization o muc transaction-level re-check
 
@@ -50,3 +52,4 @@ Neu can chay va demo:
 1. `guides/HUONG_DAN_CHAY_CHI_TIET.md`
 2. `guides/HUONG_DAN_REST_API_CHUAN.md`
 3. `guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md`
+4. `guides/UCONABC_MAPPING.md`

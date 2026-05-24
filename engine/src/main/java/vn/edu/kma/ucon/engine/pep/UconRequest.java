@@ -7,6 +7,9 @@ public class UconRequest {
     private String actionType;
     private String decision;
     private String failedPolicyCodes;
+    private Boolean confirmedRegistrationRule;
+    private Boolean adminOverride;
+    private String overrideReason;
 
     public UconRequest() {}
 
@@ -27,4 +30,13 @@ public class UconRequest {
 
     public String getFailedPolicyCodes() { return failedPolicyCodes; }
     public void setFailedPolicyCodes(String failedPolicyCodes) { this.failedPolicyCodes = failedPolicyCodes; }
+
+    public Boolean getConfirmedRegistrationRule() { return confirmedRegistrationRule; }
+    public void setConfirmedRegistrationRule(Boolean confirmedRegistrationRule) { this.confirmedRegistrationRule = confirmedRegistrationRule; }
+
+    public Boolean getAdminOverride() { return adminOverride; }
+    public void setAdminOverride(Boolean adminOverride) { this.adminOverride = adminOverride; }
+
+    public String getOverrideReason() { return overrideReason; }
+    public void setOverrideReason(String overrideReason) { this.overrideReason = overrideReason; }
 }

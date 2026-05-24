@@ -1,5 +1,7 @@
 package vn.edu.kma.ucon.engine.pep;
 
+import vn.edu.kma.ucon.engine.pdp.DecisionTrace;
+
 public class ApiDecisionResponse {
     private final String requestId;
     private final String action;
@@ -11,6 +13,7 @@ public class ApiDecisionResponse {
     private final String denyReason;
     private final String explanation;
     private final String message;
+    private final DecisionTrace decisionTrace;
 
     public ApiDecisionResponse(String requestId,
                                String action,
@@ -21,7 +24,8 @@ public class ApiDecisionResponse {
                                String failedPolicy,
                                String denyReason,
                                String explanation,
-                               String message) {
+                               String message,
+                               DecisionTrace decisionTrace) {
         this.requestId = requestId;
         this.action = action;
         this.decision = decision;
@@ -32,6 +36,7 @@ public class ApiDecisionResponse {
         this.denyReason = denyReason;
         this.explanation = explanation;
         this.message = message;
+        this.decisionTrace = decisionTrace;
     }
 
     public String getRequestId() { return requestId; }
@@ -44,4 +49,5 @@ public class ApiDecisionResponse {
     public String getDenyReason() { return denyReason; }
     public String getExplanation() { return explanation; }
     public String getMessage() { return message; }
+    public DecisionTrace getDecisionTrace() { return decisionTrace; }
 }

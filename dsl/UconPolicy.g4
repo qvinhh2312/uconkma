@@ -4,20 +4,26 @@ grammar UconPolicy;
 policyModel: policy+ EOF;
 
 policy: 'policy' ID '{'
-        'type:' policyType
+        'predicate:' predicateType
+        'phase:' phaseType
+        'updateTiming:' updateTiming
         'targetAction:' actionType
         'effect:' policyEffect
         'priority:' INT
         'description:' STRING
         'subjectType:' STRING
         'objectType:' STRING
-        'ruleFamily:' ID
         ('denyReason:' STRING)?
         'condition:' expression
-        ('postUpdates:' updateStatement+)?
+        ('preUpdates:' preUpdates+=updateStatement+)?
+        ('ongoingUpdates:' ongoingUpdates+=updateStatement+)?
+        ('postUpdates:' postUpdates+=updateStatement+)?
+        ('rollbackUpdates:' rollbackUpdates+=updateStatement+)?
         '}';
 
-policyType: 'PRE_AUTHORIZATION' | 'ONGOING_AUTHORIZATION' | 'POST_UPDATE';
+predicateType: 'AUTHORIZATION' | 'OBLIGATION' | 'CONDITION';
+phaseType: 'PRE' | 'ONGOING' | 'POST';
+updateTiming: 'NONE' | 'PRE' | 'ONGOING' | 'POST';
 actionType: 'REGISTER' | 'DROP' | 'ANY';
 policyEffect: 'PERMIT' | 'DENY';
 

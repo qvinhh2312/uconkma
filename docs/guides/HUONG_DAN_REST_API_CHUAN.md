@@ -8,7 +8,9 @@ Runtime hien tai:
 
 - seed du lieu bang `engine/src/main/resources/data.sql`
 - tra ve JSON response co traceability
+- tra ve `decisionTrace` theo phase/policy
 - ghi log ro theo pha UCON
+- validate runtime state bang `DomainInvariantChecker`
 
 ## 2. Du lieu runtime co san
 
@@ -52,7 +54,7 @@ Y nghia:
 - PIP cung cap thuoc tinh cho subject/object/environment
 - post-update cap nhat state that sau khi request duoc permit
 
-`ONGOING_AUTHORIZATION` trong project nay la `transaction-level re-check`, nghia la kiem tra lai sat luc commit, khong phai monitor lien tuc cho mot session dai.
+`ONGOING` trong project nay la `transaction-level re-check`, nghia la kiem tra lai sat luc commit, khong phai monitor lien tuc cho mot session dai.
 
 ## 5. Mau response runtime
 
@@ -63,13 +65,18 @@ Y nghia:
   "requestId": "demo-register-success",
   "action": "REGISTER",
   "decision": "ALLOW",
-  "phase": "POST_UPDATE",
+  "phase": "POST",
   "studentId": "SV001",
   "classId": "CS102_01",
   "failedPolicy": null,
   "denyReason": null,
-  "explanation": "Request da vuot qua PRE_AUTHORIZATION, ONGOING_AUTHORIZATION va da thuc thi POST_UPDATE thanh cong.",
-  "message": "Successfully enrolled."
+  "explanation": "Request da vuot qua PRE, ONGOING va da thuc thi POST updates thanh cong.",
+  "message": "Successfully enrolled.",
+  "decisionTrace": {
+    "requestId": "demo-register-success",
+    "action": "REGISTER",
+    "decision": "ALLOW"
+  }
 }
 ```
 
@@ -80,13 +87,18 @@ Y nghia:
   "requestId": "demo-register-deny-tuition",
   "action": "REGISTER",
   "decision": "DENY",
-  "phase": "PRE_AUTHORIZATION",
+  "phase": "PRE",
   "studentId": "SV002",
   "classId": "CS102_01",
-  "failedPolicy": "P01_TuitionPaid_Pre",
+  "failedPolicy": "P01_TuitionPaid_PreA0",
   "denyReason": "TUITION_NOT_PAID",
   "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra.",
-  "message": "DENIED_PREAUTH: TUITION_NOT_PAID"
+  "message": "DENIED_PREAUTH: TUITION_NOT_PAID",
+  "decisionTrace": {
+    "requestId": "demo-register-deny-tuition",
+    "action": "REGISTER",
+    "decision": "DENY"
+  }
 }
 ```
 
@@ -109,14 +121,16 @@ Invoke-RestMethod `
 Ket qua mong doi:
 
 - `decision = ALLOW`
-- `phase = POST_UPDATE`
+- `phase = POST`
 - `message = Successfully enrolled.`
+- `decisionTrace.phases` co day du `PRE`, `ONGOING`, `POST`
 
 Y nghia:
 
-- request pass `PRE_AUTHORIZATION`
-- request pass `ONGOING_AUTHORIZATION`
-- `POST_UPDATE` da cap nhat state
+- request pass `PRE`
+- request pass `ONGOING`
+- `POST` da cap nhat state
+- response giai thich duoc request di qua nhung policy/phase nao
 
 ## 7. Test 2: REGISTER bi tu choi do hoc phi
 
@@ -141,9 +155,10 @@ try {
 Ket qua mong doi:
 
 - `decision = DENY`
-- `phase = PRE_AUTHORIZATION`
-- `failedPolicy = P01_TuitionPaid_Pre`
+- `phase = PRE`
+- `failedPolicy = P01_TuitionPaid_PreA0`
 - `denyReason = TUITION_NOT_PAID`
+- `decisionTrace.phases[0].failedPolicy = P01_TuitionPaid_PreA0`
 
 Y nghia:
 
@@ -188,13 +203,13 @@ Invoke-RestMethod `
 Ket qua mong doi:
 
 - `decision = ALLOW`
-- `phase = POST_UPDATE`
+- `phase = POST`
 - `message = Successfully dropped.`
 
 Y nghia:
 
 - request drop pass PRE va ONGOING
-- `POST_UPDATE` da hoan tac state cua lan register truoc
+- `POST` da hoan tac state cua lan register truoc
 
 ## 9. Cac response quan trong khac
 

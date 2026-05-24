@@ -16,9 +16,9 @@
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="objectType" lowerBound="1"
         eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="ruleFamily" lowerBound="1"
-        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
-    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" lowerBound="1" eType="#//PolicyType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="predicate" lowerBound="1" eType="#//PredicateType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="phase" lowerBound="1" eType="#//PhaseType"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="updateTiming" lowerBound="1" eType="#//UpdateTiming"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="targetAction" lowerBound="1" eType="#//ActionType"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="priority" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="effect" lowerBound="1" eType="#//PolicyEffect"/>
@@ -26,14 +26,33 @@
     
     <eStructuralFeatures xsi:type="ecore:EReference" name="condition" lowerBound="1"
         eType="#//Expression" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="preUpdates" upperBound="-1"
+        eType="#//Statement" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ongoingUpdates" upperBound="-1"
+        eType="#//Statement" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="postUpdates" upperBound="-1"
+        eType="#//Statement" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="rollbackUpdates" upperBound="-1"
         eType="#//Statement" containment="true"/>
   </eClassifiers>
 
-  <eClassifiers xsi:type="ecore:EEnum" name="PolicyType">
-    <eLiterals name="PRE_AUTHORIZATION" value="0"/>
-    <eLiterals name="ONGOING_AUTHORIZATION" value="1"/>
-    <eLiterals name="POST_UPDATE" value="2"/>
+  <eClassifiers xsi:type="ecore:EEnum" name="PredicateType">
+    <eLiterals name="AUTHORIZATION" value="0"/>
+    <eLiterals name="OBLIGATION" value="1"/>
+    <eLiterals name="CONDITION" value="2"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="PhaseType">
+    <eLiterals name="PRE" value="0"/>
+    <eLiterals name="ONGOING" value="1"/>
+    <eLiterals name="POST" value="2"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="UpdateTiming">
+    <eLiterals name="NONE" value="0"/>
+    <eLiterals name="PRE" value="1"/>
+    <eLiterals name="ONGOING" value="2"/>
+    <eLiterals name="POST" value="3"/>
   </eClassifiers>
 
   <eClassifiers xsi:type="ecore:EEnum" name="ActionType">

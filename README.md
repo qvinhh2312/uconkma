@@ -6,11 +6,13 @@ He thong nghien cuu va hien thuc mo hinh UCON cho bai toan dang ky hoc phan tai 
 
 Project nay dung DSL rieng de dac ta policy UCON, sinh XMI policy model, va thuc thi policy o runtime tren Spring Boot.
 
-Trong pham vi do an, UCON duoc hien thuc theo 3 pha chinh:
+Ban hien tai da duoc nang cap theo huong `UCONKMA v2` voi khung:
 
-- `PRE_AUTHORIZATION`: chan request truoc khi hanh dong xay ra
-- `ONGOING_AUTHORIZATION`: kiem tra lai truoc commit neu state thay doi
-- `POST_UPDATE`: cap nhat state sau khi request duoc phep
+- `predicate`: `AUTHORIZATION`, `OBLIGATION`, `CONDITION`
+- `phase`: `PRE`, `ONGOING`, `POST`
+- `updateTiming`: `NONE`, `PRE`, `ONGOING`, `POST`
+
+Tu do, project khong con chi la bo 3 policy type co dinh, ma da bieu dien ro hon tinh chat `A/B/C`, `mutability` va `continuity` cua UCON.
 
 ## Anh xa UCON trong project
 
@@ -42,17 +44,25 @@ PIP
 Post-update / Trace
   ExpressionEvaluator
   Cap nhat state, tao/xoa Registration, ghi AuditLog
+
+Verification / Analysis
+  attribute-schema.yml
+  PolicyValidator
+  PolicyAnalyzer
+  DomainInvariantChecker
 ```
 
 ## Ghi chu ve UCON hien tai
 
 Project da the hien ro tinh chat UCON qua:
 
-- chan request truoc hanh dong
-- re-check state truoc commit
-- cap nhat mutable attributes sau khi permit
+- `PRE`: chan request truoc hanh dong
+- `ONGOING`: re-check state truoc commit va ho tro ongoing update / rollback
+- `POST`: cap nhat mutable attributes sau khi permit
+- `OBLIGATION`: rang buoc xac nhan quy che, ly do override, audit trace
+- `CONDITION`: rang buoc moi truong nhu registration window, maintenance
 
-Tuy nhien, `ONGOING_AUTHORIZATION` hien tai duoc hien thuc duoi dang `transaction-level re-check`, nghia la kiem tra lai o sat thoi diem commit. No khong phai continuous monitoring cho mot phien su dung dai han.
+Tuy nhien, `ONGOING` hien tai duoc hien thuc duoi dang `transaction-level re-check`, nghia la kiem tra lai o sat thoi diem commit. No khong phai continuous monitoring cho mot phien su dung dai han va chua co `UsageSession` day du.
 
 ## Cau truc repo
 
@@ -67,23 +77,38 @@ UCON_KMA/
 
 ## Cac nhom policy chinh
 
-- `PRE_AUTHORIZATION`
+- `AUTHORIZATION`
   - hoc phi
-  - transaction window
-  - trang thai lop
   - duplicate
   - gioi han tin chi
   - tien quyet
   - xung dot lich
-- `ONGOING_AUTHORIZATION`
   - suc chua lop
-  - trang thai lop thay doi
   - student hold
+- `CONDITION`
+  - registration window
   - maintenance
-- `POST_UPDATE`
-  - cap nhat enrolled/currentCredits/tuitionDebt
-  - tao/xoa Registration
-  - ghi AuditLog
+- `OBLIGATION`
+  - xac nhan quy che dang ky
+  - ly do override
+  - audit trace
+- `UPDATES`
+  - `PRE`: tang `registerAttemptCount`
+  - `ONGOING`: `reservedSeats` + rollback
+  - `POST`: cap nhat `enrolled/currentCredits/tuitionDebt`, tao/xoa `Registration`, ghi `AuditLog`
+
+## Verification va Analysis
+
+Project da co them:
+
+- `attribute-schema.yml`
+  - khai bao mutable / immutable cho `subject`, `object`, `environment`, `request`
+- `PolicyValidator`
+  - validate policy model theo semantic rules va schema rules
+- `PolicyAnalyzer`
+  - canh bao thieu audit, missing rollback, stateful mutation can invariant-check
+- `DomainInvariantChecker`
+  - giu cac bat bien runtime nhu `enrolled <= capacity`, `tuitionDebt >= 0`
 
 ## Cach build nhanh
 
@@ -132,13 +157,18 @@ Response runtime hien tai tra ve JSON co traceability, vi du:
   "requestId": "demo-1",
   "action": "REGISTER",
   "decision": "DENY",
-  "phase": "PRE_AUTHORIZATION",
+  "phase": "PRE",
   "studentId": "SV002",
   "classId": "CS102_01",
-  "failedPolicy": "P01_TuitionPaid_Pre",
+  "failedPolicy": "P01_TuitionPaid_PreA0",
   "denyReason": "TUITION_NOT_PAID",
   "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra.",
-  "message": "DENIED_PREAUTH: TUITION_NOT_PAID"
+  "message": "DENIED_PREAUTH: TUITION_NOT_PAID",
+  "decisionTrace": {
+    "requestId": "demo-1",
+    "action": "REGISTER",
+    "decision": "DENY"
+  }
 }
 ```
 

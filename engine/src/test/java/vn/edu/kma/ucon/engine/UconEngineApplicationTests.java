@@ -28,12 +28,17 @@ import vn.edu.kma.ucon.engine.pep.ApiDecisionResponse;
 import vn.edu.kma.ucon.engine.pep.RegistrationController;
 import vn.edu.kma.ucon.engine.pep.UconRequest;
 import vn.edu.kma.ucon.engine.pdp.AuthDecision;
+import vn.edu.kma.ucon.engine.pdp.AttributeSchema;
+import vn.edu.kma.ucon.engine.pdp.DecisionTrace;
 import vn.edu.kma.ucon.engine.pdp.Environment;
 import vn.edu.kma.ucon.engine.pdp.MaintenanceFlag;
+import vn.edu.kma.ucon.engine.pdp.PolicyAnalysisReport;
+import vn.edu.kma.ucon.engine.pdp.PolicyAnalyzer;
 import vn.edu.kma.ucon.engine.pdp.PolicyDecisionPoint;
 import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
 import vn.edu.kma.ucon.engine.pdp.PolicyFunctionRegistry;
 import vn.edu.kma.ucon.engine.pdp.PolicyModelSemanticValidator;
+import vn.edu.kma.ucon.engine.pdp.PolicyValidator;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Course;
 import vn.edu.kma.ucon.engine.pip.entity.Registration;
@@ -69,6 +74,12 @@ class UconEngineApplicationTests {
     PolicyModelSemanticValidator semanticValidator;
     @Autowired
     PolicyFunctionRegistry functionRegistry;
+    @Autowired
+    PolicyValidator policyValidator;
+    @Autowired
+    PolicyAnalyzer policyAnalyzer;
+    @Autowired
+    AttributeSchema attributeSchema;
 
     @BeforeEach
     void setUp() {
@@ -98,6 +109,7 @@ class UconEngineApplicationTests {
         cs102Class.setCourse(courseRepo.findById("CS102").orElseThrow());
         cs102Class.setCapacity(5);
         cs102Class.setEnrolled(4);
+        cs102Class.setReservedSeats(0);
         cs102Class.setStatus("OPEN");
         cs102Class.setScheduleSlots("T3_1-3,T5_4-6");
         classRepo.save(cs102Class);
@@ -107,6 +119,7 @@ class UconEngineApplicationTests {
         cs101Class.setCourse(courseRepo.findById("CS101").orElseThrow());
         cs101Class.setCapacity(30);
         cs101Class.setEnrolled(10);
+        cs101Class.setReservedSeats(0);
         cs101Class.setStatus("OPEN");
         cs101Class.setScheduleSlots("T2_1-3");
         classRepo.save(cs101Class);
@@ -133,15 +146,19 @@ class UconEngineApplicationTests {
         ResponseEntity<ApiDecisionResponse> response = regController.register(req);
         assertEquals(200, response.getStatusCode().value());
         assertEquals("Successfully enrolled.", response.getBody().getMessage());
+        assertNotNull(response.getBody().getDecisionTrace());
+        assertEquals(3, response.getBody().getDecisionTrace().phases().size());
 
         Student s = studentRepo.findById("SV001").orElseThrow();
         assertEquals(4, s.getCurrentCredits());
         assertEquals(4000000, s.getTuitionDebt());
+        assertEquals(1, s.getRegisterAttemptCount());
         assertTrue(s.getRegisteredClassIds().contains("CS102_01"));
         assertTrue(s.getRegisteredScheduleSlots().contains("T3_1-3"));
 
         ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
         assertEquals(5, cls.getEnrolled());
+        assertEquals(0, cls.getReservedSeats());
 
         assertEquals(1, registrationRepo.count());
         Registration registration = registrationRepo.findAll().get(0);
@@ -172,7 +189,7 @@ class UconEngineApplicationTests {
         ResponseEntity<ApiDecisionResponse> response = regController.register(req);
         assertEquals(403, response.getStatusCode().value());
         assertEquals("TUITION_NOT_PAID", response.getBody().getDenyReason());
-        assertEquals("P01_TuitionPaid_Pre", response.getBody().getFailedPolicy());
+        assertEquals("P01_TuitionPaid_PreA0", response.getBody().getFailedPolicy());
         assertEquals("DENY", auditRepo.findAll().get(0).getDecision());
         assertEquals(0, registrationRepo.count());
     }
@@ -194,7 +211,9 @@ class UconEngineApplicationTests {
         req.setStudentId("SV001");
         req.setClassId("CS102_01");
 
-        AuthDecision decision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, env, req);
+        req.setConfirmedRegistrationRule(true);
+        req.setAdminOverride(false);
+        AuthDecision decision = policyEngine.evaluatePhase("PRE", student, cls, env, req);
         assertFalse(decision.isPermit());
         assertEquals("OUTSIDE_TRANSACTION_WINDOW", decision.getFailedCode());
     }
@@ -208,14 +227,14 @@ class UconEngineApplicationTests {
         Environment env = defaultEnv(false);
         UconRequest req = registerRequest();
 
-        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, openCls, env, req);
+        AuthDecision preDecision = policyEngine.evaluatePhase("PRE", student, openCls, env, req);
         assertTrue(preDecision.isPermit());
 
         openCls.setStatus("LOCKED");
         classRepo.save(openCls);
 
         ClassSection lockedCls = classRepo.findById("CS102_01").orElseThrow();
-        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, lockedCls, env, req);
+        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING", student, lockedCls, env, req);
         assertFalse(ongoingDecision.isPermit());
         assertEquals("CLASS_STATUS_CHANGED", ongoingDecision.getFailedCode());
     }
@@ -326,10 +345,10 @@ class UconEngineApplicationTests {
 
         UconRequest req = registerRequest();
 
-        AuthDecision preDecision = policyEngine.evaluatePhase("PRE_AUTHORIZATION", student, cls, defaultEnv(false), req);
+        AuthDecision preDecision = policyEngine.evaluatePhase("PRE", student, cls, defaultEnv(false), req);
         assertTrue(preDecision.isPermit());
 
-        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING_AUTHORIZATION", student, cls, defaultEnv(true), req);
+        AuthDecision ongoingDecision = policyEngine.evaluatePhase("ONGOING", student, cls, defaultEnv(true), req);
         assertFalse(ongoingDecision.isPermit());
         assertEquals("SYSTEM_UNDER_MAINTENANCE", ongoingDecision.getFailedCode());
 
@@ -376,10 +395,35 @@ class UconEngineApplicationTests {
     }
 
     @Test
+    @DisplayName("Register is denied when the student has not confirmed the registration rule")
+    void test13_RegisterDenied_WhenRegulationNotConfirmed() {
+        UconRequest req = registerRequest();
+        req.setConfirmedRegistrationRule(false);
+
+        ResponseEntity<ApiDecisionResponse> response = regController.register(req);
+        assertEquals(403, response.getStatusCode().value());
+        assertEquals("REGULATION_NOT_CONFIRMED", response.getBody().getDenyReason());
+        assertEquals("P17_AgreeRegistrationRule_PreB0", response.getBody().getFailedPolicy());
+    }
+
+    @Test
+    @DisplayName("Register is denied when override is requested without a reason")
+    void test14_RegisterDenied_WhenOverrideReasonMissing() {
+        UconRequest req = registerRequest();
+        req.setAdminOverride(true);
+        req.setOverrideReason("");
+
+        ResponseEntity<ApiDecisionResponse> response = regController.register(req);
+        assertEquals(403, response.getStatusCode().value());
+        assertEquals("OVERRIDE_REASON_REQUIRED", response.getBody().getDenyReason());
+        assertEquals("P18_AdminOverrideReason_PreB0", response.getBody().getFailedPolicy());
+    }
+
+    @Test
     @DisplayName("Validator rejects updates to request-managed fields")
-    void test13_ValidatorRejectsRequestManagedFieldUpdates() {
+    void test15_ValidatorRejectsRequestManagedFieldUpdates() {
         EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
-        EObject target = firstUpdateTarget(copiedRoot, "P11_RegisterStateUpdate_Post");
+        EObject target = firstUpdateTarget(copiedRoot, "P11_RegisterStateUpdate_PostA3");
         target.eSet(target.eClass().getEStructuralFeature("entity"), enumLiteral(target, "EntityScope", "REQUEST"));
         target.eSet(target.eClass().getEStructuralFeature("path"), "decision");
 
@@ -389,9 +433,9 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Validator rejects malformed audit log statements")
-    void test14_ValidatorRejectsMalformedAuditLogStatements() {
+    void test16_ValidatorRejectsMalformedAuditLogStatements() {
         EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
-        EObject auditStmt = findPolicyById(copiedRoot, "P12_AuditAndTrace_Post")
+        EObject auditStmt = findPolicyById(copiedRoot, "P12_AuditAndTrace_PostB3")
                 .eContents()
                 .stream()
                 .filter(e -> "AuditLogStatement".equals(e.eClass().getName()))
@@ -408,13 +452,14 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Policy decision point startup fails when semantic validation fails")
-    void test15_PolicyDecisionPointFailsFast_WhenValidationFails() {
-        PolicyDecisionPoint pdp = new PolicyDecisionPoint(new PolicyModelSemanticValidator(functionRegistry) {
+    void test17_PolicyDecisionPointFailsFast_WhenValidationFails() {
+        PolicyValidator failingValidator = new PolicyValidator(new PolicyModelSemanticValidator(functionRegistry) {
             @Override
             public void validate(EObject policyModelRoot) {
                 throw new IllegalStateException("forced semantic failure");
             }
-        });
+        }, attributeSchema);
+        PolicyDecisionPoint pdp = new PolicyDecisionPoint(failingValidator, new PolicyAnalyzer());
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, pdp::init);
         assertTrue(ex.getMessage().contains("PDP startup failed"));
@@ -424,15 +469,15 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Validator rejects invalid condition paths, function arity, and function phase")
-    void test16_ValidatorRejectsInvalidPath_Arity_AndPhase() {
+    void test18_ValidatorRejectsInvalidPath_Arity_AndPhase() {
         EObject invalidPathRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
-        EObject badPath = firstVariableAccessInCondition(invalidPathRoot, "P05_CreditLimit_Pre");
+        EObject badPath = firstVariableAccessInCondition(invalidPathRoot, "P05_CreditLimit_PreA0");
         badPath.eSet(badPath.eClass().getEStructuralFeature("path"), "maxCreditEffecitve");
         IllegalStateException pathEx = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(invalidPathRoot));
         assertTrue(pathEx.getMessage().contains("unknown path SUBJECT.maxCreditEffecitve"));
 
         EObject invalidArityRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
-        EObject functionCall = firstFunctionCallInCondition(invalidArityRoot, "P10_StudentHoldRecheck_On");
+        EObject functionCall = firstFunctionCallInCondition(invalidArityRoot, "P10_StudentHoldRecheck_OnA0");
         @SuppressWarnings("unchecked")
         List<EObject> args = (List<EObject>) functionCall.eGet(functionCall.eClass().getEStructuralFeature("arguments"));
         args.add(EcoreUtil.copy(args.get(0)));
@@ -440,7 +485,7 @@ class UconEngineApplicationTests {
         assertTrue(arityEx.getMessage().contains("expects 1 arguments"));
 
         EObject invalidPhaseRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
-        EObject postPolicy = findPolicyById(invalidPhaseRoot, "P11_RegisterStateUpdate_Post");
+        EObject postPolicy = findPolicyById(invalidPhaseRoot, "P11_RegisterStateUpdate_PostA3");
         EObject replacement = createFunctionCall(invalidPhaseRoot, "checkExistsRegistration", List.of(
                 createVariableAccess(invalidPhaseRoot, "SUBJECT", "studentId"),
                 createVariableAccess(invalidPhaseRoot, "OBJECT", "classId"),
@@ -448,14 +493,67 @@ class UconEngineApplicationTests {
         ));
         postPolicy.eSet(postPolicy.eClass().getEStructuralFeature("condition"), replacement);
         IllegalStateException phaseEx = assertThrows(IllegalStateException.class, () -> semanticValidator.validate(invalidPhaseRoot));
-        assertTrue(phaseEx.getMessage().contains("disallowed phase POST_UPDATE"));
+        assertTrue(phaseEx.getMessage().contains("disallowed phase POST"));
 
         EObject overlappingPriorityRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
-        EObject registerOnlyPolicy = findPolicyById(overlappingPriorityRoot, "P01_TuitionPaid_Pre");
+        EObject registerOnlyPolicy = findPolicyById(overlappingPriorityRoot, "P01_TuitionPaid_PreA0");
         registerOnlyPolicy.eSet(registerOnlyPolicy.eClass().getEStructuralFeature("priority"), 95);
         IllegalStateException priorityEx = assertThrows(IllegalStateException.class,
                 () -> semanticValidator.validate(overlappingPriorityRoot));
         assertTrue(priorityEx.getMessage().contains("overlapping priority 95"));
+    }
+
+    @Test
+    @DisplayName("PolicyValidator rejects immutable ENVIRONMENT updates via attribute schema")
+    void test19_PolicyValidatorRejectsEnvironmentImmutableUpdate() {
+        EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject target = firstUpdateTarget(copiedRoot, "P11_RegisterStateUpdate_PostA3");
+        target.eSet(target.eClass().getEStructuralFeature("entity"), enumLiteral(target, "EntityScope", "ENVIRONMENT"));
+        target.eSet(target.eClass().getEStructuralFeature("path"), "isMaintenance");
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> policyValidator.validate(copiedRoot));
+        assertTrue(ex.getMessage().contains("environment must stay immutable")
+                || ex.getMessage().contains("immutable path ENVIRONMENT.isMaintenance"));
+    }
+
+    @Test
+    @DisplayName("PolicyAnalyzer warns when audit trace policy is missing")
+    void test20_PolicyAnalyzerWarnsWhenAuditTraceMissing() {
+        EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject auditPolicy = findPolicyById(copiedRoot, "P12_AuditAndTrace_PostB3");
+        @SuppressWarnings("unchecked")
+        List<EObject> policies = (List<EObject>) copiedRoot.eGet(copiedRoot.eClass().getEStructuralFeature("policies"));
+        policies.remove(auditPolicy);
+
+        PolicyAnalysisReport report = policyAnalyzer.analyze(copiedRoot);
+        assertTrue(report.warnings().stream().anyMatch(w -> "MISSING_AUDIT".equals(w.type())));
+    }
+
+    @Test
+    @DisplayName("Deny responses include decision trace with phase and failed policy")
+    void test21_DenyResponseContainsDecisionTrace() {
+        Student sv002 = new Student();
+        sv002.setStudentId("SV002");
+        sv002.setTuitionPaid(false);
+        sv002.setMaxCreditsEffective(15);
+        sv002.setCompletedCourses("CS101");
+        sv002.setHolds("");
+        sv002.setRegisteredClassIds("");
+        sv002.setRegisteredScheduleSlots("");
+        studentRepo.save(sv002);
+
+        UconRequest req = new UconRequest();
+        req.setStudentId("SV002");
+        req.setClassId("CS102_01");
+
+        ResponseEntity<ApiDecisionResponse> response = regController.register(req);
+        DecisionTrace trace = response.getBody().getDecisionTrace();
+
+        assertNotNull(trace);
+        assertEquals("DENY", trace.decision());
+        assertEquals(1, trace.phases().size());
+        assertEquals("PRE", trace.phases().get(0).phase());
+        assertEquals("P01_TuitionPaid_PreA0", trace.phases().get(0).failedPolicy());
     }
 
     private void runConcurrentRegister(String studentId,
@@ -485,6 +583,8 @@ class UconEngineApplicationTests {
         req.setActionType("REGISTER");
         req.setStudentId("SV001");
         req.setClassId("CS102_01");
+        req.setConfirmedRegistrationRule(true);
+        req.setAdminOverride(false);
         return req;
     }
 
@@ -494,6 +594,8 @@ class UconEngineApplicationTests {
         req.setActionType("DROP");
         req.setStudentId("SV001");
         req.setClassId("CS102_01");
+        req.setConfirmedRegistrationRule(true);
+        req.setAdminOverride(false);
         return req;
     }
 

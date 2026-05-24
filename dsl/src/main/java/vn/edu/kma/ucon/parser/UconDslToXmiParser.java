@@ -25,7 +25,7 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 public class UconDslToXmiParser {
 
     public static void main(String[] args) throws Exception {
-        System.out.println("Starting Step 7: DSL to XMI Serialization...");
+        System.out.println("Starting: DSL to XMI Serialization...");
 
         // 1. Setup EMF and Load ucon.ecore
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("ecore", new EcoreResourceFactoryImpl());
@@ -94,15 +94,16 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
     @Override
     public EObject visitPolicy(UconPolicyParser.PolicyContext ctx) {
         EObject policy = factory.create(getCls("Policy"));
-        policy.eSet(getCls("Policy").getEStructuralFeature("policyId"), ctx.ID(0).getText());
-        policy.eSet(getCls("Policy").getEStructuralFeature("type"), getEnumVal("PolicyType", ctx.policyType().getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("policyId"), ctx.ID().getText());
+        policy.eSet(getCls("Policy").getEStructuralFeature("predicate"), getEnumVal("PredicateType", ctx.predicateType().getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("phase"), getEnumVal("PhaseType", ctx.phaseType().getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("updateTiming"), getEnumVal("UpdateTiming", ctx.updateTiming().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("targetAction"), getEnumVal("ActionType", ctx.actionType().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("effect"), getEnumVal("PolicyEffect", ctx.policyEffect().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("priority"), Integer.parseInt(ctx.INT().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("description"), ctx.STRING(0).getText().replace("\"", ""));
         policy.eSet(getCls("Policy").getEStructuralFeature("subjectType"), ctx.STRING(1).getText().replace("\"", ""));
         policy.eSet(getCls("Policy").getEStructuralFeature("objectType"), ctx.STRING(2).getText().replace("\"", ""));
-        policy.eSet(getCls("Policy").getEStructuralFeature("ruleFamily"), ctx.ID(1).getText());
         
         if (ctx.STRING().size() > 3) {
             String denyReasonStr = ctx.STRING(3).getText().replace("\"", "");
@@ -112,15 +113,24 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
         EObject condition = visit(ctx.expression());
         policy.eSet(getCls("Policy").getEStructuralFeature("condition"), condition);
 
-        if (ctx.updateStatement() != null && !ctx.updateStatement().isEmpty()) {
-            List<EObject> postUpdates = new ArrayList<>();
-            for (UconPolicyParser.UpdateStatementContext uCtx : ctx.updateStatement()) {
-                postUpdates.add(visit(uCtx));
-            }
-            policy.eSet(getCls("Policy").getEStructuralFeature("postUpdates"), postUpdates);
-        }
+        assignUpdateSection(policy, "preUpdates", ctx.preUpdates);
+        assignUpdateSection(policy, "ongoingUpdates", ctx.ongoingUpdates);
+        assignUpdateSection(policy, "postUpdates", ctx.postUpdates);
+        assignUpdateSection(policy, "rollbackUpdates", ctx.rollbackUpdates);
 
         return policy;
+    }
+
+    private void assignUpdateSection(EObject policy, String featureName, List<UconPolicyParser.UpdateStatementContext> contexts) {
+        if (contexts == null || contexts.isEmpty()) {
+            return;
+        }
+
+        List<EObject> statements = new ArrayList<>();
+        for (UconPolicyParser.UpdateStatementContext ctx : contexts) {
+            statements.add(visit(ctx));
+        }
+        policy.eSet(getCls("Policy").getEStructuralFeature(featureName), statements);
     }
 
     @Override

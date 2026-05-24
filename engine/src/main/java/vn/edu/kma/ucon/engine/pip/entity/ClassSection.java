@@ -18,6 +18,7 @@ public class ClassSection {
     
     private int capacity;
     private int enrolled;
+    private int reservedSeats;
     private String status; // e.g. "OPEN", "LOCKED", "CANCELLED"
     
     // Comma-separated slots e.g. "T2_1-3,T4_4-6"
@@ -39,6 +40,9 @@ public class ClassSection {
 
     public int getEnrolled() { return enrolled; }
     public void setEnrolled(int enrolled) { this.enrolled = enrolled; }
+
+    public int getReservedSeats() { return reservedSeats; }
+    public void setReservedSeats(int reservedSeats) { this.reservedSeats = reservedSeats; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

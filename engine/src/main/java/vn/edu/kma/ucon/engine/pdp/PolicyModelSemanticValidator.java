@@ -21,9 +21,9 @@ public class PolicyModelSemanticValidator {
 
     private static final Set<String> ALLOWED_SUBJECT_TYPES = Set.of("Student");
     private static final Set<String> ALLOWED_OBJECT_TYPES = Set.of("ClassSection");
-    private static final Set<String> ALLOWED_RULE_FAMILIES = Set.of("AUTHORIZATION", "MUTATION", "TRACE");
 
     private static final Set<String> MUTABLE_SUBJECT_PATHS = Set.of(
+            "registerAttemptCount",
             "currentCredits",
             "registeredScheduleSlots",
             "registeredClassIds",
@@ -32,6 +32,7 @@ public class PolicyModelSemanticValidator {
 
     private static final Set<String> MUTABLE_OBJECT_PATHS = Set.of(
             "enrolled",
+            "reservedSeats",
             "status"
     );
 
@@ -64,9 +65,10 @@ public class PolicyModelSemanticValidator {
                                 Map<String, String> policyIds,
                                 Map<String, String> prioritiesPerPhaseAction) {
         String policyId = stringValue(policy, "policyId");
-        String type = enumName(policy, "type");
+        String predicate = enumName(policy, "predicate");
+        String phase = enumName(policy, "phase");
+        String updateTiming = enumName(policy, "updateTiming");
         String targetAction = enumName(policy, "targetAction");
-        String ruleFamily = stringValue(policy, "ruleFamily");
         Integer priority = (Integer) policy.eGet(policy.eClass().getEStructuralFeature("priority"));
 
         if (policyId == null || policyId.isBlank()) {
@@ -83,55 +85,89 @@ public class PolicyModelSemanticValidator {
 
         ensureBindingPresent(policyId, policy, "subjectType", ALLOWED_SUBJECT_TYPES);
         ensureBindingPresent(policyId, policy, "objectType", ALLOWED_OBJECT_TYPES);
-        ensureBindingPresent(policyId, policy, "ruleFamily", ALLOWED_RULE_FAMILIES);
-        validateRuleFamily(policyId, type, ruleFamily);
 
-        validatePriorityUniqueness(policyId, type, targetAction, priority, prioritiesPerPhaseAction);
+        validatePriorityUniqueness(policyId, phase, targetAction, priority, prioritiesPerPhaseAction);
 
-        @SuppressWarnings("unchecked")
-        List<EObject> postUpdates = (List<EObject>) policy.eGet(policy.eClass().getEStructuralFeature("postUpdates"));
+        List<EObject> preUpdates = childStatements(policy, "preUpdates");
+        List<EObject> ongoingUpdates = childStatements(policy, "ongoingUpdates");
+        List<EObject> postUpdates = childStatements(policy, "postUpdates");
+        List<EObject> rollbackUpdates = childStatements(policy, "rollbackUpdates");
 
-        if (!"POST_UPDATE".equals(type) && postUpdates != null && !postUpdates.isEmpty()) {
-            throw new IllegalStateException("Only POST_UPDATE policies may contain postUpdates: " + policyId);
+        if ("CONDITION".equals(predicate) && hasAnyUpdates(preUpdates, ongoingUpdates, postUpdates, rollbackUpdates)) {
+            throw new IllegalStateException("CONDITION policy " + policyId + " must not define any update section.");
         }
 
         EObject condition = (EObject) policy.eGet(policy.eClass().getEStructuralFeature("condition"));
-        validateExpression(policyId, condition, type, "condition", true);
+        validateExpression(policyId, condition, phase, "condition", true);
 
-        if ("POST_UPDATE".equals(type)) {
-            if (postUpdates == null || postUpdates.isEmpty()) {
-                throw new IllegalStateException("POST_UPDATE policy " + policyId + " must define at least one postUpdate.");
+        switch (updateTiming) {
+            case "NONE" -> {
+                if (hasAnyUpdates(preUpdates, ongoingUpdates, postUpdates, rollbackUpdates)) {
+                    throw new IllegalStateException("Policy " + policyId + " declares updateTiming NONE but still defines updates.");
+                }
             }
-            validatePostUpdates(policyId, postUpdates);
+            case "PRE" -> {
+                if (preUpdates.isEmpty()) {
+                    throw new IllegalStateException("Policy " + policyId + " declares PRE updateTiming but has no preUpdates.");
+                }
+                if (!ongoingUpdates.isEmpty() || !postUpdates.isEmpty() || !rollbackUpdates.isEmpty()) {
+                    throw new IllegalStateException("Policy " + policyId + " with PRE updateTiming may only define preUpdates.");
+                }
+            }
+            case "ONGOING" -> {
+                if (ongoingUpdates.isEmpty()) {
+                    throw new IllegalStateException("Policy " + policyId + " declares ONGOING updateTiming but has no ongoingUpdates.");
+                }
+                if (rollbackUpdates.isEmpty()) {
+                    throw new IllegalStateException("Policy " + policyId + " defines ongoingUpdates but no rollbackUpdates.");
+                }
+                if (!preUpdates.isEmpty() || !postUpdates.isEmpty()) {
+                    throw new IllegalStateException("Policy " + policyId + " with ONGOING updateTiming may only define ongoingUpdates and rollbackUpdates.");
+                }
+            }
+            case "POST" -> {
+                if (postUpdates.isEmpty()) {
+                    throw new IllegalStateException("Policy " + policyId + " declares POST updateTiming but has no postUpdates.");
+                }
+                if (!preUpdates.isEmpty() || !ongoingUpdates.isEmpty()) {
+                    throw new IllegalStateException("Policy " + policyId + " with POST updateTiming may only define postUpdates and optional rollbackUpdates.");
+                }
+            }
+            default -> throw new IllegalStateException("Policy " + policyId + " has unsupported updateTiming " + updateTiming);
         }
+
+        validateStatements(policyId, phase, preUpdates, "preUpdates");
+        validateStatements(policyId, phase, ongoingUpdates, "ongoingUpdates");
+        validateStatements(policyId, phase, postUpdates, "postUpdates");
+        validateStatements(policyId, phase, rollbackUpdates, "rollbackUpdates");
     }
 
     private void validatePriorityUniqueness(String policyId,
-                                            String type,
+                                            String phase,
                                             String targetAction,
                                             Integer priority,
                                             Map<String, String> prioritiesPerPhaseAction) {
-        String baseKey = type + "|" + priority + "|";
+        String baseKey = phase + "|" + priority + "|";
 
         if ("ANY".equals(targetAction)) {
             for (String action : Set.of("ANY", "REGISTER", "DROP")) {
                 String existingPolicyId = prioritiesPerPhaseAction.get(baseKey + action);
                 if (existingPolicyId != null) {
                     throw new IllegalStateException("Policies " + existingPolicyId + " and " + policyId
-                            + " share overlapping priority " + priority + " for " + type + " with action scope ANY.");
+                            + " share overlapping priority " + priority + " for " + phase + " with action scope ANY.");
                 }
             }
         } else {
             String sameActionPolicyId = prioritiesPerPhaseAction.get(baseKey + targetAction);
             if (sameActionPolicyId != null) {
                 throw new IllegalStateException("Policies " + sameActionPolicyId + " and " + policyId
-                        + " share the same priority " + priority + " for " + type + "/" + targetAction + ".");
+                        + " share the same priority " + priority + " for " + phase + "/" + targetAction + ".");
             }
 
             String anyPolicyId = prioritiesPerPhaseAction.get(baseKey + "ANY");
             if (anyPolicyId != null) {
                 throw new IllegalStateException("Policies " + anyPolicyId + " and " + policyId
-                        + " share overlapping priority " + priority + " for " + type + " because ANY overlaps "
+                        + " share overlapping priority " + priority + " for " + phase + " because ANY overlaps "
                         + targetAction + ".");
             }
         }
@@ -139,34 +175,21 @@ public class PolicyModelSemanticValidator {
         prioritiesPerPhaseAction.put(baseKey + targetAction, policyId);
     }
 
-    private void validateRuleFamily(String policyId, String type, String ruleFamily) {
-        boolean valid = switch (type) {
-            case "PRE_AUTHORIZATION", "ONGOING_AUTHORIZATION" -> "AUTHORIZATION".equals(ruleFamily);
-            case "POST_UPDATE" -> "MUTATION".equals(ruleFamily) || "TRACE".equals(ruleFamily);
-            default -> false;
-        };
-
-        if (!valid) {
-            throw new IllegalStateException("Policy " + policyId + " has incompatible type " + type
-                    + " and ruleFamily " + ruleFamily + ".");
-        }
-    }
-
-    private void validatePostUpdates(String policyId, List<EObject> postUpdates) {
-        for (EObject stmt : postUpdates) {
+    private void validateStatements(String policyId, String phase, List<EObject> statements, String usageLabel) {
+        for (EObject stmt : statements) {
             String stmtType = stmt.eClass().getName();
             switch (stmtType) {
-                case "UpdateStatement" -> validateUpdateStatement(policyId, stmt);
+                case "UpdateStatement" -> validateUpdateStatement(policyId, stmt, phase, usageLabel);
                 case "CreateTransactionStatement" -> validateCreateTransactionStatement(policyId, stmt);
                 case "DeleteTransactionStatement" -> validateDeleteTransactionStatement(policyId, stmt);
                 case "AuditLogStatement" -> validateAuditLogStatement(policyId, stmt);
                 default -> throw new IllegalStateException(
-                        "Policy " + policyId + " contains unsupported postUpdate statement type: " + stmtType);
+                        "Policy " + policyId + " contains unsupported " + usageLabel + " statement type: " + stmtType);
             }
         }
     }
 
-    private void validateUpdateStatement(String policyId, EObject stmt) {
+    private void validateUpdateStatement(String policyId, EObject stmt, String phase, String usageLabel) {
         EObject target = (EObject) stmt.eGet(stmt.eClass().getEStructuralFeature("target"));
         String entity = enumName(target, "entity");
         String path = stringValue(target, "path");
@@ -192,7 +215,7 @@ public class PolicyModelSemanticValidator {
             default -> throw new IllegalStateException("Policy " + policyId + " uses unsupported update target entity " + entity);
         }
 
-        validateExpression(policyId, value, "POST_UPDATE", "updateValue:" + path, false);
+        validateExpression(policyId, value, phase, usageLabel + ":" + path, false);
     }
 
     private void validateCreateTransactionStatement(String policyId, EObject stmt) {
@@ -297,7 +320,7 @@ public class PolicyModelSemanticValidator {
         String path = stringValue(expr, "path");
 
         if ("REQUEST".equals(entity) && !ALLOWED_REQUEST_AUDIT_PATHS.contains(path)
-                && !Set.of("studentId", "classId", "actionType").contains(path)) {
+                && !Set.of("studentId", "classId", "actionType", "confirmedRegistrationRule", "adminOverride", "overrideReason").contains(path)) {
             throw new IllegalStateException("Policy " + policyId + " uses unsupported REQUEST path '" + path + "' at " + usageLabel);
         }
 
@@ -316,6 +339,21 @@ public class PolicyModelSemanticValidator {
     @SuppressWarnings("unchecked")
     private List<EObject> childExpressions(EObject obj, String featureName) {
         return (List<EObject>) obj.eGet(obj.eClass().getEStructuralFeature(featureName));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<EObject> childStatements(EObject obj, String featureName) {
+        Object value = obj.eGet(obj.eClass().getEStructuralFeature(featureName));
+        return value == null ? List.of() : (List<EObject>) value;
+    }
+
+    private boolean hasAnyUpdates(List<EObject>... sections) {
+        for (List<EObject> section : sections) {
+            if (section != null && !section.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void validateScopedVariableAccess(String policyId,

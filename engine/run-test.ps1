@@ -8,11 +8,12 @@ $cases = @{
     "T01" = @{
         Method = "test01_RegisterSuccess_UpdatesStateBillingTransactionAndAudit"
         Title = "Dang ky hoc phan thanh cong"
-        Goal = "Chung minh request REGISTER hop le duoc permit va post-update chay day du."
-        Phase = "PRE -> ONGOING -> POST_UPDATE"
-        Policies = "P11, P12"
+        Goal = "Chung minh request REGISTER hop le di qua du PRE, ONGOING, POST va thuc thi day du updates/obligations."
+        Phase = "PRE -> ONGOING -> POST"
+        Policies = "P19, P20, P11, P12"
         Checks = @(
             "Gui request REGISTER hop le cho SV001 vao lop CS102_01"
+            "Kiem tra registerAttemptCount tang len 1 sau PRE update"
             "Kiem tra enrolled tang len 5"
             "Kiem tra currentCredits tang len 4"
             "Kiem tra tuitionDebt tang len 4000000"
@@ -21,6 +22,7 @@ $cases = @{
         )
         Result = @(
             "Request duoc cho phep"
+            "PRE update va ONGOING update duoc ap dung an toan"
             "State hoc tap va hoc phi duoc cap nhat"
             "Registration va audit log duoc tao"
         )
@@ -28,8 +30,8 @@ $cases = @{
     "T02" = @{
         Method = "test02_RegisterDenied_WhenTuitionNotPaid"
         Title = "Tu choi dang ky khi chua dong hoc phi"
-        Goal = "Chung minh UCON pre-authorization chan request truoc khi hanh dong xay ra."
-        Phase = "PRE_AUTHORIZATION"
+        Goal = "Chung minh UCON chan request o pha PRE truoc khi hanh dong xay ra."
+        Phase = "PRE"
         Policies = "P01"
         Checks = @(
             "Tao sinh vien chua dong hoc phi"
@@ -39,7 +41,7 @@ $cases = @{
             "Kiem tra Audit log ghi DENY"
         )
         Result = @(
-            "Request bi chan tai pha PRE_AUTHORIZATION"
+            "Request bi chan tai pha PRE"
             "Khong co cap nhat state nao xay ra"
             "Audit log van duoc ghi de truy vet"
         )
@@ -48,12 +50,12 @@ $cases = @{
         Method = "test03_RegisterDenied_OutsideTransactionWindow"
         Title = "Tu choi dang ky ngoai khung thoi gian giao dich"
         Goal = "Chung minh policy moi truong gioi han hanh dong theo pha va thoi gian hop le."
-        Phase = "PRE_AUTHORIZATION"
+        Phase = "PRE"
         Policies = "P02"
         Checks = @(
             "Dung environment co registrationPhase khong hop le"
             "Dat currentDateTime nam ngoai khoang openTime-closeTime"
-            "Danh gia PRE_AUTHORIZATION truc tiep tai PolicyEngine"
+            "Danh gia PRE truc tiep tai PolicyEngine"
             "Kiem tra failed code la OUTSIDE_TRANSACTION_WINDOW"
         )
         Result = @(
@@ -64,13 +66,13 @@ $cases = @{
     "T04" = @{
         Method = "test04_RegisterDenied_WhenClassLocksBetweenPhases"
         Title = "Tu choi dang ky khi lop bi khoa giua hai pha"
-        Goal = "Chung minh ongoing-authorization cua UCON khi state doi sau PRE."
-        Phase = "PRE_AUTHORIZATION -> ONGOING_AUTHORIZATION"
+        Goal = "Chung minh ongoing check cua UCON khi state doi sau PRE."
+        Phase = "PRE -> ONGOING"
         Policies = "P03, P09"
         Checks = @(
             "Danh gia PRE khi lop dang OPEN va request hop le"
             "Doi trang thai lop sang LOCKED truoc commit"
-            "Danh gia lai ONGOING_AUTHORIZATION"
+            "Danh gia lai ONGOING"
             "Kiem tra failed code la CLASS_STATUS_CHANGED"
         )
         Result = @(
@@ -82,7 +84,7 @@ $cases = @{
         Method = "test05_RegisterDenied_WhenRepositoryShowsExistingRegistration"
         Title = "Tu choi dang ky trung theo repository"
         Goal = "Chung minh duplicate check dua tren RegistrationRepository."
-        Phase = "PRE_AUTHORIZATION"
+        Phase = "PRE"
         Policies = "P04"
         Checks = @(
             "Tao san mot Registration trong repository"
@@ -99,7 +101,7 @@ $cases = @{
         Method = "test06_RegisterDenied_WhenCreditLimitExceeded"
         Title = "Tu choi dang ky khi vuot tran tin chi"
         Goal = "Chung minh policy han muc tin chi duoc kiem tra truoc khi dang ky."
-        Phase = "PRE_AUTHORIZATION"
+        Phase = "PRE"
         Policies = "P05"
         Checks = @(
             "Dat currentCredits = 12 cho sinh vien"
@@ -116,7 +118,7 @@ $cases = @{
         Method = "test07_RegisterDenied_WhenPrerequisiteMissing"
         Title = "Tu choi dang ky khi thieu mon tien quyet"
         Goal = "Chung minh policy hoc vu kiem tra prerequisite truoc khi cho dang ky."
-        Phase = "PRE_AUTHORIZATION"
+        Phase = "PRE"
         Policies = "P06"
         Checks = @(
             "Xoa danh sach mon da hoan thanh cua sinh vien"
@@ -125,14 +127,14 @@ $cases = @{
         )
         Result = @(
             "Sinh vien khong du dieu kien tien quyet"
-            "Request bi tu choi tai PRE_AUTHORIZATION"
+            "Request bi tu choi tai PRE"
         )
     }
     "T08" = @{
         Method = "test08_RegisterDenied_WhenScheduleConflicts"
         Title = "Tu choi dang ky khi trung lich hoc"
         Goal = "Chung minh policy conflict lich hoc ngan dang ky lop bi chong lich."
-        Phase = "PRE_AUTHORIZATION"
+        Phase = "PRE"
         Policies = "P07"
         Checks = @(
             "Gan registeredScheduleSlots trung voi lich lop can dang ky"
@@ -147,8 +149,8 @@ $cases = @{
     "T09" = @{
         Method = "test09_RegisterDenied_WhenStudentOnHold"
         Title = "Tu choi dang ky khi sinh vien dang bi hold"
-        Goal = "Chung minh ONGOING_AUTHORIZATION co the dung request dua tren trang thai hoc vu."
-        Phase = "ONGOING_AUTHORIZATION"
+        Goal = "Chung minh ONGOING co the dung request dua tren trang thai hoc vu."
+        Phase = "ONGOING"
         Policies = "P10"
         Checks = @(
             "Gan hold DISCIPLINARY_HOLD cho sinh vien"
@@ -164,9 +166,9 @@ $cases = @{
     "T10" = @{
         Method = "test10_OnlyOneStudentCanClaimLastSeat"
         Title = "Chi mot sinh vien co the lay suat cuoi cung"
-        Goal = "Chung minh ONGOING_AUTHORIZATION ket hop optimistic locking de chong race condition."
-        Phase = "ONGOING_AUTHORIZATION"
-        Policies = "P08"
+        Goal = "Chung minh ONGOING ket hop reserved seat va optimistic locking de chong race condition."
+        Phase = "ONGOING"
+        Policies = "P08, P20"
         Checks = @(
             "Tao 2 thread dang ky dong thoi cho 1 cho cuoi cung"
             "Cho hai request bat dau cung luc"
@@ -181,9 +183,9 @@ $cases = @{
     "T11" = @{
         Method = "test11_MaintenanceBlocksRequest_AndPreservesState"
         Title = "Maintenance chan request va giu nguyen state"
-        Goal = "Chung minh UCON re-check lien tuc gan commit va chong mutation khi he thong bao tri."
-        Phase = "PRE_AUTHORIZATION -> ONGOING_AUTHORIZATION"
-        Policies = "P13A, P13"
+        Goal = "Chung minh UCON re-check gan commit va chong mutation khi he thong bao tri."
+        Phase = "PRE -> ONGOING"
+        Policies = "P13a, P13"
         Checks = @(
             "Danh gia PRE khi maintenance = false va request hop le"
             "Danh gia ONGOING khi maintenance = true"
@@ -200,9 +202,9 @@ $cases = @{
     "T12" = @{
         Method = "test12_DropRestoresState_RemovesTransaction_AndRefundsDebt"
         Title = "DROP hoan tra state va hoan no hoc phi"
-        Goal = "Chung minh post-update co the cap nhat va dao nguoc trang thai sau khi huy lop."
-        Phase = "POST_UPDATE"
-        Policies = "P14, P16"
+        Goal = "Chung minh DROP di qua PRE va POST de hoan tac trang thai sau khi huy lop."
+        Phase = "PRE -> POST"
+        Policies = "P16, P14, P12"
         Checks = @(
             "Dang ky thanh cong mot lop truoc khi DROP"
             "Dat tuitionPaid = false de xac nhan DROP van duoc phep"
@@ -218,7 +220,41 @@ $cases = @{
         )
     }
     "T13" = @{
-        Method = "test13_ValidatorRejectsRequestManagedFieldUpdates"
+        Method = "test13_RegisterDenied_WhenRegulationNotConfirmed"
+        Title = "Tu choi dang ky khi chua xac nhan quy che"
+        Goal = "Chung minh obligation PRE buoc sinh vien xac nhan quy che truoc khi dang ky."
+        Phase = "PRE"
+        Policies = "P17"
+        Checks = @(
+            "Tao request REGISTER hop le"
+            "Dat confirmedRegistrationRule = false"
+            "Gui request qua controller"
+            "Kiem tra response tra ve REGULATION_NOT_CONFIRMED"
+        )
+        Result = @(
+            "Request bi chan boi obligation PRE"
+            "He thong bat buoc nguoi dung xac nhan quy che dang ky"
+        )
+    }
+    "T14" = @{
+        Method = "test14_RegisterDenied_WhenOverrideReasonMissing"
+        Title = "Tu choi dang ky khi override khong co ly do"
+        Goal = "Chung minh obligation PRE yeu cau ly do khi request dung co che override hoc vu."
+        Phase = "PRE"
+        Policies = "P18"
+        Checks = @(
+            "Tao request REGISTER hop le"
+            "Dat adminOverride = true va overrideReason rong"
+            "Gui request qua controller"
+            "Kiem tra response tra ve OVERRIDE_REASON_REQUIRED"
+        )
+        Result = @(
+            "Request bi chan boi obligation PRE"
+            "Override hoc vu phai co giai trinh hop le"
+        )
+    }
+    "T15" = @{
+        Method = "test15_ValidatorRejectsRequestManagedFieldUpdates"
         Title = "Validator chan cap nhat vao field duoc quan ly boi request"
         Goal = "Chung minh semantic validation bao ve model khoi update khong hop le."
         Phase = "MODEL VALIDATION"
@@ -234,8 +270,8 @@ $cases = @{
             "REQUEST duoc xem la immutable trong update semantics"
         )
     }
-    "T14" = @{
-        Method = "test14_ValidatorRejectsMalformedAuditLogStatements"
+    "T16" = @{
+        Method = "test16_ValidatorRejectsMalformedAuditLogStatements"
         Title = "Validator chan cau truc AuditLog sai"
         Goal = "Chung minh statement schema duoc kiem tra truoc khi policy duoc nap vao PDP."
         Phase = "MODEL VALIDATION"
@@ -251,8 +287,8 @@ $cases = @{
             "PDP chi chap nhan policy model hop le"
         )
     }
-    "T15" = @{
-        Method = "test15_PolicyDecisionPointFailsFast_WhenValidationFails"
+    "T17" = @{
+        Method = "test17_PolicyDecisionPointFailsFast_WhenValidationFails"
         Title = "PDP fail-fast khi semantic validation that bai"
         Goal = "Chung minh he thong khong khoi dong voi policy model khong dang tin cay."
         Phase = "PDP STARTUP"
@@ -267,8 +303,8 @@ $cases = @{
             "He thong tranh trang thai thuc thi voi policy model khong hop le"
         )
     }
-    "T16" = @{
-        Method = "test16_ValidatorRejectsInvalidPath_Arity_AndPhase"
+    "T18" = @{
+        Method = "test18_ValidatorRejectsInvalidPath_Arity_AndPhase"
         Title = "Validator chan path, arity va phase khong hop le"
         Goal = "Chung minh semantic validator bao ve model khoi cac loi path typo va function call sai."
         Phase = "MODEL VALIDATION"
@@ -276,13 +312,64 @@ $cases = @{
         Checks = @(
             "Sua VariableAccess thanh SUBJECT.maxCreditEffecitve"
             "Them mot doi so du vao function isEmpty"
-            "Dat function checkExistsRegistration vao POST_UPDATE"
+            "Dat function checkExistsRegistration vao POST"
             "Kiem tra validator bat duoc ca 3 nhom loi"
         )
         Result = @(
             "Path sai bi chan som"
             "Function call sai arity bi chan"
             "Function dung sai phase bi chan"
+        )
+    }
+    "T19" = @{
+        Method = "test19_PolicyValidatorRejectsEnvironmentImmutableUpdate"
+        Title = "PolicyValidator chan cap nhat vao ENVIRONMENT immutable"
+        Goal = "Chung minh attribute-schema.yml va PolicyValidator cung bao ve mutability rules."
+        Phase = "MODEL VALIDATION"
+        Policies = "PolicyValidator, attribute-schema.yml"
+        Checks = @(
+            "Sao chep policy model hien tai"
+            "Sua target cua UpdateStatement thanh ENVIRONMENT.isMaintenance"
+            "Chay PolicyValidator"
+            "Kiem tra loi immutable ENVIRONMENT update"
+        )
+        Result = @(
+            "Environment duoc xem la immutable"
+            "Policy sai bi chan boi tang schema + validator"
+        )
+    }
+    "T20" = @{
+        Method = "test20_PolicyAnalyzerWarnsWhenAuditTraceMissing"
+        Title = "PolicyAnalyzer canh bao khi policy audit bi thieu"
+        Goal = "Chung minh he thong khong chi validate dung/sai ma con phan tich chat luong policy set."
+        Phase = "POLICY ANALYSIS"
+        Policies = "PolicyAnalyzer"
+        Checks = @(
+            "Sao chep policy model hien tai"
+            "Xoa policy P12_AuditAndTrace_PostB3"
+            "Chay PolicyAnalyzer"
+            "Kiem tra warning MISSING_AUDIT"
+        )
+        Result = @(
+            "Analyzer phat hien policy set thieu trace obligation"
+            "Co the dung de ho tro bao cao va danh gia chat luong policy"
+        )
+    }
+    "T21" = @{
+        Method = "test21_DenyResponseContainsDecisionTrace"
+        Title = "Response DENY tra ve decision trace"
+        Goal = "Chung minh runtime REST khong chi tra DENY ma con giai thich request fail o dau."
+        Phase = "TRACEABILITY"
+        Policies = "DecisionTrace"
+        Checks = @(
+            "Tao sinh vien SV002 chua dong hoc phi"
+            "Gui request REGISTER qua controller"
+            "Doc response JSON"
+            "Kiem tra decisionTrace co phase PRE va failedPolicy P01_TuitionPaid_PreA0"
+        )
+        Result = @(
+            "Response REST co trace giai thich quyet dinh"
+            "Nguoi dung co the thay phase va policy gay DENY"
         )
     }
 }
@@ -302,6 +389,10 @@ $aliases = @{
     "P12" = "T01"
     "P13" = "T11"
     "P13A" = "T11"
+    "P17" = "T13"
+    "P18" = "T14"
+    "P19" = "T01"
+    "P20" = "T01"
     "P14" = "T12"
     "P16" = "T12"
 }
@@ -362,16 +453,6 @@ function New-ReportRow($rowType, $displayId, $caseId, $case) {
     }
 }
 
-function Shorten-Text($text, $maxLength) {
-    if ($null -eq $text) {
-        return ""
-    }
-    if ($text.Length -le $maxLength) {
-        return $text
-    }
-    return $text.Substring(0, $maxLength - 3) + "..."
-}
-
 function Show-TestReport($cases, $aliases) {
     Write-Section "[REPORT] Bao cao tong hop test policy va UCON"
     Write-Host "Nguon du lieu: run-test.ps1 + UconEngineApplicationTests + ucon_policy.dsl" -ForegroundColor Yellow
@@ -391,44 +472,19 @@ function Show-TestReport($cases, $aliases) {
     Write-Host "[BANG 1] TEST CASE GOC" -ForegroundColor Cyan
     $testRows |
         Sort-Object TestCase |
-        Select-Object `
-            @{Name="Test"; Expression={$_.TestCase}}, `
-            @{Name="Pha"; Expression={Shorten-Text $_.PhaUCON 28}}, `
-            @{Name="Policy"; Expression={Shorten-Text $_.PolicyLienQuan 18}}, `
-            @{Name="Method"; Expression={Shorten-Text $_.TestMethod 42}} |
-        Format-Table -AutoSize
+        Format-Table TestCase, TestMethod, PhaUCON, PolicyLienQuan, TieuDe -AutoSize -Wrap
 
     Write-Host ""
     Write-Host "[BANG 2] POLICY -> TEST MAPPING" -ForegroundColor Cyan
     $policyRows |
         Sort-Object Ma |
-        Select-Object `
-            @{Name="Policy"; Expression={$_.Ma}}, `
-            @{Name="Test"; Expression={$_.TestCase}}, `
-            @{Name="Pha"; Expression={Shorten-Text $_.PhaUCON 28}}, `
-            @{Name="Method"; Expression={Shorten-Text $_.TestMethod 42}} |
-        Format-Table -AutoSize
+        Format-Table Ma, TestCase, TestMethod, PhaUCON, TieuDe -AutoSize -Wrap
 
     Write-Host ""
     Write-Host "[BANG 3] NOI DUNG KIEM THU DAY DU" -ForegroundColor Cyan
-    foreach ($row in ($policyRows | Sort-Object Ma)) {
-        $case = $cases[$row.TestCase]
-        Write-Host ""
-        Write-Host "$($row.Ma) -> $($row.TestCase)" -ForegroundColor Green
-        Write-Host "  Tieu de      : $($row.TieuDe)" -ForegroundColor Gray
-        Write-Host "  Test method  : $($row.TestMethod)" -ForegroundColor Gray
-        Write-Host "  Pha UCON     : $($row.PhaUCON)" -ForegroundColor Gray
-        Write-Host "  Muc tieu     : $($row.MucTieu)" -ForegroundColor Gray
-        Write-Host "  Chinh sach   : $($row.PolicyLienQuan)" -ForegroundColor Gray
-        Write-Host "  Kich ban test:" -ForegroundColor Yellow
-        foreach ($check in $case.Checks) {
-            Write-Host "    - $check" -ForegroundColor Gray
-        }
-        Write-Host "  Ket qua mong doi:" -ForegroundColor Magenta
-        foreach ($result in $case.Result) {
-            Write-Host "    - $result" -ForegroundColor Gray
-        }
-    }
+    $policyRows |
+        Sort-Object Ma |
+        Format-Table Ma, TestCase, MucTieu, KichBanTest, KetQuaMongDoi -AutoSize -Wrap
 
     Write-Host ""
     Write-Host "[TONG KET]" -ForegroundColor Magenta
@@ -451,8 +507,9 @@ elseif ($id -eq "ALL") {
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
         "Core business rules cho REGISTER va DROP"
-        "Ongoing authorization va race condition"
+        "Obligation PRE, ongoing update va race condition"
         "Semantic validator va fail-fast startup"
+        "Attribute schema, policy analyzer va decision trace"
     ) "Gray"
     Write-Host ""
     Write-Host "[RUN] Dang thuc thi Maven..." -ForegroundColor Cyan
@@ -463,8 +520,8 @@ elseif ($id -eq "ALL") {
     if ($exitCode -eq 0) {
         Write-Host "[RESULT]" -ForegroundColor Magenta
         Write-Bullets "-" @(
-            "Toan bo policy engine van hoat dong dung"
-            "Khong co regression trong business logic va validator"
+            "Toan bo policy engine van hoat dong dung tren mo hinh PRE/ONGOING/POST moi"
+            "Khong co regression trong business logic, validator va trace runtime"
         ) "Gray"
     }
     else {
@@ -485,11 +542,11 @@ elseif ($cases.ContainsKey($id)) {
     Show-MavenSummary $output
     Write-Host ""
     if ($exitCode -eq 0) {
-        Write-Host "[RESULT KHI PASS]" -ForegroundColor Magenta
+        Write-Host "[RESULT]" -ForegroundColor Magenta
         Write-Bullets "-" $case.Result "Gray"
     }
     else {
-        Write-Host "[RESULT KHI FAIL]" -ForegroundColor Red
+        Write-Host "[RESULT]" -ForegroundColor Red
         Write-Bullets "-" @(
             "Test khong dat ky vong, can kiem tra policy/test mapping hoac logic enforcement."
         ) "Gray"
@@ -523,8 +580,8 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T16"
-    Write-Host "  P01..P16"
+    Write-Host "  T01..T21"
+    Write-Host "  P01..P20"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 16 tests)"
+    Write-Host "  all       (chay toan bo 21 tests)"
 }

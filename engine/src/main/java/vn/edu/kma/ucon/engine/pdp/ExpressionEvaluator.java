@@ -50,7 +50,7 @@ public class ExpressionEvaluator {
     }
 
 
-    public void executePostUpdates(List<EObject> updateStatements, Student subject, ClassSection obj, Environment env, UconRequest req) {
+    public void executeStatements(List<EObject> updateStatements, Student subject, ClassSection obj, Environment env, UconRequest req) {
         if (updateStatements == null) return;
         for (EObject stmt : updateStatements) {
             String className = stmt.eClass().getName();
@@ -71,6 +71,10 @@ public class ExpressionEvaluator {
                     throw new UnsupportedOperationException("Unknown statement type in postUpdates: " + className);
             }
         }
+    }
+
+    public void executePostUpdates(List<EObject> updateStatements, Student subject, ClassSection obj, Environment env, UconRequest req) {
+        executeStatements(updateStatements, subject, obj, env, req);
     }
 
     private Object evaluateNode(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
