@@ -17,6 +17,7 @@ public class Student {
     private int maxCreditsEffective;
     private int tuitionDebt;
     private int registerAttemptCount;
+    private int dropCountForSemester;
 
     @Column(length = 1000)
     private String completedCourses;
@@ -67,6 +68,9 @@ public class Student {
 
     public int getRegisterAttemptCount() { return registerAttemptCount; }
     public void setRegisterAttemptCount(int registerAttemptCount) { this.registerAttemptCount = registerAttemptCount; }
+
+    public int getDropCountForSemester() { return dropCountForSemester; }
+    public void setDropCountForSemester(int dropCountForSemester) { this.dropCountForSemester = dropCountForSemester; }
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }

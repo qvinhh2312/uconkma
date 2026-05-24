@@ -7,6 +7,8 @@ public class Environment {
     private String closeTime;
     private String semester;
     private boolean isMaintenance;
+    private int maxRegisterAttempts;
+    private int maxDropTimes;
 
     public Environment(String registrationPhase, String currentDateTime) {
         this.registrationPhase = registrationPhase;
@@ -30,4 +32,10 @@ public class Environment {
 
     public boolean getIsMaintenance() { return isMaintenance; }
     public void setIsMaintenance(boolean isMaintenance) { this.isMaintenance = isMaintenance; }
+
+    public int getMaxRegisterAttempts() { return maxRegisterAttempts; }
+    public void setMaxRegisterAttempts(int maxRegisterAttempts) { this.maxRegisterAttempts = maxRegisterAttempts; }
+
+    public int getMaxDropTimes() { return maxDropTimes; }
+    public void setMaxDropTimes(int maxDropTimes) { this.maxDropTimes = maxDropTimes; }
 }

@@ -1,7 +1,7 @@
 grammar UconPolicy;
 
 // Root
-policyModel: policy+ EOF;
+policyModel: policy+ policySet* EOF;
 
 policy: 'policy' ID '{'
         'predicate:' predicateType
@@ -26,6 +26,12 @@ phaseType: 'PRE' | 'ONGOING' | 'POST';
 updateTiming: 'NONE' | 'PRE' | 'ONGOING' | 'POST';
 actionType: 'REGISTER' | 'DROP' | 'ANY';
 policyEffect: 'PERMIT' | 'DENY';
+policySet: 'policySet' ID '{'
+           'combiningAlgorithm:' combiningAlgorithm
+           'policies:' ID (',' ID)*
+           '}';
+
+combiningAlgorithm: 'DENY_OVERRIDES' | 'PERMIT_OVERRIDES' | 'FIRST_APPLICABLE' | 'PRIORITY_ORDER' | 'ONLY_ONE_APPLICABLE';
 
 // Expression tree
 expression: orExpression;

@@ -5,6 +5,17 @@
   <eClassifiers xsi:type="ecore:EClass" name="PolicyModel">
     <eStructuralFeatures xsi:type="ecore:EReference" name="policies" upperBound="-1"
         eType="#//Policy" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="policySets" upperBound="-1"
+        eType="#//PolicySet" containment="true"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EClass" name="PolicySet">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="policySetId" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" iD="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="combiningAlgorithm" lowerBound="1"
+        eType="#//CombiningAlgorithm"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="policyIds" upperBound="-1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
   </eClassifiers>
 
   <eClassifiers xsi:type="ecore:EClass" name="Policy">
@@ -64,6 +75,14 @@
   <eClassifiers xsi:type="ecore:EEnum" name="PolicyEffect">
     <eLiterals name="PERMIT" value="0"/>
     <eLiterals name="DENY" value="1"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="CombiningAlgorithm">
+    <eLiterals name="DENY_OVERRIDES" value="0"/>
+    <eLiterals name="PERMIT_OVERRIDES" value="1"/>
+    <eLiterals name="FIRST_APPLICABLE" value="2"/>
+    <eLiterals name="PRIORITY_ORDER" value="3"/>
+    <eLiterals name="ONLY_ONE_APPLICABLE" value="4"/>
   </eClassifiers>
 
   <!-- Abstract Expression Base Class -->

@@ -88,6 +88,11 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
             policies.add(visit(pCtx));
         }
         model.eSet(getCls("PolicyModel").getEStructuralFeature("policies"), policies);
+        List<EObject> policySets = new ArrayList<>();
+        for (UconPolicyParser.PolicySetContext psCtx : ctx.policySet()) {
+            policySets.add(visit(psCtx));
+        }
+        model.eSet(getCls("PolicyModel").getEStructuralFeature("policySets"), policySets);
         return model;
     }
 
@@ -119,6 +124,20 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
         assignUpdateSection(policy, "rollbackUpdates", ctx.rollbackUpdates);
 
         return policy;
+    }
+
+    @Override
+    public EObject visitPolicySet(UconPolicyParser.PolicySetContext ctx) {
+        EObject policySet = factory.create(getCls("PolicySet"));
+        policySet.eSet(getCls("PolicySet").getEStructuralFeature("policySetId"), ctx.ID(0).getText());
+        policySet.eSet(getCls("PolicySet").getEStructuralFeature("combiningAlgorithm"),
+                getEnumVal("CombiningAlgorithm", ctx.combiningAlgorithm().getText()));
+        List<String> policyIds = new ArrayList<>();
+        for (int i = 1; i < ctx.ID().size(); i++) {
+            policyIds.add(ctx.ID(i).getText());
+        }
+        policySet.eSet(getCls("PolicySet").getEStructuralFeature("policyIds"), policyIds);
+        return policySet;
     }
 
     private void assignUpdateSection(EObject policy, String featureName, List<UconPolicyParser.UpdateStatementContext> contexts) {

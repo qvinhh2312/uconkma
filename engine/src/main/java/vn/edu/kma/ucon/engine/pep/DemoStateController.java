@@ -67,6 +67,8 @@ public class DemoStateController {
         environment.put("registrationPhase", "NORMAL");
         environment.put("openTime", "2026-01-01");
         environment.put("closeTime", "2026-12-31");
+        environment.put("maxRegisterAttempts", 5);
+        environment.put("maxDropTimes", 2);
         return environment;
     }
 
@@ -82,6 +84,7 @@ public class DemoStateController {
         state.put("tuitionPaid", student.isTuitionPaid());
         state.put("tuitionDebt", student.getTuitionDebt());
         state.put("registerAttemptCount", student.getRegisterAttemptCount());
+        state.put("dropCountForSemester", student.getDropCountForSemester());
         state.put("holds", safe(student.getHolds()));
         state.put("completedCourses", safe(student.getCompletedCourses()));
         state.put("registeredClassIds", safe(student.getRegisteredClassIds()));

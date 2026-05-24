@@ -1,7 +1,7 @@
 package vn.edu.kma.ucon.engine.pdp;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.ecore.EEnumLiteral;
@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import vn.edu.kma.ucon.engine.pep.UconRequest;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
+import vn.edu.kma.ucon.engine.update.PlannedPolicyUpdate;
+import vn.edu.kma.ucon.engine.update.UpdatePlan;
 
 @Service
 public class PolicyEngine {
@@ -21,162 +23,245 @@ public class PolicyEngine {
 
     private final PolicyDecisionPoint pdp;
     private final ExpressionEvaluator evaluator;
+    private final PolicyCombiner policyCombiner;
 
-    public PolicyEngine(PolicyDecisionPoint pdp, ExpressionEvaluator evaluator) {
+    public PolicyEngine(PolicyDecisionPoint pdp, ExpressionEvaluator evaluator, PolicyCombiner policyCombiner) {
         this.pdp = pdp;
         this.evaluator = evaluator;
+        this.policyCombiner = policyCombiner;
     }
 
-    @SuppressWarnings("unchecked")
     public AuthDecision evaluatePhase(String phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
-        return evaluatePhaseWithTrace(phase, subject, obj, env, req).decision();
+        Phase phaseEnum = Phase.valueOf(phase);
+        for (PredicateType predicate : orderedPredicatesFor(phaseEnum)) {
+            AuthDecision decision = evaluate(phaseEnum, predicate, subject, obj, env, req);
+            if (!decision.isPermit()) {
+                return decision;
+            }
+        }
+        return new AuthDecision(true, null, null);
+    }
+
+    public PhaseEvaluationResult evaluatePhaseWithTrace(String phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
+        Phase phaseEnum = Phase.valueOf(phase);
+        List<PolicyTraceEntry> mergedEntries = new ArrayList<>();
+        for (PredicateType predicate : orderedPredicatesFor(phaseEnum)) {
+            PhaseEvaluationResult result = evaluateWithTrace(phaseEnum, predicate, subject, obj, env, req);
+            mergedEntries.addAll(result.trace().policies());
+            if (!result.decision().isPermit()) {
+                PhaseTrace trace = new PhaseTrace(
+                        phaseEnum.name(),
+                        "ALL",
+                        req.getActionType(),
+                        "DENY",
+                        result.decision().getFailedPolicy(),
+                        result.decision().getFailedCode(),
+                        mergedEntries,
+                        List.of(),
+                        List.of());
+                return new PhaseEvaluationResult(result.decision(), trace);
+            }
+        }
+        PhaseTrace trace = new PhaseTrace(
+                phaseEnum.name(),
+                "ALL",
+                req.getActionType(),
+                "ALLOW",
+                null,
+                null,
+                mergedEntries,
+                List.of(),
+                List.of());
+        return new PhaseEvaluationResult(new AuthDecision(true, null, null), trace);
+    }
+
+    public AuthDecision evaluate(Phase phase, PredicateType predicate, Student subject, ClassSection obj, Environment env, UconRequest req) {
+        return evaluateWithTrace(phase, predicate, subject, obj, env, req).decision();
     }
 
     @SuppressWarnings("unchecked")
-    public PhaseEvaluationResult evaluatePhaseWithTrace(String phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
+    public PhaseEvaluationResult evaluateWithTrace(Phase phase, PredicateType predicate, Student subject, ClassSection obj, Environment env, UconRequest req) {
         EObject root = pdp.getPolicyModelRoot();
         if (root == null) {
-            PhaseTrace emptyTrace = new PhaseTrace(phase, req.getActionType(), "ALLOW", null, null, List.of(), List.of(), List.of());
+            PhaseTrace emptyTrace = new PhaseTrace(phase.name(), predicate.name(), req.getActionType(), "ALLOW", null, null, List.of(), List.of(), List.of());
             return new PhaseEvaluationResult(new AuthDecision(true, null, null), emptyTrace);
         }
 
         List<EObject> policies = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policies"));
-
-        List<EObject> phasePolicies = collectPhasePolicies(policies, phase, req);
+        List<EObject> matchingPolicies = collectPolicies(root, policies, phase, predicate, req);
         List<PolicyTraceEntry> entries = new ArrayList<>();
+        List<PolicyEvaluation> evaluations = new ArrayList<>();
 
-        log.info("[PHASE START] phase={} action={} requestId={} policies={}",
-                phase, req.getActionType(), req.getRequestId(), phasePolicies.size());
+        log.info("[PHASE START] phase={} predicate={} action={} requestId={} policies={}",
+                phase.name(), predicate.name(), req.getActionType(), req.getRequestId(), matchingPolicies.size());
 
-        for (EObject policy : phasePolicies) {
-            String ruleId = (String) policy.eGet(policy.eClass().getEStructuralFeature("policyId"));
-            EEnumLiteral predicate = (EEnumLiteral) policy.eGet(policy.eClass().getEStructuralFeature("predicate"));
+        for (EObject policy : matchingPolicies) {
+            String ruleId = stringValue(policy, "policyId");
             EObject condition = (EObject) policy.eGet(policy.eClass().getEStructuralFeature("condition"));
             EEnumLiteral effect = (EEnumLiteral) policy.eGet(policy.eClass().getEStructuralFeature("effect"));
-            String denyReason = (String) policy.eGet(policy.eClass().getEStructuralFeature("denyReason"));
+            String denyReason = stringValue(policy, "denyReason");
 
             boolean match = evaluator.evaluateCondition(condition, subject, obj, env, req);
-            log.info("[POLICY CHECK] phase={} predicate={} policy={} effect={} matched={} denyReason={}",
-                    phase, predicate.getName(), ruleId, effect.getName(), match, denyReason);
+            boolean blocked = ("DENY".equals(effect.getName()) && match) || ("PERMIT".equals(effect.getName()) && !match);
 
-            if (match && "DENY".equals(effect.getName())) {
-                log.warn("Policy {} blocked request.", ruleId);
-                entries.add(new PolicyTraceEntry(ruleId, predicate.getName(), effect.getName(), true, true, denyReason));
-                AuthDecision decision = new AuthDecision(false, denyReason != null ? denyReason : ruleId, ruleId);
-                PhaseTrace trace = new PhaseTrace(phase, req.getActionType(), "DENY", ruleId, decision.getFailedCode(), entries, List.of(), List.of());
-                return new PhaseEvaluationResult(decision, trace);
-            }
-            if (!match && "PERMIT".equals(effect.getName())) {
-                log.warn("[POLICY BLOCK] phase={} policy={} failedCode={}",
-                        phase, ruleId, denyReason != null ? denyReason : ruleId);
-                entries.add(new PolicyTraceEntry(ruleId, predicate.getName(), effect.getName(), false, true, denyReason));
-                AuthDecision decision = new AuthDecision(false, denyReason != null ? denyReason : ruleId, ruleId);
-                PhaseTrace trace = new PhaseTrace(phase, req.getActionType(), "DENY", ruleId, decision.getFailedCode(), entries, List.of(), List.of());
-                return new PhaseEvaluationResult(decision, trace);
-            }
-            entries.add(new PolicyTraceEntry(ruleId, predicate.getName(), effect.getName(), match, false, denyReason));
+            log.info("[POLICY CHECK] phase={} predicate={} policy={} effect={} matched={} denyReason={}",
+                    phase.name(), predicate.name(), ruleId, effect.getName(), match, denyReason);
+
+            entries.add(new PolicyTraceEntry(ruleId, predicate.name(), effect.getName(), match, blocked, denyReason));
+            evaluations.add(new PolicyEvaluation(ruleId, predicate.name(), effect.getName(), match, denyReason));
         }
 
-        log.info("[PHASE PASS] phase={} action={} requestId={}", phase, req.getActionType(), req.getRequestId());
-        AuthDecision decision = new AuthDecision(true, null, null);
-        PhaseTrace trace = new PhaseTrace(phase, req.getActionType(), "ALLOW", null, null, entries, List.of(), List.of());
+        AuthDecision decision = policyCombiner.combine(resolveCombiningAlgorithm(root), evaluations);
+        if (!decision.isPermit()) {
+            log.warn("[POLICY BLOCK] phase={} predicate={} failedPolicy={} failedCode={}",
+                    phase.name(), predicate.name(), decision.getFailedPolicy(), decision.getFailedCode());
+        } else {
+            log.info("[PHASE PASS] phase={} predicate={} action={} requestId={}",
+                    phase.name(), predicate.name(), req.getActionType(), req.getRequestId());
+        }
+
+        PhaseTrace trace = new PhaseTrace(
+                phase.name(),
+                predicate.name(),
+                req.getActionType(),
+                decision.isPermit() ? "ALLOW" : "DENY",
+                decision.getFailedPolicy(),
+                decision.getFailedCode(),
+                entries,
+                List.of(),
+                List.of());
         return new PhaseEvaluationResult(decision, trace);
     }
 
-    public List<String> executeUpdatesForPhase(String phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
-        return executeUpdateSection(phase, subject, obj, env, req, false);
+    public UpdatePlan planUpdatesForPhase(Phase phase, Student subject, ClassSection obj, Environment env, UconRequest req, boolean auditLogOnly) {
+        return planSection(phase, sectionName(phase), subject, obj, env, req, auditLogOnly);
     }
 
-    public List<String> executeAuditLogOnly(Student subject, ClassSection obj, Environment env, UconRequest req) {
-        return executeUpdateSection("POST", subject, obj, env, req, true);
+    public UpdatePlan planRollbackUpdatesForPhase(Phase phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
+        return planSection(phase, "rollbackUpdates", subject, obj, env, req, false);
     }
 
     @SuppressWarnings("unchecked")
-    public List<String> executeRollbackUpdatesForPhase(String phase, Student subject, ClassSection obj, Environment env, UconRequest req) {
+    private UpdatePlan planSection(Phase phase,
+                                   String featureName,
+                                   Student subject,
+                                   ClassSection obj,
+                                   Environment env,
+                                   UconRequest req,
+                                   boolean auditLogOnly) {
         EObject root = pdp.getPolicyModelRoot();
-        if (root == null) return List.of();
-
-        List<EObject> policies = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policies"));
-        List<EObject> phasePolicies = collectPhasePolicies(policies, phase, req);
-        List<String> appliedPolicies = new ArrayList<>();
-        for (EObject policy : phasePolicies) {
-            String ruleId = (String) policy.eGet(policy.eClass().getEStructuralFeature("policyId"));
-            EObject condition = (EObject) policy.eGet(policy.eClass().getEStructuralFeature("condition"));
-            boolean match = evaluator.evaluateCondition(condition, subject, obj, env, req);
-            if (match) {
-                List<EObject> rollbackUpdates = statements(policy, "rollbackUpdates");
-                if (!rollbackUpdates.isEmpty()) {
-                    log.info("[ROLLBACK UPDATE] phase={} action={} requestId={} policy={} statements={}",
-                            phase, req.getActionType(), req.getRequestId(), ruleId, rollbackUpdates.size());
-                    evaluator.executeStatements(rollbackUpdates, subject, obj, env, req);
-                    appliedPolicies.add(ruleId);
-                }
-            }
+        if (root == null) {
+            return UpdatePlan.empty(phase, featureName);
         }
-        return appliedPolicies;
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<String> executeUpdateSection(String phase, Student subject, ClassSection obj, Environment env, UconRequest req, boolean auditLogOnly) {
-        EObject root = pdp.getPolicyModelRoot();
-        if (root == null) return List.of();
 
         List<EObject> policies = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policies"));
-        List<EObject> phasePolicies = collectPhasePolicies(policies, phase, req);
-        List<String> appliedPolicies = new ArrayList<>();
+        List<EObject> phasePolicies = collectPolicies(root, policies, phase, null, req);
+        List<PlannedPolicyUpdate> plannedPolicies = new ArrayList<>();
 
         for (EObject policy : phasePolicies) {
-            String ruleId = (String) policy.eGet(policy.eClass().getEStructuralFeature("policyId"));
-            EEnumLiteral predicate = (EEnumLiteral) policy.eGet(policy.eClass().getEStructuralFeature("predicate"));
             EObject condition = (EObject) policy.eGet(policy.eClass().getEStructuralFeature("condition"));
+            if (!evaluator.evaluateCondition(condition, subject, obj, env, req)) {
+                continue;
+            }
 
-            boolean match = evaluator.evaluateCondition(condition, subject, obj, env, req);
-
-            if (match) {
-                List<EObject> phaseUpdates = statements(policy, updateFeatureName(phase));
-                if (auditLogOnly) {
-                    List<EObject> auditOnly = phaseUpdates.stream()
-                        .filter(s -> "AuditLogStatement".equals(s.eClass().getName()))
+            List<EObject> statements = statements(policy, featureName);
+            if (auditLogOnly) {
+                statements = statements.stream()
+                        .filter(stmt -> "AuditLogStatement".equals(stmt.eClass().getName()))
                         .collect(Collectors.toList());
-                    if (!auditOnly.isEmpty()) {
-                        log.info("[UPDATES] mode=AUDIT_ONLY phase={} action={} predicate={} requestId={} policy={} statements={}",
-                                phase, req.getActionType(), predicate.getName(), req.getRequestId(), ruleId, auditOnly.size());
-                        evaluator.executeStatements(auditOnly, subject, obj, env, req);
-                        appliedPolicies.add(ruleId);
-                    }
-                } else if (!phaseUpdates.isEmpty()) {
-                    log.info("[UPDATES] mode=FULL phase={} action={} predicate={} requestId={} policy={} statements={}",
-                            phase, req.getActionType(), predicate.getName(), req.getRequestId(), ruleId, phaseUpdates.size());
-                    evaluator.executeStatements(phaseUpdates, subject, obj, env, req);
-                    appliedPolicies.add(ruleId);
-                }
             }
+            if (statements.isEmpty()) {
+                continue;
+            }
+
+            plannedPolicies.add(new PlannedPolicyUpdate(
+                    stringValue(policy, "policyId"),
+                    enumName(policy, "predicate"),
+                    List.copyOf(statements)));
         }
-        return appliedPolicies;
+
+        return plannedPolicies.isEmpty() ? UpdatePlan.empty(phase, featureName) : new UpdatePlan(phase, featureName, plannedPolicies);
     }
 
-    private List<EObject> collectPhasePolicies(List<EObject> policies, String phase, UconRequest req) {
+    private String sectionName(Phase phase) {
+        return switch (phase) {
+            case PRE -> "preUpdates";
+            case ONGOING -> "ongoingUpdates";
+            case POST -> "postUpdates";
+        };
+    }
+
+    private List<PredicateType> orderedPredicatesFor(Phase phase) {
+        if (phase == Phase.POST) {
+            return List.of(PredicateType.AUTHORIZATION, PredicateType.OBLIGATION);
+        }
+        return List.of(PredicateType.CONDITION, PredicateType.AUTHORIZATION, PredicateType.OBLIGATION);
+    }
+
+    private List<EObject> collectPolicies(EObject root, List<EObject> policies, Phase phase, PredicateType predicate, UconRequest req) {
         return policies.stream()
-                .filter(p -> {
-                    EEnumLiteral phaseLiteral = (EEnumLiteral) p.eGet(p.eClass().getEStructuralFeature("phase"));
-                    EEnumLiteral targetAction = (EEnumLiteral) p.eGet(p.eClass().getEStructuralFeature("targetAction"));
-                    boolean phaseMatch = phase.equals(phaseLiteral.getName());
-                    boolean actionMatch = "ANY".equals(targetAction.getName()) ||
-                            (req.getActionType() != null && targetAction.getName().equalsIgnoreCase(req.getActionType()));
-                    return phaseMatch && actionMatch;
-                })
-                .sorted((p1, p2) -> {
-                    Integer prio1 = (Integer) p1.eGet(p1.eClass().getEStructuralFeature("priority"));
-                    Integer prio2 = (Integer) p2.eGet(p2.eClass().getEStructuralFeature("priority"));
-                    int byPriority = prio2.compareTo(prio1);
+                .filter(policy -> phaseMatches(policy, phase) && actionMatches(policy, req) && predicateMatches(policy, predicate))
+                .filter(policy -> belongsToActivePolicySet(root, policy))
+                .sorted((left, right) -> {
+                    Integer leftPriority = (Integer) left.eGet(left.eClass().getEStructuralFeature("priority"));
+                    Integer rightPriority = (Integer) right.eGet(right.eClass().getEStructuralFeature("priority"));
+                    int byPriority = rightPriority.compareTo(leftPriority);
                     if (byPriority != 0) {
                         return byPriority;
                     }
-                    String id1 = (String) p1.eGet(p1.eClass().getEStructuralFeature("policyId"));
-                    String id2 = (String) p2.eGet(p2.eClass().getEStructuralFeature("policyId"));
-                    return id1.compareTo(id2);
+                    return stringValue(left, "policyId").compareTo(stringValue(right, "policyId"));
                 })
                 .collect(Collectors.toList());
+    }
+
+    private boolean phaseMatches(EObject policy, Phase phase) {
+        EEnumLiteral phaseLiteral = (EEnumLiteral) policy.eGet(policy.eClass().getEStructuralFeature("phase"));
+        return phase.name().equals(phaseLiteral.getName());
+    }
+
+    private boolean predicateMatches(EObject policy, PredicateType predicate) {
+        if (predicate == null) {
+            return true;
+        }
+        EEnumLiteral predicateLiteral = (EEnumLiteral) policy.eGet(policy.eClass().getEStructuralFeature("predicate"));
+        return predicate.name().equals(predicateLiteral.getName());
+    }
+
+    private boolean belongsToActivePolicySet(EObject root, EObject policy) {
+        if (root == null || root.eClass().getEStructuralFeature("policySets") == null) {
+            return true;
+        }
+        @SuppressWarnings("unchecked")
+        List<EObject> policySets = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policySets"));
+        if (policySets == null || policySets.isEmpty()) {
+            return true;
+        }
+        EObject activeSet = policySets.get(0);
+        @SuppressWarnings("unchecked")
+        List<String> policyIds = (List<String>) activeSet.eGet(activeSet.eClass().getEStructuralFeature("policyIds"));
+        return policyIds.contains(stringValue(policy, "policyId"));
+    }
+
+    private CombiningAlgorithm resolveCombiningAlgorithm(EObject root) {
+        if (root == null || root.eClass().getEStructuralFeature("policySets") == null) {
+            return CombiningAlgorithm.DENY_OVERRIDES;
+        }
+        @SuppressWarnings("unchecked")
+        List<EObject> policySets = (List<EObject>) root.eGet(root.eClass().getEStructuralFeature("policySets"));
+        if (policySets == null || policySets.isEmpty()) {
+            return CombiningAlgorithm.DENY_OVERRIDES;
+        }
+        Object value = policySets.get(0).eGet(policySets.get(0).eClass().getEStructuralFeature("combiningAlgorithm"));
+        if (value instanceof EEnumLiteral literal) {
+            return CombiningAlgorithm.valueOf(literal.getName());
+        }
+        return CombiningAlgorithm.valueOf(value.toString());
+    }
+
+    private boolean actionMatches(EObject policy, UconRequest req) {
+        EEnumLiteral targetAction = (EEnumLiteral) policy.eGet(policy.eClass().getEStructuralFeature("targetAction"));
+        return "ANY".equals(targetAction.getName())
+                || (req.getActionType() != null && targetAction.getName().equalsIgnoreCase(req.getActionType()));
     }
 
     @SuppressWarnings("unchecked")
@@ -185,12 +270,13 @@ public class PolicyEngine {
         return value == null ? List.of() : (List<EObject>) value;
     }
 
-    private String updateFeatureName(String phase) {
-        return switch (phase) {
-            case "PRE" -> "preUpdates";
-            case "ONGOING" -> "ongoingUpdates";
-            case "POST" -> "postUpdates";
-            default -> throw new IllegalArgumentException("Unsupported phase for updates: " + phase);
-        };
+    private String stringValue(EObject obj, String featureName) {
+        Object value = obj.eGet(obj.eClass().getEStructuralFeature(featureName));
+        return value == null ? null : value.toString();
+    }
+
+    private String enumName(EObject obj, String featureName) {
+        Object value = obj.eGet(obj.eClass().getEStructuralFeature(featureName));
+        return value == null ? null : value.toString();
     }
 }

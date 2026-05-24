@@ -62,7 +62,7 @@ Project da the hien ro tinh chat UCON qua:
 - `OBLIGATION`: rang buoc xac nhan quy che, ly do override, audit trace
 - `CONDITION`: rang buoc moi truong nhu registration window, maintenance
 
-Tuy nhien, `ONGOING` hien tai duoc hien thuc duoi dang `transaction-level re-check`, nghia la kiem tra lai o sat thoi diem commit. No khong phai continuous monitoring cho mot phien su dung dai han va chua co `UsageSession` day du.
+Tuy nhien, `ONGOING` hien tai duoc hien thuc duoi dang `transaction-level re-check`, nghia la kiem tra lai o sat thoi diem commit. Project da bo sung `UsageSession` nen co the theo doi `ACTIVE / COMMITTED / REVOKED / FAILED`, nhung chua mo rong thanh co che continuous monitoring cho mot phien su dung dai han.
 
 ## Cau truc repo
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 public record PhaseTrace(
         String phase,
+        String predicate,
         String action,
         String decision,
         String failedPolicy,

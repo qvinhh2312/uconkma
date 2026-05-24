@@ -372,6 +372,94 @@ $cases = @{
             "Nguoi dung co the thay phase va policy gay DENY"
         )
     }
+    "T22" = @{
+        Method = "test22_DirectOngoingMaintenanceMarksSessionRevoked"
+        Title = "UsageSession bi REVOKED khi ongoing condition fail"
+        Goal = "Chung minh continuity qua UsageSession khi request dang ACTIVE bi maintenance huy o ONGOING."
+        Phase = "ONGOING"
+        Policies = "P13, UsageSession"
+        Checks = @(
+            "Tao UsageSession ACTIVE cho request REGISTER"
+            "Danh gia ONGOING CONDITION voi maintenance = true"
+            "Mark session thanh REVOKED"
+            "Kiem tra status trong repository la REVOKED"
+        )
+        Result = @(
+            "UsageSession luu duoc vong doi quyen su dung"
+            "Continuity cua UCON duoc the hien qua session status"
+        )
+    }
+    "T23" = @{
+        Method = "test23_Race_10Students_3Slots_PreservesInvariants"
+        Title = "Stress race 10 sinh vien tranh 3 cho va giu invariant"
+        Goal = "Chung minh stress concurrency khong lam vuot capacity va reservedSeats duoc don sach."
+        Phase = "ONGOING / INVARIANT"
+        Policies = "P08, P20, InvariantChecker"
+        Checks = @(
+            "Dat lop con 3 cho trong"
+            "Cho 10 sinh vien dang ky dong thoi"
+            "Kiem tra tong request xu ly du 10"
+            "Kiem tra enrolled nam trong [4,7]"
+            "Kiem tra reservedSeats ve 0"
+            "Kiem tra registration count = enrolled - 4"
+        )
+        Result = @(
+            "Khong co overbook"
+            "Invariant suc chua va reserved seat duoc bao toan duoi stress"
+        )
+    }
+    "T24" = @{
+        Method = "test24_ReserveSeatRollback_RestoresReservedSeats"
+        Title = "Rollback ongoing-update phuc hoi reservedSeats"
+        Goal = "Chung minh onA2 co rollback ro rang cho reserved seat."
+        Phase = "ONGOING -> ROLLBACK"
+        Policies = "P20, RollbackManager"
+        Checks = @(
+            "Build ongoing update plan cho request REGISTER"
+            "Apply P20 de tang reservedSeats len 1"
+            "Build rollback plan va apply rollback"
+            "Kiem tra reservedSeats quay ve 0"
+        )
+        Result = @(
+            "Ongoing update co rollback dung nhu dac ta"
+            "Reserved seat khong bi leak sau khi huy bo"
+        )
+    }
+    "T25" = @{
+        Method = "test25_RegisterDenied_WhenMaxRegisterAttemptsReached"
+        Title = "Tu choi dang ky khi vuot gioi han so lan thu"
+        Goal = "Chung minh policy su dung P25 de gioi han so lan register attempt trong mot dot."
+        Phase = "PRE"
+        Policies = "P25"
+        Checks = @(
+            "Dat registerAttemptCount = 5 cho SV001"
+            "Gui request REGISTER moi"
+            "Kiem tra response tra ve MAX_REGISTER_ATTEMPTS_EXCEEDED"
+            "Kiem tra failedPolicy la P25_MaxRegisterAttempts_PreA0"
+        )
+        Result = @(
+            "Request bi chan do vuot nguong so lan thu"
+            "Rang buoc usage-count cua UCON duoc kich hoat"
+        )
+    }
+    "T26" = @{
+        Method = "test26_DropDenied_WhenMaxDropTimesReached"
+        Title = "Tu choi DROP khi vuot gioi han so lan huy"
+        Goal = "Chung minh policy su dung P26 de gioi han so lan DROP trong hoc ky."
+        Phase = "PRE"
+        Policies = "P26"
+        Checks = @(
+            "Dang ky thanh cong mot lop de tao state DROP hop le"
+            "Dat dropCountForSemester = 2 cho SV001"
+            "Gui request DROP"
+            "Kiem tra response tra ve MAX_DROP_TIMES_EXCEEDED"
+            "Kiem tra failedPolicy la P26_MaxDropTimes_PreA0"
+        )
+        Result = @(
+            "Request DROP bi chan do vuot nguong so lan huy"
+            "Rang buoc usage-count cho DROP duoc ap dung"
+        )
+    }
 }
 
 $aliases = @{
@@ -393,6 +481,10 @@ $aliases = @{
     "P18" = "T14"
     "P19" = "T01"
     "P20" = "T01"
+    "P21" = "T26"
+    "P23" = "T26"
+    "P25" = "T25"
+    "P26" = "T26"
     "P14" = "T12"
     "P16" = "T12"
 }
@@ -502,7 +594,7 @@ if ($id -eq "REPORT" -or $id -eq "TABLE") {
 }
 elseif ($id -eq "ALL") {
     Write-Section "[ALL] Chay toan bo bo test UCON"
-    Write-Host "Tong quan: Bo 16 test bao phu business policy, concurrency va validator." -ForegroundColor Yellow
+    Write-Host "Tong quan: Bo 26 test bao phu business policy, session, update, validator, concurrency, usage-count va trace." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
@@ -580,8 +672,8 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T21"
-    Write-Host "  P01..P20"
+    Write-Host "  T01..T26"
+    Write-Host "  P01..P26"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 21 tests)"
+    Write-Host "  all       (chay toan bo 26 tests)"
 }

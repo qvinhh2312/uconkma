@@ -20,6 +20,7 @@ MERGE INTO student (
     registered_class_ids,
     registered_schedule_slots,
     register_attempt_count,
+    drop_count_for_semester,
     tuition_debt,
     tuition_paid,
     version
@@ -33,6 +34,7 @@ VALUES (
     15,
     '',
     '',
+    0,
     0,
     0,
     TRUE,
@@ -49,6 +51,7 @@ MERGE INTO student (
     registered_class_ids,
     registered_schedule_slots,
     register_attempt_count,
+    drop_count_for_semester,
     tuition_debt,
     tuition_paid,
     version
@@ -62,6 +65,7 @@ VALUES (
     15,
     '',
     '',
+    0,
     0,
     0,
     FALSE,

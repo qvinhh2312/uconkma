@@ -24,6 +24,7 @@ public class PolicyModelSemanticValidator {
 
     private static final Set<String> MUTABLE_SUBJECT_PATHS = Set.of(
             "registerAttemptCount",
+            "dropCountForSemester",
             "currentCredits",
             "registeredScheduleSlots",
             "registeredClassIds",
@@ -53,11 +54,38 @@ public class PolicyModelSemanticValidator {
 
         @SuppressWarnings("unchecked")
         List<EObject> policies = (List<EObject>) policyModelRoot.eGet(policyModelRoot.eClass().getEStructuralFeature("policies"));
+        @SuppressWarnings("unchecked")
+        List<EObject> policySets = (List<EObject>) policyModelRoot.eGet(policyModelRoot.eClass().getEStructuralFeature("policySets"));
 
         Map<String, String> policyIds = new HashMap<>();
         Map<String, String> prioritiesPerPhaseAction = new HashMap<>();
         for (EObject policy : policies) {
             validatePolicy(policy, policyIds, prioritiesPerPhaseAction);
+        }
+        validatePolicySets(policySets, policyIds.keySet());
+    }
+
+    private void validatePolicySets(List<EObject> policySets, Set<String> knownPolicyIds) {
+        Map<String, String> seenSetIds = new HashMap<>();
+        for (EObject policySet : policySets) {
+            String policySetId = stringValue(policySet, "policySetId");
+            if (policySetId == null || policySetId.isBlank()) {
+                throw new IllegalStateException("PolicySet id must not be blank.");
+            }
+            if (seenSetIds.putIfAbsent(policySetId, policySetId) != null) {
+                throw new IllegalStateException("Duplicate policySet id detected: " + policySetId);
+            }
+            enumName(policySet, "combiningAlgorithm");
+            @SuppressWarnings("unchecked")
+            List<String> policyIds = (List<String>) policySet.eGet(policySet.eClass().getEStructuralFeature("policyIds"));
+            if (policyIds == null || policyIds.isEmpty()) {
+                throw new IllegalStateException("PolicySet " + policySetId + " must reference at least one policy.");
+            }
+            for (String policyId : policyIds) {
+                if (!knownPolicyIds.contains(policyId)) {
+                    throw new IllegalStateException("PolicySet " + policySetId + " references unknown policy id " + policyId);
+                }
+            }
         }
     }
 

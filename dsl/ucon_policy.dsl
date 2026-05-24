@@ -92,6 +92,22 @@ policy P16_DropOnlyIfRegistered_PreA0 {
     condition: checkExistsRegistration(subject.studentId, object.classId, environment.semester)
 }
 
+policy P21_DropWindow_PreC0 {
+    predicate: CONDITION
+    phase: PRE
+    updateTiming: NONE
+    targetAction: DROP
+    effect: PERMIT
+    priority: 64
+    description: "Chi cho huy hoc phan trong khung thoi gian cho phep"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    denyReason: "OUTSIDE_DROP_WINDOW"
+
+    condition: environment.currentDateTime >= environment.openTime
+               AND environment.currentDateTime <= environment.closeTime
+}
+
 policy P05_CreditLimit_PreA0 {
     predicate: AUTHORIZATION
     phase: PRE
@@ -105,6 +121,21 @@ policy P05_CreditLimit_PreA0 {
     denyReason: "CREDIT_LIMIT_EXCEEDED"
 
     condition: (subject.currentCredits + object.course.credits) <= subject.maxCreditsEffective
+}
+
+policy P25_MaxRegisterAttempts_PreA0 {
+    predicate: AUTHORIZATION
+    phase: PRE
+    updateTiming: NONE
+    targetAction: REGISTER
+    effect: PERMIT
+    priority: 55
+    description: "Gioi han so lan thu dang ky trong mot dot"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    denyReason: "MAX_REGISTER_ATTEMPTS_EXCEEDED"
+
+    condition: subject.registerAttemptCount < environment.maxRegisterAttempts
 }
 
 policy P06_Prerequisite_PreA0 {
@@ -238,6 +269,21 @@ policy P20_ReserveSeat_OnA2 {
        object.reservedSeats SUB_ASSIGN 1
 }
 
+policy P23_DropLockedClass_OnA0 {
+    predicate: AUTHORIZATION
+    phase: ONGOING
+    updateTiming: NONE
+    targetAction: DROP
+    effect: PERMIT
+    priority: 22
+    description: "Khong cho huy neu lop bi khoa trong luc xu ly"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    denyReason: "DROP_CLASS_STATUS_CHANGED"
+
+    condition: object.status == "OPEN"
+}
+
 policy P09_ClassStatusRecheck_OnA0 {
     predicate: AUTHORIZATION
     phase: ONGOING
@@ -312,7 +358,23 @@ policy P14_DropStateRevert_PostA3 {
        subject.currentCredits SUB_ASSIGN object.course.credits
        subject.registeredScheduleSlots REMOVE object.scheduleSlots
        subject.registeredClassIds REMOVE object.classId
+       subject.dropCountForSemester ADD_ASSIGN 1
        subject.tuitionDebt SUB_ASSIGN object.course.tuitionFee
+}
+
+policy P26_MaxDropTimes_PreA0 {
+    predicate: AUTHORIZATION
+    phase: PRE
+    updateTiming: NONE
+    targetAction: DROP
+    effect: PERMIT
+    priority: 63
+    description: "Gioi han so lan huy hoc phan trong hoc ky"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    denyReason: "MAX_DROP_TIMES_EXCEEDED"
+
+    condition: subject.dropCountForSemester < environment.maxDropTimes
 }
 
 policy P12_AuditAndTrace_PostB3 {
@@ -330,4 +392,32 @@ policy P12_AuditAndTrace_PostB3 {
 
     postUpdates:
        create AuditLog(request.requestId, subject.studentId, object.classId, request.decision, request.failedPolicyCodes)
+}
+
+policySet RegistrationPolicySet {
+    combiningAlgorithm: DENY_OVERRIDES
+    policies: P01_TuitionPaid_PreA0,
+              P13a_EmergencyMaintenance_PreC0,
+              P02_TransactionWindow_PreC0,
+              P03_ClassStatusOpen_PreA0,
+              P04_NotAlreadyRegistered_PreA0,
+              P16_DropOnlyIfRegistered_PreA0,
+              P21_DropWindow_PreC0,
+              P26_MaxDropTimes_PreA0,
+              P05_CreditLimit_PreA0,
+              P25_MaxRegisterAttempts_PreA0,
+              P06_Prerequisite_PreA0,
+              P17_AgreeRegistrationRule_PreB0,
+              P07_ScheduleConflict_PreA0,
+              P18_AdminOverrideReason_PreB0,
+              P19_RegisterAttempt_PreA1,
+              P13_EmergencyMaintenance_OnC0,
+              P08_CapacityRecheck_OnA0,
+              P20_ReserveSeat_OnA2,
+              P23_DropLockedClass_OnA0,
+              P09_ClassStatusRecheck_OnA0,
+              P10_StudentHoldRecheck_OnA0,
+              P11_RegisterStateUpdate_PostA3,
+              P14_DropStateRevert_PostA3,
+              P12_AuditAndTrace_PostB3
 }

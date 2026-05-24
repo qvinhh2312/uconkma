@@ -8,5 +8,7 @@ public record DecisionTrace(
         String decision,
         String studentId,
         String classId,
+        String sessionId,
+        String sessionStatus,
         List<PhaseTrace> phases) {
 }

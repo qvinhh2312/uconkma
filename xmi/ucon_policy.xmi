@@ -55,6 +55,18 @@
       <arguments xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="semester"/>
     </condition>
   </policies>
+  <policies policyId="P21_DropWindow_PreC0" description="Chi cho huy hoc phan trong khung thoi gian cho phep" subjectType="Student" objectType="ClassSection" predicate="CONDITION" targetAction="DROP" priority="64" denyReason="OUTSIDE_DROP_WINDOW">
+    <condition xsi:type="ucon:LogicalOperator">
+      <left xsi:type="ucon:RelationalOperator" operator="GREATER_OR_EQUALS">
+        <left xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="currentDateTime"/>
+        <right xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="openTime"/>
+      </left>
+      <right xsi:type="ucon:RelationalOperator" operator="LESS_OR_EQUALS">
+        <left xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="currentDateTime"/>
+        <right xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="closeTime"/>
+      </right>
+    </condition>
+  </policies>
   <policies policyId="P05_CreditLimit_PreA0" description="Khong vuot tran han muc tin chi thuc te" subjectType="Student" objectType="ClassSection" priority="60" denyReason="CREDIT_LIMIT_EXCEEDED">
     <condition xsi:type="ucon:RelationalOperator" operator="LESS_OR_EQUALS">
       <left xsi:type="ucon:ArithmeticOperator">
@@ -62,6 +74,12 @@
         <right xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.credits"/>
       </left>
       <right xsi:type="ucon:VariableAccess" path="maxCreditsEffective"/>
+    </condition>
+  </policies>
+  <policies policyId="P25_MaxRegisterAttempts_PreA0" description="Gioi han so lan thu dang ky trong mot dot" subjectType="Student" objectType="ClassSection" priority="55" denyReason="MAX_REGISTER_ATTEMPTS_EXCEEDED">
+    <condition xsi:type="ucon:RelationalOperator" operator="LESS_THAN">
+      <left xsi:type="ucon:VariableAccess" path="registerAttemptCount"/>
+      <right xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="maxRegisterAttempts"/>
     </condition>
   </policies>
   <policies policyId="P06_Prerequisite_PreA0" description="Dam bao da hoan tat mon hoc tien quyet" subjectType="Student" objectType="ClassSection" priority="50" denyReason="PREREQUISITE_NOT_MET">
@@ -132,6 +150,12 @@
       <value xsi:type="ucon:Constant" value="1" type="INTEGER"/>
     </rollbackUpdates>
   </policies>
+  <policies policyId="P23_DropLockedClass_OnA0" description="Khong cho huy neu lop bi khoa trong luc xu ly" subjectType="Student" objectType="ClassSection" phase="ONGOING" targetAction="DROP" priority="22" denyReason="DROP_CLASS_STATUS_CHANGED">
+    <condition xsi:type="ucon:RelationalOperator">
+      <left xsi:type="ucon:VariableAccess" entity="OBJECT" path="status"/>
+      <right xsi:type="ucon:Constant" value="OPEN"/>
+    </condition>
+  </policies>
   <policies policyId="P09_ClassStatusRecheck_OnA0" description="Kiem tra lai trang thai lop phong khi Admin khoa dot xuat" subjectType="Student" objectType="ClassSection" phase="ONGOING" priority="20" denyReason="CLASS_STATUS_CHANGED">
     <condition xsi:type="ucon:RelationalOperator">
       <left xsi:type="ucon:VariableAccess" entity="OBJECT" path="status"/>
@@ -199,10 +223,20 @@
       <target path="registeredClassIds"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="classId"/>
     </postUpdates>
+    <postUpdates xsi:type="ucon:UpdateStatement" operator="ADD_ASSIGN">
+      <target path="dropCountForSemester"/>
+      <value xsi:type="ucon:Constant" value="1" type="INTEGER"/>
+    </postUpdates>
     <postUpdates xsi:type="ucon:UpdateStatement" operator="SUB_ASSIGN">
       <target path="tuitionDebt"/>
       <value xsi:type="ucon:VariableAccess" entity="OBJECT" path="course.tuitionFee"/>
     </postUpdates>
+  </policies>
+  <policies policyId="P26_MaxDropTimes_PreA0" description="Gioi han so lan huy hoc phan trong hoc ky" subjectType="Student" objectType="ClassSection" targetAction="DROP" priority="63" denyReason="MAX_DROP_TIMES_EXCEEDED">
+    <condition xsi:type="ucon:RelationalOperator" operator="LESS_THAN">
+      <left xsi:type="ucon:VariableAccess" path="dropCountForSemester"/>
+      <right xsi:type="ucon:VariableAccess" entity="ENVIRONMENT" path="maxDropTimes"/>
+    </condition>
   </policies>
   <policies policyId="P12_AuditAndTrace_PostB3" description="Ghi audit log cho moi request" subjectType="Student" objectType="ClassSection" predicate="OBLIGATION" phase="POST" updateTiming="POST" targetAction="ANY" priority="1">
     <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
@@ -214,4 +248,5 @@
       <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="failedPolicyCodes"/>
     </postUpdates>
   </policies>
+  <policySets policySetId="RegistrationPolicySet" combiningAlgorithm="DENY_OVERRIDES" policyIds="P01_TuitionPaid_PreA0 P13a_EmergencyMaintenance_PreC0 P02_TransactionWindow_PreC0 P03_ClassStatusOpen_PreA0 P04_NotAlreadyRegistered_PreA0 P16_DropOnlyIfRegistered_PreA0 P21_DropWindow_PreC0 P26_MaxDropTimes_PreA0 P05_CreditLimit_PreA0 P25_MaxRegisterAttempts_PreA0 P06_Prerequisite_PreA0 P17_AgreeRegistrationRule_PreB0 P07_ScheduleConflict_PreA0 P18_AdminOverrideReason_PreB0 P19_RegisterAttempt_PreA1 P13_EmergencyMaintenance_OnC0 P08_CapacityRecheck_OnA0 P20_ReserveSeat_OnA2 P23_DropLockedClass_OnA0 P09_ClassStatusRecheck_OnA0 P10_StudentHoldRecheck_OnA0 P11_RegisterStateUpdate_PostA3 P14_DropStateRevert_PostA3 P12_AuditAndTrace_PostB3"/>
 </ucon:PolicyModel>

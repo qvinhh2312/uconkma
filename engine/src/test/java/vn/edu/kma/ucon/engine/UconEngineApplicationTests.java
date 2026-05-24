@@ -3,6 +3,7 @@ package vn.edu.kma.ucon.engine;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,6 +40,8 @@ import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
 import vn.edu.kma.ucon.engine.pdp.PolicyFunctionRegistry;
 import vn.edu.kma.ucon.engine.pdp.PolicyModelSemanticValidator;
 import vn.edu.kma.ucon.engine.pdp.PolicyValidator;
+import vn.edu.kma.ucon.engine.pdp.Phase;
+import vn.edu.kma.ucon.engine.pdp.PredicateType;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Course;
 import vn.edu.kma.ucon.engine.pip.entity.Registration;
@@ -48,6 +51,13 @@ import vn.edu.kma.ucon.engine.pip.repository.ClassSectionRepository;
 import vn.edu.kma.ucon.engine.pip.repository.CourseRepository;
 import vn.edu.kma.ucon.engine.pip.repository.RegistrationRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
+import vn.edu.kma.ucon.engine.session.SessionStatus;
+import vn.edu.kma.ucon.engine.session.UsageSession;
+import vn.edu.kma.ucon.engine.session.UsageSessionRepository;
+import vn.edu.kma.ucon.engine.session.UsageSessionService;
+import vn.edu.kma.ucon.engine.update.RollbackManager;
+import vn.edu.kma.ucon.engine.update.UpdateManager;
+import vn.edu.kma.ucon.engine.update.UpdatePlan;
 
 @SpringBootTest
 class UconEngineApplicationTests {
@@ -80,12 +90,21 @@ class UconEngineApplicationTests {
     PolicyAnalyzer policyAnalyzer;
     @Autowired
     AttributeSchema attributeSchema;
+    @Autowired
+    UsageSessionRepository usageSessionRepository;
+    @Autowired
+    UsageSessionService usageSessionService;
+    @Autowired
+    UpdateManager updateManager;
+    @Autowired
+    RollbackManager rollbackManager;
 
     @BeforeEach
     void setUp() {
         maintenanceFlag.setActive(false);
         auditRepo.deleteAll();
         registrationRepo.deleteAll();
+        usageSessionRepository.deleteAll();
         studentRepo.deleteAll();
         classRepo.deleteAll();
         courseRepo.deleteAll();
@@ -133,6 +152,8 @@ class UconEngineApplicationTests {
         sv001.setRegisteredClassIds("");
         sv001.setRegisteredScheduleSlots("");
         sv001.setHolds("");
+        sv001.setRegisterAttemptCount(0);
+        sv001.setDropCountForSemester(0);
         studentRepo.save(sv001);
     }
 
@@ -147,7 +168,14 @@ class UconEngineApplicationTests {
         assertEquals(200, response.getStatusCode().value());
         assertEquals("Successfully enrolled.", response.getBody().getMessage());
         assertNotNull(response.getBody().getDecisionTrace());
-        assertEquals(3, response.getBody().getDecisionTrace().phases().size());
+        assertEquals(8, response.getBody().getDecisionTrace().phases().size());
+        assertEquals("COMMITTED", response.getBody().getDecisionTrace().sessionStatus());
+        assertEquals("PRE", response.getBody().getDecisionTrace().phases().get(0).phase());
+        assertEquals("CONDITION", response.getBody().getDecisionTrace().phases().get(0).predicate());
+        assertEquals("AUTHORIZATION", response.getBody().getDecisionTrace().phases().get(1).predicate());
+        assertEquals("OBLIGATION", response.getBody().getDecisionTrace().phases().get(2).predicate());
+        assertEquals("ONGOING", response.getBody().getDecisionTrace().phases().get(3).phase());
+        assertEquals("POST", response.getBody().getDecisionTrace().phases().get(6).phase());
 
         Student s = studentRepo.findById("SV001").orElseThrow();
         assertEquals(4, s.getCurrentCredits());
@@ -167,6 +195,8 @@ class UconEngineApplicationTests {
 
         assertEquals(1, auditRepo.count());
         assertEquals("ALLOW", auditRepo.findAll().get(0).getDecision());
+        assertEquals(1, usageSessionRepository.count());
+        assertEquals(SessionStatus.COMMITTED, usageSessionRepository.findAll().get(0).getStatus());
     }
 
     @Test
@@ -551,9 +581,126 @@ class UconEngineApplicationTests {
 
         assertNotNull(trace);
         assertEquals("DENY", trace.decision());
-        assertEquals(1, trace.phases().size());
+        assertEquals(3, trace.phases().size());
         assertEquals("PRE", trace.phases().get(0).phase());
-        assertEquals("P01_TuitionPaid_PreA0", trace.phases().get(0).failedPolicy());
+        assertEquals("CONDITION", trace.phases().get(0).predicate());
+        assertEquals("AUTHORIZATION", trace.phases().get(1).predicate());
+        assertEquals("P01_TuitionPaid_PreA0", trace.phases().get(1).failedPolicy());
+        assertNull(trace.sessionStatus());
+    }
+
+    @Test
+    @DisplayName("Direct ongoing maintenance denial marks an active usage session as revoked")
+    void test22_DirectOngoingMaintenanceMarksSessionRevoked() {
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
+        UconRequest req = registerRequest();
+
+        UsageSession session = usageSessionService.createActive(req);
+        AuthDecision ongoingDecision = policyEngine.evaluate(Phase.ONGOING, PredicateType.CONDITION, student, cls, defaultEnv(true), req);
+        assertFalse(ongoingDecision.isPermit());
+        assertEquals("SYSTEM_UNDER_MAINTENANCE", ongoingDecision.getFailedCode());
+
+        usageSessionService.markRevoked(session, ongoingDecision.getFailedCode());
+        assertEquals(1, usageSessionRepository.count());
+        assertEquals(SessionStatus.REVOKED, usageSessionRepository.findAll().get(0).getStatus());
+    }
+
+    @Test
+    @DisplayName("Ten students competing for three slots preserve capacity invariants")
+    void test23_Race_10Students_3Slots_PreservesInvariants() throws InterruptedException {
+        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
+        cls.setCapacity(7);
+        cls.setEnrolled(4);
+        cls.setReservedSeats(0);
+        classRepo.save(cls);
+
+        for (int i = 2; i <= 10; i++) {
+            Student student = new Student();
+            student.setStudentId("SV%03d".formatted(i));
+            student.setTuitionPaid(true);
+            student.setMaxCreditsEffective(15);
+            student.setCompletedCourses("CS101");
+            student.setHolds("");
+            student.setRegisteredClassIds("");
+            student.setRegisteredScheduleSlots("");
+            studentRepo.save(student);
+        }
+
+        int threads = 10;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threads);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        for (int i = 1; i <= 10; i++) {
+            String studentId = "SV%03d".formatted(i);
+            executor.submit(() -> runConcurrentRegister(studentId, successCount, failCount, startLatch, doneLatch));
+        }
+
+        startLatch.countDown();
+        doneLatch.await();
+        executor.shutdown();
+
+        ClassSection after = classRepo.findById("CS102_01").orElseThrow();
+        assertEquals(threads, successCount.get() + failCount.get());
+        assertTrue(successCount.get() <= 3);
+        assertTrue(failCount.get() >= 7);
+        assertTrue(after.getEnrolled() >= 4);
+        assertTrue(after.getEnrolled() <= 7);
+        assertEquals(0, after.getReservedSeats());
+        assertTrue(after.getEnrolled() <= after.getCapacity());
+        assertEquals(after.getEnrolled() - 4, registrationRepo.count());
+    }
+
+    @Test
+    @DisplayName("Ongoing reserve-seat update rolls back cleanly")
+    void test24_ReserveSeatRollback_RestoresReservedSeats() {
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
+        Environment env = defaultEnv(false);
+        UconRequest req = registerRequest();
+
+        UpdatePlan ongoingPlan = updateManager.buildPlan(Phase.ONGOING, student, cls, env, req);
+        UpdatePlan rollbackPlan = rollbackManager.buildPlan(Phase.ONGOING, student, cls, env, req);
+
+        List<String> ongoingApplied = updateManager.apply(ongoingPlan, student, cls, env, req);
+        assertTrue(ongoingApplied.contains("P20_ReserveSeat_OnA2"));
+        assertEquals(1, cls.getReservedSeats());
+
+        List<String> rollbackApplied = rollbackManager.apply(rollbackPlan, student, cls, env, req);
+        assertTrue(rollbackApplied.contains("P20_ReserveSeat_OnA2"));
+        assertEquals(0, cls.getReservedSeats());
+    }
+
+    @Test
+    @DisplayName("Register is denied when the maximum register-attempt limit is reached")
+    void test25_RegisterDenied_WhenMaxRegisterAttemptsReached() {
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        student.setRegisterAttemptCount(5);
+        studentRepo.save(student);
+
+        ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
+        assertEquals(403, response.getStatusCode().value());
+        assertEquals("MAX_REGISTER_ATTEMPTS_EXCEEDED", response.getBody().getDenyReason());
+        assertEquals("P25_MaxRegisterAttempts_PreA0", response.getBody().getFailedPolicy());
+    }
+
+    @Test
+    @DisplayName("Drop is denied when the maximum drop count for the semester is reached")
+    void test26_DropDenied_WhenMaxDropTimesReached() {
+        ResponseEntity<ApiDecisionResponse> regResponse = regController.register(registerRequest());
+        assertEquals(200, regResponse.getStatusCode().value());
+
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        student.setDropCountForSemester(2);
+        studentRepo.save(student);
+
+        ResponseEntity<ApiDecisionResponse> response = regController.drop(dropRequest());
+        assertEquals(403, response.getStatusCode().value());
+        assertEquals("MAX_DROP_TIMES_EXCEEDED", response.getBody().getDenyReason());
+        assertEquals("P26_MaxDropTimes_PreA0", response.getBody().getFailedPolicy());
     }
 
     private void runConcurrentRegister(String studentId,
@@ -605,6 +752,8 @@ class UconEngineApplicationTests {
         env.setCloseTime("2026-12-31");
         env.setSemester("2026_FALL");
         env.setIsMaintenance(maintenance);
+        env.setMaxRegisterAttempts(5);
+        env.setMaxDropTimes(2);
         return env;
     }
 
