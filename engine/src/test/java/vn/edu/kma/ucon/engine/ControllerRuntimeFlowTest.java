@@ -27,6 +27,9 @@ class ControllerRuntimeFlowTest extends AbstractUconIntegrationTest {
         ResponseEntity<ApiDecisionResponse> response = registrationController.register(registerRequest());
 
         assertEquals(200, response.getStatusCode().value());
+        assertEquals("POST", response.getBody().getPhase());
+        assertEquals("AUTHORIZATION", response.getBody().getPredicate());
+        assertEquals("COMMITTED", response.getBody().getSessionStatus());
         DecisionTrace trace = response.getBody().getDecisionTrace();
         assertNotNull(trace);
         assertEquals("ALLOW", trace.decision());
@@ -74,6 +77,9 @@ class ControllerRuntimeFlowTest extends AbstractUconIntegrationTest {
 
         assertEquals(403, response.getStatusCode().value());
         assertEquals("DENY", response.getBody().getDecision());
+        assertEquals("PRE", response.getBody().getPhase());
+        assertEquals("AUTHORIZATION", response.getBody().getPredicate());
+        assertEquals("FAILED", response.getBody().getSessionStatus());
         assertEquals("P16_DropOnlyIfRegistered_PreA0", response.getBody().getFailedPolicy());
         assertEquals("NOT_REGISTERED", response.getBody().getDenyReason());
         assertTrue(response.getBody().getDecisionTrace().phases().stream()

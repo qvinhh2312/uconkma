@@ -5,6 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+/**
+ * Event-driven monitor for UCON continuity. Domain events trigger re-evaluation
+ * of ONGOING policies against ACTIVE usage sessions, allowing sessions to be
+ * revoked when mutable attributes change after initial access.
+ */
 @Component
 public class OngoingMonitor {
 

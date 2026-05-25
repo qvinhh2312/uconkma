@@ -144,7 +144,7 @@ public class UconExecutionWorkflow {
         SessionStatus sessionStatus = phase == Phase.ONGOING
                 ? (DenyReasonCatalog.isRevocationCode(result.decision().getFailedCode()) ? SessionStatus.REVOKED : SessionStatus.FAILED)
                 : null;
-        return deny(context, phase, result.decision(), sessionStatus);
+        return deny(context, phase, predicate, result.decision(), sessionStatus);
     }
 
     private void applyPreUpdates(UconContext context) {
@@ -236,10 +236,12 @@ public class UconExecutionWorkflow {
                 context.getRequest().getActionType(),
                 context.getRequest().getDecision(),
                 Phase.POST.name(),
+                PredicateType.AUTHORIZATION.name(),
                 context.getRequest().getStudentId(),
                 context.getRequest().getClassId(),
                 null,
                 null,
+                SessionStatus.COMMITTED.name(),
                 successExplanation,
                 successMessage,
                 trace);
@@ -253,7 +255,11 @@ public class UconExecutionWorkflow {
         return new UconWorkflowResult(HttpStatus.OK, response);
     }
 
-    private UconWorkflowResult deny(UconContext context, Phase phase, AuthDecision decision, SessionStatus sessionStatus) {
+    private UconWorkflowResult deny(UconContext context,
+                                    Phase phase,
+                                    PredicateType predicate,
+                                    AuthDecision decision,
+                                    SessionStatus sessionStatus) {
         context.getRequest().setDecision("DENY");
         context.getRequest().setFailedPolicyCodes(decision.getFailedCode());
 
@@ -301,10 +307,12 @@ public class UconExecutionWorkflow {
                 context.getRequest().getActionType(),
                 context.getRequest().getDecision(),
                 phase.name(),
+                predicate.name(),
                 context.getRequest().getStudentId(),
                 context.getRequest().getClassId(),
                 decision.getFailedPolicy(),
                 decision.getFailedCode(),
+                context.getUsageSession() != null ? context.getUsageSession().getStatus().name() : SessionStatus.FAILED.name(),
                 DenyReasonCatalog.explanationFor(decision.getFailedCode()),
                 messageForPhase(phase, decision.getFailedCode()),
                 trace);

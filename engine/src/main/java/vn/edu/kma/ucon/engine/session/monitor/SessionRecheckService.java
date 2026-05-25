@@ -22,6 +22,10 @@ import vn.edu.kma.ucon.engine.session.UsageSession;
 import vn.edu.kma.ucon.engine.session.UsageSessionRepository;
 import vn.edu.kma.ucon.engine.session.UsageSessionService;
 
+/**
+ * Re-evaluates ONGOING UCON policies for active sessions when environment,
+ * object or subject attributes change outside the original request thread.
+ */
 @Service
 public class SessionRecheckService {
 

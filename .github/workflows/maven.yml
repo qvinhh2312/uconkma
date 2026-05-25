@@ -20,6 +20,9 @@ jobs:
           java-version: "21"
           cache: maven
 
+      - name: Check repository formatting
+        run: mvn -f engine/pom.xml -Pformat-check spotless:check
+
       - name: Build DSL module
         run: mvn -f dsl/pom.xml clean install
 

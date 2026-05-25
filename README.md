@@ -201,6 +201,7 @@ Project da co:
   - `maven-surefire-plugin`
   - `maven-enforcer-plugin`
   - `jacoco-maven-plugin`
+  - `spotless-maven-plugin` profile `format-check`
 - local coverage from `JaCoCo`:
   - line coverage: `80.39%`
   - branch coverage: `60.66%`
@@ -250,6 +251,8 @@ mvn spring-boot:run
 cd engine
 mvn -Pformat-check spotless:check
 ```
+
+GitHub Actions cung chay buoc format check nay truoc khi build DSL va test engine.
 
 Neu dung Windows va Maven bundle trong repo, co the thay `mvn` bang
 `.\apache-maven-3.9.6\bin\mvn.cmd` sau khi `cd` vao module tuong ung.

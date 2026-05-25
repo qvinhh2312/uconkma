@@ -21,6 +21,8 @@ cd engine
 mvn -Pformat-check spotless:check
 ```
 
+GitHub Actions also runs the same format check before building DSL and testing engine.
+
 ## Result
 
 ```text
@@ -31,7 +33,7 @@ DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Full engine suite completed locally in about `67 s` on the current machine snapshot.
+Full engine suite completed locally in about `56 s` on the current machine snapshot.
 
 Spotless format check:
 
