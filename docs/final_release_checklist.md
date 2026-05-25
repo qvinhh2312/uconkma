@@ -12,6 +12,7 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | Spotless check pass | `[x]` | `mvn -Pformat-check spotless:check` |
 | JaCoCo coverage >= 80% line | `[x]` | line coverage `80.39%`, branch coverage `60.66%` |
 | No minified artifact | `[x]` | `ArtifactFormattingTest` + Spotless profile |
+| Raw GitHub files readable | `[x]` | `tools/verify-raw-format.ps1`, see `docs/raw_github_format_verification.md` |
 | XMI/Ecore conformance test pass | `[x]` | `XmiEcoreConformanceTest` |
 | Controller runtime flow test pass | `[x]` | `ControllerRuntimeFlowTest` |
 | Race condition test pass | `[x]` | race cases in engine integration suite |

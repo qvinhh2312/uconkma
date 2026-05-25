@@ -292,12 +292,13 @@ Neu can viet bao cao / bao ve:
 7. [docs/test-result.md](docs/test-result.md)
 8. [docs/final_code_quality_checklist.md](docs/final_code_quality_checklist.md)
 9. [docs/final_release_checklist.md](docs/final_release_checklist.md)
-10. [docs/benchmark_result.md](docs/benchmark_result.md)
-11. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
-12. [docs/mutation_testing.md](docs/mutation_testing.md)
-13. [docs/generated/policies.md](docs/generated/policies.md)
-14. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
-15. [docs/generated/validation_report.md](docs/generated/validation_report.md)
+10. [docs/raw_github_format_verification.md](docs/raw_github_format_verification.md)
+11. [docs/benchmark_result.md](docs/benchmark_result.md)
+12. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
+13. [docs/mutation_testing.md](docs/mutation_testing.md)
+14. [docs/generated/policies.md](docs/generated/policies.md)
+15. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
+16. [docs/generated/validation_report.md](docs/generated/validation_report.md)
 
 Neu can chay demo:
 

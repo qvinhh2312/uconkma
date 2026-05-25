@@ -21,6 +21,10 @@ cd engine
 mvn -Pformat-check spotless:check
 ```
 
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\verify-raw-format.ps1
+```
+
 GitHub Actions also runs the same format check before building DSL and testing engine.
 
 ## Result
@@ -40,6 +44,12 @@ Spotless format check:
 ```text
 BUILD SUCCESS
 Spotless.Format is keeping 78 files clean - 0 needs changes to be clean
+```
+
+Raw GitHub format check:
+
+```text
+Raw GitHub formatting verification passed.
 ```
 
 ## Coverage
