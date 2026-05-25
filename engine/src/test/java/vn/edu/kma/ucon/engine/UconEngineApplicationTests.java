@@ -23,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 
 import vn.edu.kma.ucon.engine.pep.ApiDecisionResponse;
@@ -34,6 +35,7 @@ import vn.edu.kma.ucon.engine.pdp.DecisionTrace;
 import vn.edu.kma.ucon.engine.pdp.Environment;
 import vn.edu.kma.ucon.engine.pdp.MaintenanceFlag;
 import vn.edu.kma.ucon.engine.pdp.PolicyAnalysisReport;
+import vn.edu.kma.ucon.engine.pdp.PolicyAdministrationPoint;
 import vn.edu.kma.ucon.engine.pdp.PolicyAnalyzer;
 import vn.edu.kma.ucon.engine.pdp.PolicyDecisionPoint;
 import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
@@ -55,6 +57,9 @@ import vn.edu.kma.ucon.engine.session.SessionStatus;
 import vn.edu.kma.ucon.engine.session.UsageSession;
 import vn.edu.kma.ucon.engine.session.UsageSessionRepository;
 import vn.edu.kma.ucon.engine.session.UsageSessionService;
+import vn.edu.kma.ucon.engine.session.monitor.ClassStatusChangedEvent;
+import vn.edu.kma.ucon.engine.session.monitor.MaintenanceEnabledEvent;
+import vn.edu.kma.ucon.engine.session.monitor.StudentHoldAddedEvent;
 import vn.edu.kma.ucon.engine.update.RollbackManager;
 import vn.edu.kma.ucon.engine.update.UpdateManager;
 import vn.edu.kma.ucon.engine.update.UpdatePlan;
@@ -89,11 +94,15 @@ class UconEngineApplicationTests {
     @Autowired
     PolicyAnalyzer policyAnalyzer;
     @Autowired
+    PolicyAdministrationPoint policyAdministrationPoint;
+    @Autowired
     AttributeSchema attributeSchema;
     @Autowired
     UsageSessionRepository usageSessionRepository;
     @Autowired
     UsageSessionService usageSessionService;
+    @Autowired
+    ApplicationEventPublisher eventPublisher;
     @Autowired
     UpdateManager updateManager;
     @Autowired
@@ -489,7 +498,10 @@ class UconEngineApplicationTests {
                 throw new IllegalStateException("forced semantic failure");
             }
         }, attributeSchema);
-        PolicyDecisionPoint pdp = new PolicyDecisionPoint(failingValidator, new PolicyAnalyzer());
+        PolicyDecisionPoint pdp = new PolicyDecisionPoint(
+                failingValidator,
+                new PolicyAnalyzer(),
+                new PolicyAdministrationPoint());
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, pdp::init);
         assertTrue(ex.getMessage().contains("PDP startup failed"));
@@ -758,6 +770,74 @@ class UconEngineApplicationTests {
         assertTrue(report.warnings().stream().anyMatch(w -> "CONFLICTING_PRIORITY".equals(w.type())));
     }
 
+    @Test
+    @DisplayName("PolicyAdministrationPoint keeps only ACTIVE policies in the runtime model")
+    void test30_PolicyAdministrationPointKeepsOnlyActivePolicies() {
+        EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        EObject targetPolicy = findPolicyById(copiedRoot, "P01_TuitionPaid_PreA0");
+        targetPolicy.eSet(targetPolicy.eClass().getEStructuralFeature("policyStatus"),
+                enumLiteral(targetPolicy, "PolicyStatus", "DEPRECATED"));
+
+        EObject filteredRoot = policyAdministrationPoint.activateValidatedPolicies(copiedRoot);
+
+        @SuppressWarnings("unchecked")
+        List<EObject> filteredPolicies = (List<EObject>) filteredRoot.eGet(filteredRoot.eClass().getEStructuralFeature("policies"));
+        assertTrue(filteredPolicies.stream().noneMatch(p -> "P01_TuitionPaid_PreA0".equals(
+                p.eGet(p.eClass().getEStructuralFeature("policyId")))));
+
+        @SuppressWarnings("unchecked")
+        List<EObject> policySets = (List<EObject>) filteredRoot.eGet(filteredRoot.eClass().getEStructuralFeature("policySets"));
+        @SuppressWarnings("unchecked")
+        List<String> policyIds = (List<String>) policySets.get(0).eGet(policySets.get(0).eClass().getEStructuralFeature("policyIds"));
+        assertFalse(policyIds.contains("P01_TuitionPaid_PreA0"));
+    }
+
+    @Test
+    @DisplayName("Ongoing monitor revokes an ACTIVE session when class status changes")
+    void test31_OngoingMonitorRevokesActiveSession_WhenClassStatusChanges() {
+        UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
+        ClassSection cls = classRepo.findById("CS102_01").orElseThrow();
+        cls.setStatus("LOCKED");
+        classRepo.save(cls);
+
+        eventPublisher.publishEvent(new ClassStatusChangedEvent("CS102_01", "LOCKED"));
+
+        UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
+        assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
+        assertEquals("CLASS_STATUS_CHANGED", reloaded.getRevokeReason());
+        assertEquals("DENY", auditRepo.findTopByRequestIdOrderByIdDesc(session.getRequestId()).orElseThrow().getDecision());
+    }
+
+    @Test
+    @DisplayName("Ongoing monitor revokes an ACTIVE session when maintenance is enabled")
+    void test32_OngoingMonitorRevokesActiveSession_WhenMaintenanceEnabled() {
+        UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
+        maintenanceFlag.setActive(true);
+
+        eventPublisher.publishEvent(new MaintenanceEnabledEvent(true));
+
+        UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
+        assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
+        assertEquals("SYSTEM_UNDER_MAINTENANCE", reloaded.getRevokeReason());
+        assertEquals("DENY", auditRepo.findTopByRequestIdOrderByIdDesc(session.getRequestId()).orElseThrow().getDecision());
+    }
+
+    @Test
+    @DisplayName("Ongoing monitor revokes an ACTIVE session when a student hold is added")
+    void test33_OngoingMonitorRevokesActiveSession_WhenStudentHoldAdded() {
+        UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        student.setHolds("DISCIPLINARY_HOLD");
+        studentRepo.save(student);
+
+        eventPublisher.publishEvent(new StudentHoldAddedEvent("SV001", "DISCIPLINARY_HOLD"));
+
+        UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
+        assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
+        assertEquals("STUDENT_ON_HOLD", reloaded.getRevokeReason());
+        assertEquals("DENY", auditRepo.findTopByRequestIdOrderByIdDesc(session.getRequestId()).orElseThrow().getDecision());
+    }
+
     private void runConcurrentRegister(String studentId,
                                        AtomicInteger successCount,
                                        AtomicInteger failCount,
@@ -789,6 +869,18 @@ class UconEngineApplicationTests {
         req.setAdminOverride(false);
         req.setSessionLeaseValid(true);
         return req;
+    }
+
+    private UsageSession createActiveUsageSession(String studentId, String classId, String actionType) {
+        UconRequest request = new UconRequest();
+        request.setRequestId(UUID.randomUUID().toString());
+        request.setStudentId(studentId);
+        request.setClassId(classId);
+        request.setActionType(actionType);
+        request.setConfirmedRegistrationRule(true);
+        request.setAdminOverride(false);
+        request.setSessionLeaseValid(true);
+        return usageSessionService.createActive(request);
     }
 
     private UconRequest dropRequest() {

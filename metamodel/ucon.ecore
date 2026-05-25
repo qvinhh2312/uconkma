@@ -33,6 +33,13 @@
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="targetAction" lowerBound="1" eType="#//ActionType"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="priority" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="effect" lowerBound="1" eType="#//PolicyEffect"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="source" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="version" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="policyStatus" lowerBound="1" eType="#//PolicyStatus"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="uconVariant" lowerBound="1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="denyReason" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
     
     <eStructuralFeatures xsi:type="ecore:EReference" name="condition" lowerBound="1"
@@ -75,6 +82,14 @@
   <eClassifiers xsi:type="ecore:EEnum" name="PolicyEffect">
     <eLiterals name="PERMIT" value="0"/>
     <eLiterals name="DENY" value="1"/>
+  </eClassifiers>
+
+  <eClassifiers xsi:type="ecore:EEnum" name="PolicyStatus">
+    <eLiterals name="DRAFT" value="0"/>
+    <eLiterals name="VALIDATED" value="1"/>
+    <eLiterals name="ACTIVE" value="2"/>
+    <eLiterals name="DEPRECATED" value="3"/>
+    <eLiterals name="ARCHIVED" value="4"/>
   </eClassifiers>
 
   <eClassifiers xsi:type="ecore:EEnum" name="CombiningAlgorithm">

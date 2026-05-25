@@ -10,10 +10,14 @@ policy: 'policy' ID '{'
         'targetAction:' actionType
         'effect:' policyEffect
         'priority:' INT
-        'description:' STRING
-        'subjectType:' STRING
-        'objectType:' STRING
-        ('denyReason:' STRING)?
+        'description:' descriptionValue=STRING
+        'subjectType:' subjectTypeValue=STRING
+        'objectType:' objectTypeValue=STRING
+        'source:' sourceValue=STRING
+        'version:' versionValue=STRING
+        'policyStatus:' policyStatusType
+        'uconVariant:' uconVariantValue=STRING
+        ('denyReason:' denyReasonValue=STRING)?
         'condition:' expression
         ('preUpdates:' preUpdates+=updateStatement+)?
         ('ongoingUpdates:' ongoingUpdates+=updateStatement+)?
@@ -26,6 +30,7 @@ phaseType: 'PRE' | 'ONGOING' | 'POST';
 updateTiming: 'NONE' | 'PRE' | 'ONGOING' | 'POST';
 actionType: 'REGISTER' | 'DROP' | 'ANY';
 policyEffect: 'PERMIT' | 'DENY';
+policyStatusType: 'DRAFT' | 'VALIDATED' | 'ACTIVE' | 'DEPRECATED' | 'ARCHIVED';
 policySet: 'policySet' ID '{'
            'combiningAlgorithm:' combiningAlgorithm
            'policies:' ID (',' ID)*

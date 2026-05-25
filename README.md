@@ -1,116 +1,193 @@
-# UCON_KMA
+# UCONKMA
 
-He thong nghien cuu va hien thuc mo hinh UCON cho bai toan dang ky hoc phan tai KMA.
+![Maven CI](https://github.com/qvinhh2312/uconkma/actions/workflows/maven.yml/badge.svg)
 
-## Muc tieu
+He thong nghien cuu va hien thuc mo hinh `UCON` cho bai toan dang ky hoc phan tai KMA.
 
-Project nay dung DSL rieng de dac ta policy UCON, sinh XMI policy model, va thuc thi policy o runtime tren Spring Boot.
+## 1. Muc tieu de tai
 
-Ban hien tai da duoc nang cap theo huong `UCONKMA v2` voi khung:
+Project nay dung DSL rieng de:
+
+- dac ta policy UCON theo `Authorization / Obligation / Condition`
+- sinh `XMI policy model` tu DSL
+- nap policy model vao `PDP`
+- danh gia request `REGISTER / DROP` o runtime
+- cap nhat mutable attributes, rollback, trace, audit
+
+Ban hien tai da duoc nang cap theo huong `UCONKMA v2/v3-ready` voi:
 
 - `predicate`: `AUTHORIZATION`, `OBLIGATION`, `CONDITION`
 - `phase`: `PRE`, `ONGOING`, `POST`
 - `updateTiming`: `NONE`, `PRE`, `ONGOING`, `POST`
+- `policy metadata`: `source`, `version`, `policyStatus`, `uconVariant`
 
-Tu do, project khong con chi la bo 3 policy type co dinh, ma da bieu dien ro hon tinh chat `A/B/C`, `mutability` va `continuity` cua UCON.
+## 2. UCON trong project nay
 
-## Anh xa UCON trong project
+Anh xa UCON trong repo:
 
 - `Subject`: `Student`
 - `Object`: `ClassSection`
 - `Right/Action`: `REGISTER`, `DROP`
 - `Environment`: registration phase, current date, semester, maintenance flag
 
-## Kien truc tong quat
+Project the hien ro:
 
-```text
-PAP (DSL + XMI)
-  dsl/ucon_policy.dsl
-  -> parser / transformer
-  -> xmi/ucon_policy.xmi
+- `Authorization`
+- `Obligation`
+- `Condition`
+- `mutability`
+- `continuity`
+- `traceability`
 
-PEP
-  RegistrationController
-  Nhan request REST /api/register va /api/drop
+## 3. Kien truc PEP / PDP / PIP / PAP
 
-PDP
-  PolicyDecisionPoint + PolicyEngine
-  Load model XMI, loc policy theo phase/action, evaluate condition, tra decision
-
-PIP
-  StudentRepository, ClassSectionRepository, RegistrationRepository, AuditLogRepository
-  Cung cap thuoc tinh subject, object, environment, request
-
-Post-update / Trace
-  ExpressionEvaluator
-  Cap nhat state, tao/xoa Registration, ghi AuditLog
-
-Verification / Analysis
-  attribute-schema.yml
-  PolicyValidator
-  PolicyAnalyzer
-  DomainInvariantChecker
+```mermaid
+flowchart LR
+    PAP[DSL + Ecore + XMI] --> PDP[PolicyDecisionPoint / PolicyEngine]
+    PIP[Repositories + Environment + Request] --> PDP
+    PEP[RegistrationController] --> PDP
+    PDP --> UPD[UpdateManager / RollbackManager]
+    PDP --> TRACE[DecisionTrace / AuditLog]
+    UPD --> TRACE
 ```
 
-## Ghi chu ve UCON hien tai
+Thanh phan chinh:
 
-Project da the hien ro tinh chat UCON qua:
+- `PAP`
+  - `dsl/ucon_policy.dsl`
+  - `metamodel/ucon.ecore`
+  - `xmi/ucon_policy.xmi`
+- `PEP`
+  - `RegistrationController`
+- `PDP`
+  - `PolicyDecisionPoint`
+  - `PolicyEngine`
+  - `AuthorizationEvaluator`
+  - `ConditionEvaluator`
+  - `ObligationEvaluator`
+- `PIP`
+  - `StudentRepository`
+  - `ClassSectionRepository`
+  - `RegistrationRepository`
+  - `AuditLogRepository`
+- `Continuous monitoring`
+  - `OngoingMonitor`
+  - `SessionRecheckService`
+  - `ClassStatusChangedEvent`
+  - `MaintenanceEnabledEvent`
+  - `StudentHoldAddedEvent`
 
-- `PRE`: chan request truoc hanh dong
-- `ONGOING`: re-check state truoc commit va ho tro ongoing update / rollback
-- `POST`: cap nhat mutable attributes sau khi permit
-- `OBLIGATION`: rang buoc xac nhan quy che, ly do override, audit trace
-- `CONDITION`: rang buoc moi truong nhu registration window, maintenance
+## 4. DSL policy example
 
-Tuy nhien, `ONGOING` hien tai duoc hien thuc duoi dang `transaction-level re-check`, nghia la kiem tra lai o sat thoi diem commit. Project da bo sung `UsageSession` nen co the theo doi `ACTIVE / COMMITTED / REVOKED / FAILED`, nhung chua mo rong thanh co che continuous monitoring cho mot phien su dung dai han.
+```dsl
+policy P20_ReserveSeat_OnA2 {
+    predicate: AUTHORIZATION
+    phase: ONGOING
+    updateTiming: ONGOING
+    targetAction: REGISTER
+    effect: PERMIT
+    priority: 25
+    description: "Giu tam mot cho truoc khi commit dang ky"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    denyReason: "NO_SEAT_TO_RESERVE"
 
-## Cau truc repo
+    condition: (object.enrolled + object.reservedSeats) < object.capacity
 
-```text
-UCON_KMA/
-|- dsl/         Grammar ANTLR, parser, transformer DSL -> XMI
-|- engine/      Spring Boot app, policy engine, REST API, tests
-|- metamodel/   Ecore metamodel
-|- xmi/         Policy model runtime
-|- docs/        Tai lieu ly thuyet, huong dan chay, kich ban demo
+    ongoingUpdates:
+       object.reservedSeats ADD_ASSIGN 1
+
+    rollbackUpdates:
+       object.reservedSeats SUB_ASSIGN 1
+}
 ```
 
-## Cac nhom policy chinh
+## 5. Metamodel va XMI
 
-- `AUTHORIZATION`
-  - hoc phi
-  - duplicate
-  - gioi han tin chi
-  - tien quyet
-  - xung dot lich
-  - suc chua lop
-  - student hold
-- `CONDITION`
-  - registration window
-  - maintenance
-- `OBLIGATION`
-  - xac nhan quy che dang ky
-  - ly do override
-  - audit trace
-- `UPDATES`
-  - `PRE`: tang `registerAttemptCount`
-  - `ONGOING`: `reservedSeats` + rollback
-  - `POST`: cap nhat `enrolled/currentCredits/tuitionDebt`, tao/xoa `Registration`, ghi `AuditLog`
+Pipeline hien tai:
 
-## Verification va Analysis
+```text
+DSL policy
+-> ANTLR parser / AST visitor
+-> EMF PolicyModel
+-> xmi/ucon_policy.xmi
+-> PolicyDecisionPoint load
+-> PolicyEngine evaluate
+-> DecisionTrace / AuditLog
+```
 
-Project da co them:
+Artifact chinh:
+
+- [dsl/UconPolicy.g4](dsl/UconPolicy.g4)
+- [metamodel/ucon.ecore](metamodel/ucon.ecore)
+- [xmi/ucon_policy.xmi](xmi/ucon_policy.xmi)
+- [dsl/src/main/java/vn/edu/kma/ucon/parser/UconDslToXmiParser.java](dsl/src/main/java/vn/edu/kma/ucon/parser/UconDslToXmiParser.java)
+
+`XMI` hien tai da duoc lam ro hon theo `Ecore`:
+
+- policy ghi explicit `predicate`, `phase`, `updateTiming`, `targetAction`, `effect`
+- policy ghi explicit `source`, `version`, `policyStatus`, `uconVariant`
+- `VariableAccess` ghi explicit `entity`
+- `LogicalOperator` / `RelationalOperator` ghi explicit `operator`
+
+`PolicyDecisionPoint` hien tai load model theo trinh tu:
+
+1. load `PolicyModel` tu `XMI`
+2. semantic validate
+3. policy analyze
+4. `PolicyAdministrationPoint` loc chi giu `ACTIVE` policies cho runtime
+
+## 6. Policy coverage
+
+Nhung bien the UCONABC da bao phu tot:
+
+- `preA0`, `preA1`
+- `preB0`
+- `preC0`
+- `onA0`, `onA2`
+- `onB0`
+- `onC0`
+- `postA3`
+- `postB3`
+
+Policy tieu bieu:
+
+- `P01_TuitionPaid_PreA0`
+- `P02_TransactionWindow_PreC0`
+- `P17_AgreeRegistrationRule_PreB0`
+- `P20_ReserveSeat_OnA2`
+- `P27_SessionLease_OnB0`
+- `P12_AuditAndTrace_PostB3`
+
+Chi tiet:
+
+- [docs/ucon_mapping.md](docs/ucon_mapping.md)
+- [docs/ucon_coverage_report.md](docs/ucon_coverage_report.md)
+- [docs/policy_catalog.md](docs/policy_catalog.md)
+
+## 7. Verification va analysis
+
+Project da co:
 
 - `attribute-schema.yml`
-  - khai bao mutable / immutable cho `subject`, `object`, `environment`, `request`
+  - mutable / immutable schema
 - `PolicyValidator`
-  - validate policy model theo semantic rules va schema rules
+  - semantic + schema validation
 - `PolicyAnalyzer`
-  - canh bao thieu audit, missing rollback, priority collision, shadowing, conflict, stateful mutation can invariant-check
+  - `missing rollback`
+  - `missing audit`
+  - `priority collision`
+  - `shadowing`
+  - `conflicting priority`
+  - `redundant policy`
+  - `unsafe update`
+  - `incomplete DROP flow`
 - `DomainInvariantChecker`
-  - giu cac bat bien runtime nhu `enrolled <= capacity`, `tuitionDebt >= 0`
+  - `enrolled <= capacity`
+  - `tuitionDebt >= 0`
+  - `currentCredits <= maxCreditsEffective`
 
-## Cach build nhanh
+## 8. Build / test / run
 
 ### Build DSL
 
@@ -119,30 +196,30 @@ cd e:\UCON_KMA\dsl
 .\apache-maven-3.9.6\bin\mvn.cmd clean install
 ```
 
-### Chay full test engine
+### Test engine
 
 ```powershell
 cd e:\UCON_KMA\engine
 .\apache-maven-3.9.6\bin\mvn.cmd clean test
 ```
 
-### Chay theo test/policy id
+### Run theo test / policy id
 
 ```powershell
 cd e:\UCON_KMA\engine
-.\run.bat P01
-.\run.bat T01
-.\run.bat REPORT
+.\run-test.ps1 T01
+.\run-test.ps1 P20
+.\run-test.ps1 REPORT
 ```
 
-### Chay app runtime
+### Run Spring Boot app
 
 ```powershell
 cd e:\UCON_KMA\engine
 .\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
 ```
 
-## REST API runtime
+## 9. REST API demo
 
 Endpoint chinh:
 
@@ -150,7 +227,7 @@ Endpoint chinh:
 - `POST /api/drop`
 - `GET /api/demo/state`
 
-Response runtime hien tai tra ve JSON co traceability, vi du:
+Response deny co traceability:
 
 ```json
 {
@@ -158,36 +235,15 @@ Response runtime hien tai tra ve JSON co traceability, vi du:
   "action": "REGISTER",
   "decision": "DENY",
   "phase": "PRE",
-  "studentId": "SV002",
-  "classId": "CS102_01",
   "failedPolicy": "P01_TuitionPaid_PreA0",
   "denyReason": "TUITION_NOT_PAID",
-  "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra.",
-  "message": "DENIED_PREAUTH: TUITION_NOT_PAID",
-  "decisionTrace": {
-    "requestId": "demo-1",
-    "action": "REGISTER",
-    "decision": "DENY"
-  }
+  "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra."
 }
 ```
 
-## Tai lieu nen doc
+## 10. Tai lieu quan trong trong docs
 
-Neu can chay va demo:
-
-1. [docs/guides/HUONG_DAN_CHAY_CHI_TIET.md](docs/guides/HUONG_DAN_CHAY_CHI_TIET.md)
-2. [docs/guides/HUONG_DAN_REST_API_CHUAN.md](docs/guides/HUONG_DAN_REST_API_CHUAN.md)
-3. [docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md](docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md)
-
-Neu can doc ly thuyet:
-
-1. [docs/chapter1_theory/chapter_1_2_theory.md](docs/chapter1_theory/chapter_1_2_theory.md)
-2. [docs/chapter3_kma_model/chapter_3_logic.md](docs/chapter3_kma_model/chapter_3_logic.md)
-3. [docs/chapter4_dsl/chapter_4_1_metamodel.md](docs/chapter4_dsl/chapter_4_1_metamodel.md)
-4. [docs/chapter4_dsl/chapter_4_2_grammar.md](docs/chapter4_dsl/chapter_4_2_grammar.md)
-
-Neu can bo sung noi dung hoc thuat de viet bao cao hoac bao ve:
+Neu can viet bao cao / bao ve:
 
 1. [docs/ucon_mapping.md](docs/ucon_mapping.md)
 2. [docs/ucon_coverage_report.md](docs/ucon_coverage_report.md)
@@ -198,3 +254,29 @@ Neu can bo sung noi dung hoc thuat de viet bao cao hoac bao ve:
 7. [docs/test-result.md](docs/test-result.md)
 8. [docs/benchmark_result.md](docs/benchmark_result.md)
 9. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
+
+Neu can chay demo:
+
+1. [docs/guides/HUONG_DAN_CHAY_CHI_TIET.md](docs/guides/HUONG_DAN_CHAY_CHI_TIET.md)
+2. [docs/guides/HUONG_DAN_REST_API_CHUAN.md](docs/guides/HUONG_DAN_REST_API_CHUAN.md)
+3. [docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md](docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md)
+
+## 11. Ket qua hien tai
+
+Baseline da verify:
+
+- `engine`: `Tests run: 33, Failures: 0, Errors: 0, Skipped: 0`
+- `dsl`: `BUILD SUCCESS`
+
+## 12. Known limitations
+
+Repo hien tai da rat gan tinh than UCON, nhung van con gioi han ro rang:
+
+- chua bao phu day du toan bo `24` bien the con cua `UCONABC`
+- `ONGOING` hien da co ca `transaction-level re-check` va `event-driven revoke` cho `ACTIVE` sessions, nhung chua la mot monitoring ha tang dai han phuc tap
+- chua co scheduler / distributed event bus cho `long-running continuous monitoring` day du
+- `PolicyAnalyzer` la heuristic analyzer, chua dung `SMT/solver`
+- benchmark hien tai moi o muc baseline thuc nghiem nho
+- PAP/lifecycle hien da co `policyStatus` va runtime chi load `ACTIVE` policies, nhung chua day du toi muc `DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED`
+
+Nhung gioi han nay da duoc ghi ro trong docs de tranh mo ta qua muc so voi pham vi do an.

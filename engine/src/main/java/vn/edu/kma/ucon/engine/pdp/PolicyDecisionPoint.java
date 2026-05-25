@@ -23,13 +23,17 @@ public class PolicyDecisionPoint {
     private static final Logger log = LoggerFactory.getLogger(PolicyDecisionPoint.class);
     private final PolicyValidator policyValidator;
     private final PolicyAnalyzer policyAnalyzer;
+    private final PolicyAdministrationPoint policyAdministrationPoint;
     
     private EObject policyModelRoot;
     private EPackage uconPackage;
 
-    public PolicyDecisionPoint(PolicyValidator policyValidator, PolicyAnalyzer policyAnalyzer) {
+    public PolicyDecisionPoint(PolicyValidator policyValidator,
+                               PolicyAnalyzer policyAnalyzer,
+                               PolicyAdministrationPoint policyAdministrationPoint) {
         this.policyValidator = policyValidator;
         this.policyAnalyzer = policyAnalyzer;
+        this.policyAdministrationPoint = policyAdministrationPoint;
     }
 
     @PostConstruct
@@ -54,16 +58,17 @@ public class PolicyDecisionPoint {
             if (!xmiFile.exists()) xmiFile = new File("xmi/ucon_policy.xmi");
             if (!xmiFile.exists()) xmiFile = new File(System.getProperty("user.dir"), "xmi/ucon_policy.xmi");
             Resource xmiResource = resSet.getResource(URI.createFileURI(xmiFile.getAbsolutePath()), true);
-            this.policyModelRoot = xmiResource.getContents().get(0);
-            policyValidator.validate(policyModelRoot);
-            PolicyAnalysisReport analysisReport = policyAnalyzer.analyze(policyModelRoot);
+            EObject rawPolicyModel = xmiResource.getContents().get(0);
+            policyValidator.validate(rawPolicyModel);
+            PolicyAnalysisReport analysisReport = policyAnalyzer.analyze(rawPolicyModel);
             analysisReport.warnings().forEach(warning ->
                     log.warn("Policy analysis warning [{}] {}: {}",
                             warning.type(), warning.policy(), warning.message()));
+            this.policyModelRoot = policyAdministrationPoint.activateValidatedPolicies(rawPolicyModel);
 
             @SuppressWarnings("unchecked")
             List<EObject> policies = (List<EObject>) policyModelRoot.eGet(((org.eclipse.emf.ecore.EClass) uconPackage.getEClassifier("PolicyModel")).getEStructuralFeature("policies"));
-            log.info("Loaded {} policies with {} analysis warnings.", policies.size(), analysisReport.warnings().size());
+            log.info("Loaded {} ACTIVE policies with {} analysis warnings.", policies.size(), analysisReport.warnings().size());
             
         } catch (Exception e) {
             log.error("Failed to load UCON Policy Engine files!", e);

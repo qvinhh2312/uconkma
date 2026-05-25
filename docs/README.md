@@ -56,6 +56,8 @@ Nhom nay dung cho:
 - bao cao coverage UCONABC va gioi han hien tai
 - policy catalog theo ID thuc te trong repo
 - giai thich pipeline `DSL -> Ecore -> XMI -> Engine`
+- giai thich `policy metadata` va `ACTIVE-only PAP filtering`
+- giai thich `event-driven revoke` va `ACTIVE session recheck`
 - tong hop luat validator, invariant, analyzer
 - mau `DecisionTrace` de dua vao bao cao
 - ket qua test chinh thuc cua ban hien tai

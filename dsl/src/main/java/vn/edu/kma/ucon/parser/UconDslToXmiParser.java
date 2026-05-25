@@ -7,6 +7,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -22,6 +30,10 @@ import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 
 
@@ -59,12 +71,81 @@ public class UconDslToXmiParser {
         saveOptions.put(XMLResource.OPTION_KEEP_DEFAULT_CONTENT, Boolean.TRUE);
         saveOptions.put(XMLResource.OPTION_FORMATTED, Boolean.TRUE);
         xmiResource.save(saveOptions);
+        normalizeSerializedXmi(xmiOutputFile);
         System.out.println("Serialization complete! File saved at: " + xmiOutputFile.getAbsolutePath());
 
         // 5. Round-trip validation
         Resource checkResource = resSet.getResource(URI.createFileURI(xmiOutputFile.getAbsolutePath()), true);
         checkResource.load(Collections.EMPTY_MAP);
         System.out.println("Round-trip validation success. Loaded elements: " + checkResource.getContents().size());
+    }
+
+    private static void normalizeSerializedXmi(File xmiOutputFile) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(xmiOutputFile);
+
+        normalizeElement(document.getDocumentElement());
+
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "ASCII");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+        transformer.transform(new DOMSource(document), new StreamResult(xmiOutputFile));
+    }
+
+    private static void normalizeElement(Element element) {
+        switch (element.getTagName()) {
+            case "policies" -> normalizePolicyElement(element);
+            case "policySets" -> setDefaultAttribute(element, "combiningAlgorithm", "DENY_OVERRIDES");
+            case "target" -> setDefaultAttribute(element, "entity", "SUBJECT");
+            default -> {
+            }
+        }
+
+        String xsiType = element.getAttribute("xsi:type");
+        switch (xsiType) {
+            case "ucon:VariableAccess" -> setDefaultAttribute(element, "entity", "SUBJECT");
+            case "ucon:RelationalOperator" -> setDefaultAttribute(element, "operator", "EQUALS");
+            case "ucon:LogicalOperator" -> setDefaultAttribute(element, "operator", "AND");
+            case "ucon:ArithmeticOperator" -> setDefaultAttribute(element, "operator", "ADD");
+            case "ucon:Constant" -> setDefaultAttribute(element, "type", inferConstantType(element.getAttribute("value")));
+            default -> {
+            }
+        }
+
+        NodeList children = element.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child instanceof Element childElement) {
+                normalizeElement(childElement);
+            }
+        }
+    }
+
+    private static void normalizePolicyElement(Element element) {
+        setDefaultAttribute(element, "predicate", "AUTHORIZATION");
+        setDefaultAttribute(element, "phase", "PRE");
+        setDefaultAttribute(element, "updateTiming", "NONE");
+        setDefaultAttribute(element, "targetAction", "REGISTER");
+        setDefaultAttribute(element, "effect", "PERMIT");
+    }
+
+    private static void setDefaultAttribute(Element element, String attributeName, String defaultValue) {
+        if (!element.hasAttribute(attributeName) || element.getAttribute(attributeName).isBlank()) {
+            element.setAttribute(attributeName, defaultValue);
+        }
+    }
+
+    private static String inferConstantType(String value) {
+        if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+            return "BOOLEAN";
+        }
+        if (value != null && value.matches("-?\\d+")) {
+            return "INTEGER";
+        }
+        return "STRING";
     }
 }
 
@@ -112,13 +193,17 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
         policy.eSet(getCls("Policy").getEStructuralFeature("targetAction"), getEnumVal("ActionType", ctx.actionType().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("effect"), getEnumVal("PolicyEffect", ctx.policyEffect().getText()));
         policy.eSet(getCls("Policy").getEStructuralFeature("priority"), Integer.parseInt(ctx.INT().getText()));
-        policy.eSet(getCls("Policy").getEStructuralFeature("description"), ctx.STRING(0).getText().replace("\"", ""));
-        policy.eSet(getCls("Policy").getEStructuralFeature("subjectType"), ctx.STRING(1).getText().replace("\"", ""));
-        policy.eSet(getCls("Policy").getEStructuralFeature("objectType"), ctx.STRING(2).getText().replace("\"", ""));
+        policy.eSet(getCls("Policy").getEStructuralFeature("description"), unquote(ctx.descriptionValue.getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("subjectType"), unquote(ctx.subjectTypeValue.getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("objectType"), unquote(ctx.objectTypeValue.getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("source"), unquote(ctx.sourceValue.getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("version"), unquote(ctx.versionValue.getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("policyStatus"),
+                getEnumVal("PolicyStatus", ctx.policyStatusType().getText()));
+        policy.eSet(getCls("Policy").getEStructuralFeature("uconVariant"), unquote(ctx.uconVariantValue.getText()));
         
-        if (ctx.STRING().size() > 3) {
-            String denyReasonStr = ctx.STRING(3).getText().replace("\"", "");
-            policy.eSet(getCls("Policy").getEStructuralFeature("denyReason"), denyReasonStr);
+        if (ctx.denyReasonValue != null) {
+            policy.eSet(getCls("Policy").getEStructuralFeature("denyReason"), unquote(ctx.denyReasonValue.getText()));
         }
 
         EObject condition = visit(ctx.expression());
@@ -363,5 +448,9 @@ class UconAstVisitor extends UconPolicyBaseVisitor<EObject> {
             obj.eSet(getCls("DeleteTransactionStatement").getEStructuralFeature("arguments"), args);
         }
         return obj;
+    }
+
+    private String unquote(String text) {
+        return text == null ? null : text.replace("\"", "");
     }
 }

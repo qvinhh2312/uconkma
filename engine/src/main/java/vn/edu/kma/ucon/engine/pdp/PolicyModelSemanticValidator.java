@@ -113,6 +113,10 @@ public class PolicyModelSemanticValidator {
 
         ensureBindingPresent(policyId, policy, "subjectType", ALLOWED_SUBJECT_TYPES);
         ensureBindingPresent(policyId, policy, "objectType", ALLOWED_OBJECT_TYPES);
+        ensureStringMetadataPresent(policyId, policy, "source");
+        ensureStringMetadataPresent(policyId, policy, "version");
+        ensureStringMetadataPresent(policyId, policy, "uconVariant");
+        enumName(policy, "policyStatus");
 
         validatePriorityUniqueness(policyId, phase, targetAction, priority, prioritiesPerPhaseAction);
 
@@ -461,6 +465,13 @@ public class PolicyModelSemanticValidator {
         }
         if (!allowedValues.contains(value)) {
             throw new IllegalStateException("Policy " + policyId + " has unsupported " + featureName + ": " + value);
+        }
+    }
+
+    private void ensureStringMetadataPresent(String policyId, EObject policy, String featureName) {
+        String value = stringValue(policy, featureName);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Policy " + policyId + " must define metadata field " + featureName + ".");
         }
     }
 

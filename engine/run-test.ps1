@@ -512,6 +512,78 @@ $cases = @{
             "Policy set co them thong tin de xu ly xung dot truoc khi dua vao runtime"
         )
     }
+    "T30" = @{
+        Method = "test30_PolicyAdministrationPointKeepsOnlyActivePolicies"
+        Title = "PolicyAdministrationPoint chi giu ACTIVE policies cho runtime"
+        Goal = "Chung minh PAP/lifecycle gate loai bo policy khong con ACTIVE truoc khi dua vao PolicyEngine."
+        Phase = "PAP / RUNTIME FILTER"
+        Policies = "PolicyAdministrationPoint, policyStatus"
+        Checks = @(
+            "Sao chep policy model dang active"
+            "Doi policyStatus cua P01_TuitionPaid_PreA0 thanh DEPRECATED"
+            "Chay PolicyAdministrationPoint.activateValidatedPolicies"
+            "Kiem tra P01 bi loai khoi danh sach policies"
+            "Kiem tra PolicySet cung bo tham chieu toi P01"
+        )
+        Result = @(
+            "Runtime chi con giu ACTIVE policies"
+            "PAP/lifecycle co y nghia thuc te thay vi chi nam trong docs"
+        )
+    }
+    "T31" = @{
+        Method = "test31_OngoingMonitorRevokesActiveSession_WhenClassStatusChanges"
+        Title = "Ongoing monitor revoke session khi trang thai lop thay doi"
+        Goal = "Chung minh event-driven monitor co the thu hoi mot ACTIVE session khi object state thay doi sau khi session da duoc mo."
+        Phase = "CONTINUOUS MONITORING / ONGOING"
+        Policies = "P09, OngoingMonitor, SessionRecheckService"
+        Checks = @(
+            "Tao mot UsageSession ACTIVE cho request REGISTER"
+            "Doi status cua lop thanh LOCKED"
+            "Publish ClassStatusChangedEvent"
+            "Kiem tra session bi REVOKED voi ly do CLASS_STATUS_CHANGED"
+            "Kiem tra audit DENY duoc ghi"
+        )
+        Result = @(
+            "Event-driven revoke da hoat dong"
+            "ACTIVE session co the bi thu hoi khi object state khong con thoa UCON ONGOING"
+        )
+    }
+    "T32" = @{
+        Method = "test32_OngoingMonitorRevokesActiveSession_WhenMaintenanceEnabled"
+        Title = "Ongoing monitor revoke session khi maintenance duoc bat"
+        Goal = "Chung minh maintenance event co the quet va revoke ACTIVE sessions dang mo."
+        Phase = "CONTINUOUS MONITORING / ONGOING"
+        Policies = "P13, OngoingMonitor, SessionRecheckService"
+        Checks = @(
+            "Tao mot UsageSession ACTIVE"
+            "Bat maintenance flag"
+            "Publish MaintenanceEnabledEvent"
+            "Kiem tra session bi REVOKED voi ly do SYSTEM_UNDER_MAINTENANCE"
+            "Kiem tra audit DENY duoc ghi"
+        )
+        Result = @(
+            "Maintenance event da kich hoat recheck ongoing"
+            "ACTIVE session bi revoke dung theo UCON condition"
+        )
+    }
+    "T33" = @{
+        Method = "test33_OngoingMonitorRevokesActiveSession_WhenStudentHoldAdded"
+        Title = "Ongoing monitor revoke session khi sinh vien bi them hold"
+        Goal = "Chung minh subject attribute thay doi sau khi session mo co the dan den revoke."
+        Phase = "CONTINUOUS MONITORING / ONGOING"
+        Policies = "P10, OngoingMonitor, SessionRecheckService"
+        Checks = @(
+            "Tao mot UsageSession ACTIVE"
+            "Them hold cho sinh vien"
+            "Publish StudentHoldAddedEvent"
+            "Kiem tra session bi REVOKED voi ly do STUDENT_ON_HOLD"
+            "Kiem tra audit DENY duoc ghi"
+        )
+        Result = @(
+            "Monitor co the recheck theo subject event"
+            "ACTIVE session bi thu hoi khi student state khong con hop le"
+        )
+    }
 }
 
 $aliases = @{
@@ -725,7 +797,7 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T29"
+    Write-Host "  T01..T33"
     Write-Host "  P01..P27"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
     Write-Host "  all       (chay toan bo 29 tests)"

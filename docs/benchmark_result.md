@@ -37,11 +37,13 @@ Ban hien tai tap trung vao 3 thao tac:
 Ban repo hien tai da duoc xac nhan o muc `functional baseline`:
 
 - `mvn clean test` trong `engine` xanh
-- `Tests run: 29, Failures: 0, Errors: 0, Skipped: 0`
-- full engine test suite hoan tat tren may hien tai trong khoang `50.653 s`
+- `Tests run: 33, Failures: 0, Errors: 0, Skipped: 0`
+- full engine test suite hoan tat tren may hien tai trong khoang `43.088 s`
 - co `Authorization`, `Condition`, `Obligation`
 - co `preUpdates`, `ongoingUpdates`, `rollbackUpdates`, `postUpdates`
 - co `UsageSession`, `DecisionTrace`, `PolicyValidator`, `PolicyAnalyzer`
+- co `policy metadata` va `ACTIVE-only PAP filtering`
+- co `event-driven revoke` baseline qua `OngoingMonitor`
 
 ## Doc so lieu benchmark the nao
 

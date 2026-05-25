@@ -20,7 +20,7 @@ dsl/ucon_policy.dsl
 |---|---|
 | `PolicyModel` | Root chua danh sach `policies` va `policySets` |
 | `PolicySet` | Gom nhom policy va `combiningAlgorithm` |
-| `Policy` | Don vi policy chinh, mang `predicate`, `phase`, `updateTiming`, `targetAction`, `effect`, `condition`, updates |
+| `Policy` | Don vi policy chinh, mang `predicate`, `phase`, `updateTiming`, `targetAction`, `effect`, `source`, `version`, `policyStatus`, `uconVariant`, `condition`, updates |
 | `Expression` | Cay bieu thuc cho condition |
 | `VariableAccess` | Truy cap `subject.*`, `object.*`, `environment.*`, `request.*` |
 | `LogicalOperator` | `AND`, `OR`, `NOT` |
@@ -42,6 +42,7 @@ dsl/ucon_policy.dsl
 | `UpdateTiming` | `NONE`, `PRE`, `ONGOING`, `POST` |
 | `ActionType` | `REGISTER`, `DROP`, `ANY` |
 | `PolicyEffect` | `PERMIT`, `DENY` |
+| `PolicyStatus` | `DRAFT`, `VALIDATED`, `ACTIVE`, `DEPRECATED`, `ARCHIVED` |
 | `CombiningAlgorithm` | `DENY_OVERRIDES`, `PERMIT_OVERRIDES`, `FIRST_APPLICABLE`, `PRIORITY_ORDER`, `ONLY_ONE_APPLICABLE` |
 
 ## 4. Anh xa sang runtime Java
@@ -55,8 +56,28 @@ dsl/ucon_policy.dsl
 | Decision | `AuthDecision` |
 | Trace | `DecisionTrace`, `PhaseTrace`, `PolicyTraceEntry` |
 | Session | `UsageSession` |
+| PAP / lifecycle gate | `PolicyAdministrationPoint` |
 
-## 5. Vi sao metamodel nay quan trong
+## 5. Metadata va lifecycle
+
+`Policy` hien tai mang them 4 metadata truc tiep trong DSL, Ecore va XMI:
+
+| Field | Y nghia |
+|---|---|
+| `source` | Nguon nghiep vu / quy che cua policy |
+| `version` | Phien ban policy |
+| `policyStatus` | Trang thai lifecycle de PAP quyet dinh co dua vao runtime hay khong |
+| `uconVariant` | Nhan mapping truc tiep sang bien the UCONABC |
+
+Tai runtime:
+
+1. `PolicyDecisionPoint` load `XMI`
+2. `PolicyValidator` kiem tra tinh hop le
+3. `PolicyAnalyzer` sinh canh bao chat luong
+4. `PolicyAdministrationPoint` loai bo moi policy khong o trang thai `ACTIVE`
+5. `OngoingMonitor` + `SessionRecheckService` co the re-evaluate `ACTIVE` sessions khi event moi truong / subject / object xay ra
+
+## 6. Vi sao metamodel nay quan trong
 
 Metamodel la cau noi hoc thuat giua:
 

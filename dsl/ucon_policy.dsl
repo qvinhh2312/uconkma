@@ -10,6 +10,10 @@ policy P01_TuitionPaid_PreA0 {
     description: "Chi cho phep SV da hoan tat hoc phi"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "TUITION_NOT_PAID"
 
     condition: subject.tuitionPaid == true
@@ -25,6 +29,10 @@ policy P13a_EmergencyMaintenance_PreC0 {
     description: "Chi cho giao dich khi he thong khong o trang thai bao tri"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preC0"
     denyReason: "SYSTEM_UNDER_MAINTENANCE"
 
     condition: environment.isMaintenance == false
@@ -40,6 +48,10 @@ policy P02_TransactionWindow_PreC0 {
     description: "Chi cho giao dich trong dot va gio hop le"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preC0"
     denyReason: "OUTSIDE_TRANSACTION_WINDOW"
 
     condition: environment.registrationPhase IN ["NORMAL", "LATE"]
@@ -57,6 +69,10 @@ policy P03_ClassStatusOpen_PreA0 {
     description: "Chi lop dang mo thuc su moi duoc dang ky"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "CLASS_NOT_OPEN"
 
     condition: object.status == "OPEN"
@@ -72,6 +88,10 @@ policy P04_NotAlreadyRegistered_PreA0 {
     description: "Khong cho dang ky trung cung lop"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "ALREADY_REGISTERED"
 
     condition: NOT checkExistsRegistration(subject.studentId, object.classId, environment.semester)
@@ -87,6 +107,10 @@ policy P16_DropOnlyIfRegistered_PreA0 {
     description: "Chi cho huy lop khi SV da co giao dich dang ky hop le"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "NOT_REGISTERED"
 
     condition: checkExistsRegistration(subject.studentId, object.classId, environment.semester)
@@ -102,10 +126,33 @@ policy P21_DropWindow_PreC0 {
     description: "Chi cho huy hoc phan trong khung thoi gian cho phep"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preC0"
     denyReason: "OUTSIDE_DROP_WINDOW"
 
     condition: environment.currentDateTime >= environment.openTime
                AND environment.currentDateTime <= environment.closeTime
+}
+
+policy P26_MaxDropTimes_PreA0 {
+    predicate: AUTHORIZATION
+    phase: PRE
+    updateTiming: NONE
+    targetAction: DROP
+    effect: PERMIT
+    priority: 63
+    description: "Gioi han so lan huy hoc phan trong hoc ky"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
+    denyReason: "MAX_DROP_TIMES_EXCEEDED"
+
+    condition: subject.dropCountForSemester < environment.maxDropTimes
 }
 
 policy P05_CreditLimit_PreA0 {
@@ -118,6 +165,10 @@ policy P05_CreditLimit_PreA0 {
     description: "Khong vuot tran han muc tin chi thuc te"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "CREDIT_LIMIT_EXCEEDED"
 
     condition: (subject.currentCredits + object.course.credits) <= subject.maxCreditsEffective
@@ -133,6 +184,10 @@ policy P25_MaxRegisterAttempts_PreA0 {
     description: "Gioi han so lan thu dang ky trong mot dot"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "MAX_REGISTER_ATTEMPTS_EXCEEDED"
 
     condition: subject.registerAttemptCount < environment.maxRegisterAttempts
@@ -148,6 +203,10 @@ policy P06_Prerequisite_PreA0 {
     description: "Dam bao da hoan tat mon hoc tien quyet"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "PREREQUISITE_NOT_MET"
 
     condition: object.course.prerequisites SUBSET_OF subject.completedCourses
@@ -163,6 +222,10 @@ policy P17_AgreeRegistrationRule_PreB0 {
     description: "Sinh vien phai xac nhan quy che dang ky truoc khi gui request"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preB0"
     denyReason: "REGULATION_NOT_CONFIRMED"
 
     condition: request.confirmedRegistrationRule == true
@@ -178,6 +241,10 @@ policy P07_ScheduleConflict_PreA0 {
     description: "Tranh trung lich hoc voi cac mon da chon"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA0"
     denyReason: "SCHEDULE_CONFLICT"
 
     condition: NOT (object.scheduleSlots OVERLAPS subject.registeredScheduleSlots)
@@ -193,6 +260,10 @@ policy P18_AdminOverrideReason_PreB0 {
     description: "Neu dung override hoc vu thi phai co ly do"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preB0"
     denyReason: "OVERRIDE_REASON_REQUIRED"
 
     condition: request.adminOverride == false
@@ -209,6 +280,10 @@ policy P19_RegisterAttempt_PreA1 {
     description: "Tang so lan thu dang ky cho moi request hop le o PRE"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "preA1"
 
     condition: true
 
@@ -228,6 +303,10 @@ policy P13_EmergencyMaintenance_OnC0 {
     description: "Ngat giao dich dang lo lung neu Admin kich hoat bao tri khan cap"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "onC0"
     denyReason: "SYSTEM_UNDER_MAINTENANCE"
 
     condition: environment.isMaintenance == false
@@ -243,6 +322,10 @@ policy P08_CapacityRecheck_OnA0 {
     description: "Chong race condition o slot cuoi cung"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "onA0"
     denyReason: "CLASS_FULL_ON_COMMIT"
 
     condition: object.enrolled < object.capacity
@@ -258,6 +341,10 @@ policy P20_ReserveSeat_OnA2 {
     description: "Giu tam mot cho truoc khi commit dang ky"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "onA2"
     denyReason: "NO_SEAT_TO_RESERVE"
 
     condition: (object.enrolled + object.reservedSeats) < object.capacity
@@ -279,6 +366,10 @@ policy P23_DropLockedClass_OnA0 {
     description: "Khong cho huy neu lop bi khoa trong luc xu ly"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "onA0"
     denyReason: "DROP_CLASS_STATUS_CHANGED"
 
     condition: object.status == "OPEN"
@@ -294,24 +385,13 @@ policy P09_ClassStatusRecheck_OnA0 {
     description: "Kiem tra lai trang thai lop phong khi Admin khoa dot xuat"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "onA0"
     denyReason: "CLASS_STATUS_CHANGED"
 
     condition: object.status == "OPEN"
-}
-
-policy P10_StudentHoldRecheck_OnA0 {
-    predicate: AUTHORIZATION
-    phase: ONGOING
-    updateTiming: NONE
-    targetAction: REGISTER
-    effect: PERMIT
-    priority: 10
-    description: "Kiem tra tinh trang hold cua SV truoc commit dang ky"
-    subjectType: "Student"
-    objectType: "ClassSection"
-    denyReason: "STUDENT_ON_HOLD"
-
-    condition: isEmpty(subject.holds)
 }
 
 policy P27_SessionLease_OnB0 {
@@ -324,9 +404,32 @@ policy P27_SessionLease_OnB0 {
     description: "Usage session phai con hop le trong suot qua trinh xu ly giao dich"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "onB0"
     denyReason: "USAGE_SESSION_EXPIRED"
 
     condition: request.sessionLeaseValid == true
+}
+
+policy P10_StudentHoldRecheck_OnA0 {
+    predicate: AUTHORIZATION
+    phase: ONGOING
+    updateTiming: NONE
+    targetAction: REGISTER
+    effect: PERMIT
+    priority: 10
+    description: "Kiem tra tinh trang hold cua SV truoc commit dang ky"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "onA0"
+    denyReason: "STUDENT_ON_HOLD"
+
+    condition: isEmpty(subject.holds)
 }
 
 // POST phase
@@ -341,6 +444,10 @@ policy P11_RegisterStateUpdate_PostA3 {
     description: "Commit dang ky: transaction, state subject object, tuition debt"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "postA3"
 
     condition: true
 
@@ -364,6 +471,10 @@ policy P14_DropStateRevert_PostA3 {
     description: "Commit huy lop: xoa transaction, hoan state va cap nhat settlement"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "postA3"
 
     condition: true
 
@@ -377,21 +488,6 @@ policy P14_DropStateRevert_PostA3 {
        subject.tuitionDebt SUB_ASSIGN object.course.tuitionFee
 }
 
-policy P26_MaxDropTimes_PreA0 {
-    predicate: AUTHORIZATION
-    phase: PRE
-    updateTiming: NONE
-    targetAction: DROP
-    effect: PERMIT
-    priority: 63
-    description: "Gioi han so lan huy hoc phan trong hoc ky"
-    subjectType: "Student"
-    objectType: "ClassSection"
-    denyReason: "MAX_DROP_TIMES_EXCEEDED"
-
-    condition: subject.dropCountForSemester < environment.maxDropTimes
-}
-
 policy P12_AuditAndTrace_PostB3 {
     predicate: OBLIGATION
     phase: POST
@@ -402,6 +498,10 @@ policy P12_AuditAndTrace_PostB3 {
     description: "Ghi audit log cho moi request"
     subjectType: "Student"
     objectType: "ClassSection"
+    source: "Quy che dang ky hoc phan KMA"
+    version: "1.0"
+    policyStatus: ACTIVE
+    uconVariant: "postB3"
 
     condition: true
 

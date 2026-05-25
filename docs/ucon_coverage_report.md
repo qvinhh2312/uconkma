@@ -42,6 +42,9 @@ Tai lieu nay tong hop do bao phu hien tai cua `UCONKMA` theo bien the UCONABC.
 - mutable attributes
 - rollback cho ongoing update
 - `UsageSession` voi `ACTIVE / COMMITTED / REVOKED / FAILED`
+- `policy provenance metadata`: `source`, `version`, `policyStatus`, `uconVariant`
+- `PolicyAdministrationPoint` loc chi giu `ACTIVE` policies o runtime
+- `event-driven revoke` cho `ACTIVE` sessions qua `OngoingMonitor` va `SessionRecheckService`
 - decision trace va audit trace
 - semantic validation va runtime invariant check
 
@@ -50,9 +53,8 @@ Tai lieu nay tong hop do bao phu hien tai cua `UCONKMA` theo bien the UCONABC.
 - full `onB1`, `onB2`, `onB3`
 - full `preC1/2/3` va cac bien the UCONABC khong can thiet cho bai toan dang ky hoc phan
 - continuous long-running monitoring cho mot session dai han
-- event-driven revoke sau khi request da roi khoi transaction runtime
 - benchmark so luong policy lon
-- policy lifecycle/PAP day du
+- full policy lifecycle/PAP workflow
 
 ## Ket luan
 

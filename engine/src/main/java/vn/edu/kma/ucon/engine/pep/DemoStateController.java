@@ -17,6 +17,8 @@ import vn.edu.kma.ucon.engine.pip.repository.AuditLogRepository;
 import vn.edu.kma.ucon.engine.pip.repository.ClassSectionRepository;
 import vn.edu.kma.ucon.engine.pip.repository.RegistrationRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
+import vn.edu.kma.ucon.engine.session.SessionStatus;
+import vn.edu.kma.ucon.engine.session.UsageSessionRepository;
 
 @RestController
 @RequestMapping("/api/demo")
@@ -29,17 +31,20 @@ public class DemoStateController {
     private final RegistrationRepository registrationRepo;
     private final AuditLogRepository auditRepo;
     private final MaintenanceFlag maintenanceFlag;
+    private final UsageSessionRepository usageSessionRepository;
 
     public DemoStateController(StudentRepository studentRepo,
                                ClassSectionRepository classRepo,
                                RegistrationRepository registrationRepo,
                                AuditLogRepository auditRepo,
-                               MaintenanceFlag maintenanceFlag) {
+                               MaintenanceFlag maintenanceFlag,
+                               UsageSessionRepository usageSessionRepository) {
         this.studentRepo = studentRepo;
         this.classRepo = classRepo;
         this.registrationRepo = registrationRepo;
         this.auditRepo = auditRepo;
         this.maintenanceFlag = maintenanceFlag;
+        this.usageSessionRepository = usageSessionRepository;
     }
 
     @GetMapping("/state")
@@ -148,6 +153,10 @@ public class DemoStateController {
         totals.put("classes", classRepo.count());
         totals.put("registrations", registrationRepo.count());
         totals.put("auditLogs", auditRepo.count());
+        totals.put("activeSessions", usageSessionRepository.findByStatus(SessionStatus.ACTIVE).size());
+        totals.put("revokedSessions", usageSessionRepository.findByStatus(SessionStatus.REVOKED).size());
+        totals.put("failedSessions", usageSessionRepository.findByStatus(SessionStatus.FAILED).size());
+        totals.put("committedSessions", usageSessionRepository.findByStatus(SessionStatus.COMMITTED).size());
         return totals;
     }
 

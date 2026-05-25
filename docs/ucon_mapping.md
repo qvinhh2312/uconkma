@@ -1,6 +1,11 @@
 # UCON Mapping
 
 Tai lieu nay dung de anh xa truc tiep tu policy ID thuc te sang `predicate`, `phase`, `update timing`, bien the UCONABC va test case.
+Moi policy runtime hien tai dong thoi mang metadata:
+
+- `source = "Quy che dang ky hoc phan KMA"`
+- `version = "1.0"`
+- `policyStatus = ACTIVE`
 
 | Policy | Predicate | Phase | Update timing | UCON type | Test |
 |---|---|---|---|---|---|
@@ -47,5 +52,5 @@ Quy che hoc vu
 -> XMI policy model trong xmi/ucon_policy.xmi
 -> PDP/PolicyEngine evaluate runtime
 -> DecisionTrace + AuditLog
--> JUnit test T01..T29
+-> JUnit test T01..T30
 ```

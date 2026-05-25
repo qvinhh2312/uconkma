@@ -17,13 +17,13 @@ cd e:\UCON_KMA\dsl
 ## Result
 
 ```text
-Engine: Tests run: 29, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 33, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 
 DSL: BUILD SUCCESS
 ```
 
-Full engine suite completed locally in about `50.653 s` on the current machine snapshot.
+Full engine suite completed locally in about `43.088 s` on the current machine snapshot.
 
 ## Y nghia
 
@@ -37,6 +37,9 @@ Full engine suite completed locally in about `50.653 s` on the current machine s
 - race condition tests
 - `onB0` ongoing obligation
 - `PolicyAnalyzer` warnings cho `shadowing` va `conflicting priority`
+- `policy metadata` trong DSL / Ecore / XMI: `source`, `version`, `policyStatus`, `uconVariant`
+- `PolicyAdministrationPoint` loc chi giu `ACTIVE` policies o runtime
+- `OngoingMonitor` / `SessionRecheckService` cho event-driven revoke
 - XMI explicit hon va nhat quan hon voi Ecore metamodel
 
 ## Luu y

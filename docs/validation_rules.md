@@ -17,6 +17,8 @@ Tai lieu nay tong hop cac luat validation va invariant hien co trong project.
   - `ONGOING` -> phai co `ongoingUpdates` va `rollbackUpdates`
   - `POST` -> phai co `postUpdates`
 - `policyId` khong duoc trung.
+- `source`, `version`, `uconVariant` khong duoc de trong.
+- `policyStatus` phai ton tai va hop le theo enum lifecycle.
 - `policySet` khong duoc tham chieu policy khong ton tai.
 - function call phai nam trong whitelist va dung arity.
 - root `condition` phai tra ve boolean.
@@ -62,5 +64,12 @@ Schema giup `PolicyValidator` bat cac loi cap nhat vao field immutable.
 - `MISSING_AUDIT`
 - `DROP_GUARD_MISSING`
 - `STATEFUL_MUTATION`
+- `MISSING_TRACE_FOR_MUTATION`
+- `INCOMPLETE_DROP_FLOW`
+- `PRIORITY_COLLISION`
+- `CONFLICTING_PRIORITY`
+- `SHADOWING`
+- `REDUNDANT_POLICY`
+- `UNSAFE_UPDATE`
 
 Day la lop phan tich chat luong policy, khac voi validator dung/sai.
