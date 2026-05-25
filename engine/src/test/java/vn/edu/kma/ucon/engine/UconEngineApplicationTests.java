@@ -935,6 +935,50 @@ class UconEngineApplicationTests {
         assertNotNull(findPolicyById(xmiRoot, "P12_AuditAndTrace_PostB3"));
     }
 
+    @Test
+    @DisplayName("Controller register runtime uses canonical PRE/ONGOING/POST phases")
+    void test37_ControllerRegisterUsesCanonicalUconPhasesAndReturnsTrace() {
+        ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
+
+        assertEquals(200, response.getStatusCode().value());
+        ApiDecisionResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("ALLOW", body.getDecision());
+        assertEquals("POST", body.getPhase());
+        assertNotNull(body.getDecisionTrace());
+        assertEquals("COMMITTED", body.getDecisionTrace().sessionStatus());
+
+        List<String> phases = body.getDecisionTrace().phases().stream()
+                .map(phaseTrace -> phaseTrace.phase())
+                .toList();
+        assertTrue(phases.contains("PRE"));
+        assertTrue(phases.contains("ONGOING"));
+        assertTrue(phases.contains("POST"));
+        assertFalse(phases.contains("PRE" + "_AUTHORIZATION"));
+        assertFalse(phases.contains("ONGOING" + "_AUTHORIZATION"));
+        assertFalse(phases.contains("POST" + "_UPDATE"));
+    }
+
+    @Test
+    @DisplayName("Drop not registered is denied by P16 policy through the UCON pipeline")
+    void test38_DropNotRegisteredDeniedByP16PolicyThroughPipeline() {
+        ResponseEntity<ApiDecisionResponse> response = regController.drop(dropRequest());
+
+        assertEquals(403, response.getStatusCode().value());
+        ApiDecisionResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("DENY", body.getDecision());
+        assertEquals("PRE", body.getPhase());
+        assertEquals("P16_DropOnlyIfRegistered_PreA0", body.getFailedPolicy());
+        assertEquals("NOT_REGISTERED", body.getDenyReason());
+        assertNotNull(body.getDecisionTrace());
+        assertTrue(body.getDecisionTrace().phases().stream()
+                .anyMatch(phase -> "PRE".equals(phase.phase())
+                        && "AUTHORIZATION".equals(phase.predicate())
+                        && "P16_DropOnlyIfRegistered_PreA0".equals(phase.failedPolicy())));
+        assertEquals(0, registrationRepo.count());
+    }
+
     private void runConcurrentRegister(String studentId,
                                        AtomicInteger successCount,
                                        AtomicInteger failCount,

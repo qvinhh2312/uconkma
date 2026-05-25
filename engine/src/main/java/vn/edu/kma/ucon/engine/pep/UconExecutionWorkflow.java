@@ -412,7 +412,7 @@ public class UconExecutionWorkflow {
         if (phase == Phase.ONGOING) {
             return "DENIED_ONGOING: " + failedCode;
         }
-        return "DENIED_PREAUTH: " + failedCode;
+        return "DENIED_PRE: " + failedCode;
     }
 
     private void logRequestStart(UconContext context) {

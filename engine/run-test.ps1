@@ -634,6 +634,40 @@ $cases = @{
             "Policy model vuot qua semantic validation va san sang cho PDP runtime"
         )
     }
+    "T37" = @{
+        Method = "test37_ControllerRegisterUsesCanonicalUconPhasesAndReturnsTrace"
+        Title = "Controller REGISTER dung PRE/ONGOING/POST va tra trace"
+        Goal = "Chung minh endpoint public chi dung phase PRE/ONGOING/POST va khong con dung phase legacy."
+        Phase = "PRE -> ONGOING -> POST"
+        Policies = "RegistrationController, RegistrationService, UconExecutionWorkflow"
+        Checks = @(
+            "Gui request REGISTER hop le qua controller"
+            "Kiem tra response tra ve ApiDecisionResponse"
+            "Kiem tra decisionTrace co PRE, ONGOING va POST"
+            "Kiem tra trace khong co phase legacy"
+        )
+        Result = @(
+            "Runtime public chay theo phase UCONABC moi"
+            "Response co DecisionTrace de giai thich quyet dinh"
+        )
+    }
+    "T38" = @{
+        Method = "test38_DropNotRegisteredDeniedByP16PolicyThroughPipeline"
+        Title = "DROP chua dang ky bi tu choi boi policy P16"
+        Goal = "Chung minh NOT_REGISTERED khong bi hard-code trong controller ma di qua UCON policy pipeline."
+        Phase = "PRE"
+        Policies = "P16, RegistrationController, UconExecutionWorkflow"
+        Checks = @(
+            "Gui request DROP khi sinh vien chua co registration"
+            "Kiem tra response DENY"
+            "Kiem tra failedPolicy la P16_DropOnlyIfRegistered_PreA0"
+            "Kiem tra trace fail o PRE AUTHORIZATION"
+        )
+        Result = @(
+            "Rule NOT_REGISTERED do DSL/XMI policy quyet dinh"
+            "Controller van la API facade mong"
+        )
+    }
 }
 
 $aliases = @{
@@ -769,7 +803,7 @@ if ($id -eq "REPORT" -or $id -eq "TABLE") {
 }
 elseif ($id -eq "ALL") {
     Write-Section "[ALL] Chay toan bo bo test UCON"
-    Write-Host "Tong quan: Bo 36 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0, PAP lifecycle, XMI conformance va continuous monitoring." -ForegroundColor Yellow
+    Write-Host "Tong quan: Bo 38 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0, PAP lifecycle, XMI conformance, runtime controller flow va continuous monitoring." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
@@ -847,8 +881,8 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T36"
+    Write-Host "  T01..T38"
     Write-Host "  P01..P27"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 36 tests)"
+    Write-Host "  all       (chay toan bo 38 tests)"
 }

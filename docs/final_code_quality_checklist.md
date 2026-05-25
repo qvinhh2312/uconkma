@@ -27,6 +27,7 @@ Tai lieu nay tong hop trang thai ky thuat cua repo truoc khi nop/bao ve.
 | Tests | Validator test | Co | `x` | Semantic + schema validation tests co san |
 | Tests | Trace test | Co | `x` | Decision trace pass/fail/update/rollback da duoc assert |
 | Tests | DSL -> XMI test | Nen | `x` | `UconDslToXmiParserTest` |
+| Tests | Runtime controller flow test | Co | `x` | `test37` xac nhan controller dung `PRE/ONGOING/POST`; `test38` xac nhan DROP fail boi P16 |
 | Docs | README sach | Co | `x` | Badge, architecture, DSL/XMI, docs, limitations |
 | Docs | Mapping UCONABC | Co | `x` | `docs/ucon_mapping.md` |
 | Docs | Coverage report | Co | `x` | `docs/ucon_coverage_report.md` |
@@ -41,7 +42,7 @@ Tai lieu nay tong hop trang thai ky thuat cua repo truoc khi nop/bao ve.
 - `dsl/pom.xml` da khai bao `maven-surefire-plugin`, `maven-enforcer-plugin`, va parser tests.
 - Event-driven monitoring da co cho `maintenance`, `class status`, `student hold`.
 - `JaCoCo` local coverage:
-  - line coverage: `79.97%`
+  - line coverage: `80.15%`
   - branch coverage: `60.57%`
 
 ## Ghi chu gioi han con lai

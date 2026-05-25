@@ -6,7 +6,7 @@ Tai lieu nay ghi lai ket qua kiem thu tong hop cho ban hien tai cua repo.
 
 ```powershell
 cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd clean test
+.\apache-maven-3.9.6\bin\mvn.cmd test
 ```
 
 ```powershell
@@ -17,19 +17,19 @@ cd e:\UCON_KMA\dsl
 ## Result
 
 ```text
-Engine: Tests run: 36, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 38, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 
 DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Full engine suite completed locally in about `44.285 s` on the current machine snapshot.
+Full engine suite completed locally in `42.25 s` on the current machine snapshot.
 
 ## Coverage
 
 ```text
-JaCoCo line coverage: 79.97% (1609 covered / 403 missed)
+JaCoCo line coverage: 80.15% (1611 covered / 399 missed)
 JaCoCo branch coverage: 60.57% (530 covered / 345 missed)
 ```
 
@@ -51,6 +51,8 @@ JaCoCo branch coverage: 60.57% (530 covered / 345 missed)
 - `OngoingMonitor` / `SessionRecheckService` cho event-driven revoke
 - XMI explicit hon va nhat quan hon voi Ecore metamodel
 - co test rieng xac nhan `xmi/ucon_policy.xmi` load dung theo `metamodel/ucon.ecore` va vuot qua semantic validation
+- co test hoi quy xac nhan endpoint public dung `PRE/ONGOING/POST`, khong dung phase legacy
+- co test hoi quy xac nhan `DROP` chua dang ky bi tu choi boi `P16_DropOnlyIfRegistered_PreA0`, khong hard-code trong controller
 - co parser test rieng cho:
   - `DSL -> XMI`
   - syntax error ro rang

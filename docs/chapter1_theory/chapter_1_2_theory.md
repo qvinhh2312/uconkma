@@ -10,9 +10,9 @@ RBAC truyen thong phu hop voi viec gan quyen theo vai tro, nhung bai toan dang k
 
 Vi vay, mo hinh phu hop hon la UCON, noi quyet dinh duoc danh gia theo thuoc tinh va co the bi tu choi o nhieu pha:
 
-- `PRE_AUTHORIZATION`
-- `ONGOING_AUTHORIZATION`
-- `POST_UPDATE`
+- `PRE`
+- `ONGOING`
+- `POST`
 
 Trong project nay, UCON duoc hien thuc hoa theo kien truc:
 
@@ -70,34 +70,34 @@ Project hien thuc quyen duoi dang `targetAction` trong policy:
 Gia tri thoi gian hien duoc bieu dien bang chuoi ISO-8601 va runtime chi cho phep so sanh khi parse duoc thanh `LocalDate` hoac `LocalDateTime`.
 
 ## 3. Cau truc policy dang dung trong project
-Project hien tai co 16 policy, chia thanh 3 nhom:
+Project hien tai co 25 ACTIVE policy, chia thanh 3 nhom:
 
-### 3.1 PRE_AUTHORIZATION
-- `P01_TuitionPaid_Pre`
-- `P13a_EmergencyMaintenance_Pre`
-- `P02_TransactionWindow_Pre`
-- `P03_ClassStatusOpen_Pre`
-- `P04_NotAlreadyRegistered_Pre`
-- `P16_DropOnlyIfRegistered_Pre`
-- `P05_CreditLimit_Pre`
-- `P06_Prerequisite_Pre`
-- `P07_ScheduleConflict_Pre`
+### 3.1 PRE
+- `P01_TuitionPaid_PreA0`
+- `P13a_EmergencyMaintenance_PreC0`
+- `P02_TransactionWindow_PreC0`
+- `P03_ClassStatusOpen_PreA0`
+- `P04_NotAlreadyRegistered_PreA0`
+- `P16_DropOnlyIfRegistered_PreA0`
+- `P05_CreditLimit_PreA0`
+- `P06_Prerequisite_PreA0`
+- `P07_ScheduleConflict_PreA0`
 
-### 3.2 ONGOING_AUTHORIZATION
-- `P08_CapacityRecheck_On`
-- `P09_ClassStatusRecheck_On`
-- `P10_StudentHoldRecheck_On`
-- `P13_EmergencyMaintenance_On`
+### 3.2 ONGOING
+- `P08_CapacityRecheck_OnA0`
+- `P09_ClassStatusRecheck_OnA0`
+- `P10_StudentHoldRecheck_OnA0`
+- `P13_EmergencyMaintenance_OnC0`
 
-### 3.3 POST_UPDATE
-- `P11_RegisterStateUpdate_Post`
-- `P14_DropStateRevert_Post`
-- `P12_AuditAndTrace_Post`
+### 3.3 POST
+- `P11_RegisterStateUpdate_PostA3`
+- `P14_DropStateRevert_PostA3`
+- `P12_AuditAndTrace_PostB3`
 
 Luu y: project hien khong con tach rieng `P15a/P15b`. Phan billing va refund da duoc gop vao:
 
-- `P11_RegisterStateUpdate_Post`
-- `P14_DropStateRevert_Post`
+- `P11_RegisterStateUpdate_PostA3`
+- `P14_DropStateRevert_PostA3`
 
 ## 4. Tinh than UCON duoc giu trong do an
 Project khong co gang hien thuc toan bo taxonomy cua paper, nhung giu dung cac diem co gia tri nhat cho domain dang ky hoc phan:

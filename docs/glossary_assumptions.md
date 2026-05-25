@@ -10,7 +10,7 @@
 - `PolicyModel`: root model cua file XMI.
 - `Policy`: mot chinh sach rieng le trong policy model.
 - `Expression`: cay dieu kien cua policy.
-- `Statement`: hau lenh duoc dung trong `POST_UPDATE`.
+- `Statement`: hau lenh duoc dung trong `POST`.
 - `PEP`: `Policy Enforcement Point`, o project la `RegistrationController`.
 - `PDP`: `Policy Decision Point`, o project la `PolicyDecisionPoint` ket hop voi `PolicyEngine`.
 - `PIP`: `Policy Information Point`, o project la cac entity va repository cung cap trang thai hien tai.
@@ -35,7 +35,7 @@ Runtime chi cho phep so sanh khi parse duoc ve `LocalDate` hoac `LocalDateTime`.
 Tinh ton tai cua mot dang ky hop le duoc xac dinh boi bang `Registration`, khong phai boi chuoi `registeredClassIds` trong `Student`.
 
 ### 2.4 Drop semantics
-`DROP` chi hop le neu da co dang ky tuong ung trong `Registration`. Logic nay duoc bao ve boi `P16_DropOnlyIfRegistered_Pre`.
+`DROP` chi hop le neu da co dang ky tuong ung trong `Registration`. Logic nay duoc bao ve boi `P16_DropOnlyIfRegistered_PreA0`.
 
 ### 2.5 Tuition semantics
 `tuitionPaid` chi chan `REGISTER`, khong chan `DROP`.
@@ -46,8 +46,8 @@ Tinh ton tai cua mot dang ky hop le duoc xac dinh boi bang `Registration`, khong
 ### 2.7 Maintenance semantics
 Maintenance duoc kiem soat o hai pha:
 
-- `P13a_EmergencyMaintenance_Pre`
-- `P13_EmergencyMaintenance_On`
+- `P13a_EmergencyMaintenance_PreC0`
+- `P13_EmergencyMaintenance_OnC0`
 
 Dieu nay vua cho phep fail-fast, vua the hien dung tinh than continuity cua UCON.
 
@@ -61,8 +61,8 @@ Khong con dung alias `request.id`.
 ### 2.9 Post-update semantics
 Billing va refund da duoc gop vao hai policy mutation chinh:
 
-- `P11_RegisterStateUpdate_Post`
-- `P14_DropStateRevert_Post`
+- `P11_RegisterStateUpdate_PostA3`
+- `P14_DropStateRevert_PostA3`
 
 ### 2.10 Semantic validation
 Project dung Java semantic validator thay cho OCL/WFR thuan tuy, nhung validator dang kiem tra cac invariant chinh:

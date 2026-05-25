@@ -54,7 +54,7 @@ Invoke-RestMethod `
 Ket qua mong doi:
 
 - `decision = ALLOW`
-- `phase = POST_UPDATE`
+- `phase = POST`
 - `message = Successfully enrolled.`
 
 Buoc 3. Xem log runtime o terminal 1
@@ -75,7 +75,7 @@ Y nghia:
 
 - `PRE` pass
 - `ONGOING` pass
-- `POST_UPDATE` chay
+- `POST` chay
 
 Buoc 4. Xem state sau request
 
@@ -165,16 +165,16 @@ try {
 Ket qua mong doi:
 
 - `decision = DENY`
-- `phase = PRE_AUTHORIZATION`
-- `failedPolicy = P01_TuitionPaid_Pre`
+- `phase = PRE`
+- `failedPolicy = P01_TuitionPaid_PreA0`
 - `denyReason = TUITION_NOT_PAID`
 
 Buoc 3. Xem log runtime
 
 Diem can nhin:
 
-- `[PHASE RESULT] phase=PRE_AUTHORIZATION permit=false failedCode=TUITION_NOT_PAID`
-- `[REQUEST DENIED] action=REGISTER phase=PRE_AUTHORIZATION ...`
+- `[PHASE RESULT] phase=PRE permit=false failedCode=TUITION_NOT_PAID`
+- `[REQUEST DENIED] action=REGISTER phase=PRE ...`
 
 Y nghia:
 
@@ -251,7 +251,7 @@ Invoke-RestMethod `
 Ket qua mong doi:
 
 - `decision = ALLOW`
-- `phase = POST_UPDATE`
+- `phase = POST`
 - `message = Successfully dropped.`
 
 Buoc 3. Xem log runtime
@@ -260,7 +260,7 @@ Diem can nhin:
 
 - `PRE` pass
 - `ONGOING` pass
-- `POST_UPDATE` chay
+- `POST` chay
 - `[REQUEST SUCCESS] action=DROP ...`
 
 Buoc 4. Xem state sau DROP
@@ -325,13 +325,13 @@ Nen noi gi khi trinh bay
 Case 1
 
 - request duoc cho phep
-- qua du `PRE`, `ONGOING`, `POST_UPDATE`
+- qua du `PRE`, `ONGOING`, `POST`
 - state he thong thay doi
 - DB co `registration` va `audit`
 
 Case 2
 
-- request bi chan o `PRE_AUTHORIZATION`
+- request bi chan o `PRE`
 - khong co mutation state
 - nhung `audit` van ghi lai de truy vet
 

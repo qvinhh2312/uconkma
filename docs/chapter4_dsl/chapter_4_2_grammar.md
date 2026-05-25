@@ -33,13 +33,13 @@ Diem khac biet so voi ban cu:
 - policy bat buoc co `subjectType`
 - policy bat buoc co `objectType`
 - policy bat buoc co `ruleFamily`
-- `postUpdates` la tuy chon ve cu phap, nhung semantic validator buoc moi `POST_UPDATE` phai co it nhat mot statement
+- `postUpdates` la tuy chon ve cu phap, nhung semantic validator buoc moi `POST` phai co it nhat mot statement
 
 ## 3. Enum va keyword
 
 ### Policy type
 ```antlr
-policyType: 'PRE_AUTHORIZATION' | 'ONGOING_AUTHORIZATION' | 'POST_UPDATE';
+policyType: 'PRE' | 'ONGOING' | 'POST';
 ```
 
 ### Action type
@@ -113,7 +113,7 @@ listConstant: '[' STRING (',' STRING)* ']';
 functionCall: ID '(' (expression (',' expression)*)? ')';
 ```
 
-## 6. Statement cho POST_UPDATE
+## 6. Statement cho POST
 
 ```antlr
 updateStatement
@@ -176,7 +176,7 @@ Grammar hien tai duoc dung truc tiep de parse tap policy that cua project, bao g
 - maintenance o ca `PRE` va `ONGOING`
 - transaction window chung cho `ANY`
 - dieu kien `DROP` rieng
-- mutation + audit o `POST_UPDATE`
+- mutation + audit o `POST`
 
 Dieu nay co nghia grammar khong con la ban minh hoa nhu luc dau, ma la mo ta sat runtime hien hanh.
 

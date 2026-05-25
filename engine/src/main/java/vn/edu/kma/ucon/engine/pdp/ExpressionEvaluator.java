@@ -73,10 +73,6 @@ public class ExpressionEvaluator {
         }
     }
 
-    public void executePostUpdates(List<EObject> updateStatements, Student subject, ClassSection obj, Environment env, UconRequest req) {
-        executeStatements(updateStatements, subject, obj, env, req);
-    }
-
     private Object evaluateNode(EObject node, Student subject, ClassSection obj, Environment env, UconRequest req) {
         String className = node.eClass().getName();
 

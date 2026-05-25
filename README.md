@@ -202,7 +202,7 @@ Project da co:
   - `maven-enforcer-plugin`
   - `jacoco-maven-plugin`
 - local coverage from `JaCoCo`:
-  - line coverage: `79.97%`
+  - line coverage: `80.15%`
   - branch coverage: `60.57%`
 
 ## 8. Build / test / run
@@ -291,7 +291,7 @@ Neu can chay demo:
 
 Baseline da verify:
 
-- `engine`: `Tests run: 36, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 38, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`

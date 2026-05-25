@@ -71,21 +71,21 @@ Thuoc tinh chinh:
 - `isMaintenance`
 
 ## 2. Tap policy hien hanh
-Project hien co 16 policy. Ma policy khong lien tuc tuyet doi vi tap chinh sach da duoc mo rong va tai cau truc theo qua trinh phat trien.
+Project hien co 25 ACTIVE policy. Ma policy khong lien tuc tuyet doi vi tap chinh sach da duoc mo rong va tai cau truc theo qua trinh phat trien.
 
-## 3. PRE_AUTHORIZATION
+## 3. PRE
 
-### P01_TuitionPaid_Pre
+### P01_TuitionPaid_PreA0
 - Muc dich: chan dang ky moi neu sinh vien chua hoan tat hoc phi.
 - Pham vi: chi ap cho `REGISTER`.
 - Dieu kien: `subject.tuitionPaid == true`
 
-### P13a_EmergencyMaintenance_Pre
+### P13a_EmergencyMaintenance_PreC0
 - Muc dich: fail-fast ngay tu dau neu he thong dang bao tri.
 - Pham vi: ap cho `ANY`.
 - Dieu kien: `environment.isMaintenance == false`
 
-### P02_TransactionWindow_Pre
+### P02_TransactionWindow_PreC0
 - Muc dich: chi cho phep giao dich trong dot va khung gio hop le.
 - Pham vi: ap cho `ANY`.
 - Deny code: `OUTSIDE_TRANSACTION_WINDOW`
@@ -94,62 +94,62 @@ Project hien co 16 policy. Ma policy khong lien tuc tuyet doi vi tap chinh sach 
   - `currentDateTime >= openTime`
   - `currentDateTime <= closeTime`
 
-### P03_ClassStatusOpen_Pre
+### P03_ClassStatusOpen_PreA0
 - Muc dich: chi cho dang ky vao lop dang mo.
 - Pham vi: `REGISTER`
 - Dieu kien: `object.status == "OPEN"`
 
-### P04_NotAlreadyRegistered_Pre
+### P04_NotAlreadyRegistered_PreA0
 - Muc dich: chan dang ky trung.
 - Pham vi: `REGISTER`
 - Dieu kien: `NOT checkExistsRegistration(subject.studentId, object.classId, environment.semester)`
 - Ghi chu: project hien dung `RegistrationRepository` lam nguon su that, khong dua vao chuoi `registeredClassIds`.
 
-### P16_DropOnlyIfRegistered_Pre
+### P16_DropOnlyIfRegistered_PreA0
 - Muc dich: chi cho phep huy lop khi sinh vien thuc su da co dang ky hop le.
 - Pham vi: `DROP`
 - Dieu kien: `checkExistsRegistration(subject.studentId, object.classId, environment.semester)`
 
-### P05_CreditLimit_Pre
+### P05_CreditLimit_PreA0
 - Muc dich: chan vuot tran tin chi.
 - Pham vi: `REGISTER`
 - Dieu kien: `(subject.currentCredits + object.course.credits) <= subject.maxCreditsEffective`
 
-### P06_Prerequisite_Pre
+### P06_Prerequisite_PreA0
 - Muc dich: kiem tra mon tien quyet.
 - Pham vi: `REGISTER`
 - Dieu kien: `object.course.prerequisites SUBSET_OF subject.completedCourses`
 
-### P07_ScheduleConflict_Pre
+### P07_ScheduleConflict_PreA0
 - Muc dich: chan trung lich hoc.
 - Pham vi: `REGISTER`
 - Dieu kien: `NOT (object.scheduleSlots OVERLAPS subject.registeredScheduleSlots)`
 
-## 4. ONGOING_AUTHORIZATION
+## 4. ONGOING
 
-### P08_CapacityRecheck_On
+### P08_CapacityRecheck_OnA0
 - Muc dich: chong race condition o suat cuoi.
 - Pham vi: `REGISTER`
 - Dieu kien: `object.enrolled < object.capacity`
 
-### P09_ClassStatusRecheck_On
+### P09_ClassStatusRecheck_OnA0
 - Muc dich: re-check trang thai lop o sat thoi diem commit.
 - Pham vi: `REGISTER`
 - Dieu kien: `object.status == "OPEN"`
 
-### P10_StudentHoldRecheck_On
+### P10_StudentHoldRecheck_OnA0
 - Muc dich: chan sinh vien dang bi hold o pha ongoing.
 - Pham vi: `REGISTER`
 - Dieu kien: `isEmpty(subject.holds)`
 
-### P13_EmergencyMaintenance_On
+### P13_EmergencyMaintenance_OnC0
 - Muc dich: ngat giao dich dang lo lung neu he thong chuyen sang trang thai bao tri giua chung.
 - Pham vi: `ANY`
 - Dieu kien: `environment.isMaintenance == false`
 
-## 5. POST_UPDATE
+## 5. POST
 
-### P11_RegisterStateUpdate_Post
+### P11_RegisterStateUpdate_PostA3
 - Muc dich: commit toan bo hau qua cua mot lan dang ky thanh cong.
 - Pham vi: `REGISTER`
 - Rule family: `MUTATION`
@@ -161,7 +161,7 @@ Project hien co 16 policy. Ma policy khong lien tuc tuyet doi vi tap chinh sach 
   - them `classId`
   - tang `subject.tuitionDebt`
 
-### P14_DropStateRevert_Post
+### P14_DropStateRevert_PostA3
 - Muc dich: hoan tac trang thai khi huy lop.
 - Pham vi: `DROP`
 - Rule family: `MUTATION`
@@ -173,7 +173,7 @@ Project hien co 16 policy. Ma policy khong lien tuc tuyet doi vi tap chinh sach 
   - xoa `classId`
   - giam `subject.tuitionDebt`
 
-### P12_AuditAndTrace_Post
+### P12_AuditAndTrace_PostB3
 - Muc dich: ghi audit log cho moi request.
 - Pham vi: `ANY`
 - Rule family: `TRACE`
@@ -215,7 +215,7 @@ Project hien co 16 policy. Ma policy khong lien tuc tuyet doi vi tap chinh sach 
 ## 8. Ket luan
 Tap policy hien tai phan anh dung pham vi do an o thoi diem chot:
 
-- 16 policy dang hoat dong thuc te
+- 25 ACTIVE policy dang hoat dong thuc te
 - co day du `PRE`, `ONGOING`, `POST`
 - co mutation state, audit, kiem soat race condition va maintenance
 - co semantic binding ro cho `subjectType`, `objectType`, `ruleFamily`

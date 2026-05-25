@@ -43,9 +43,9 @@ Nho do, validator co the kiem tra chat hon thay vi chi nhin `type`.
 ## 3. Enum chinh
 
 ### PolicyType
-- `PRE_AUTHORIZATION`
-- `ONGOING_AUTHORIZATION`
-- `POST_UPDATE`
+- `PRE`
+- `ONGOING`
+- `POST`
 
 ### ActionType
 - `REGISTER`
@@ -152,7 +152,7 @@ Bieu dien loi goi ham DSL, hien duoc runtime ho tro qua function registry:
 - `isEmpty(...)`
 - `checkExistsRegistration(...)`
 
-## 5. Khoi Statement cho POST_UPDATE
+## 5. Khoi Statement cho POST
 
 ### Statement
 Lop tru tuong goc cho cac hau lenh.
@@ -190,7 +190,7 @@ Project khong dung OCL thuan tuy, nhung dang hien thuc semantic constraints bang
   - `subjectType`, `objectType`, `ruleFamily` phai ton tai va thuoc allowlist
 - compatibility invariants:
   - `PRE/ONGOING` phai di voi `AUTHORIZATION`
-  - `POST_UPDATE` phai di voi `MUTATION` hoac `TRACE`
+  - `POST` phai di voi `MUTATION` hoac `TRACE`
 - mutability invariants:
   - `ENVIRONMENT` va `REQUEST` khong duoc update
   - chi mot so path cua `SUBJECT` va `OBJECT` duoc phep mutate

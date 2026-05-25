@@ -6,12 +6,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/api")
 /**
  * Thin API facade for registration/drop endpoints. All policy decisions are
  * delegated to the application service and UCON workflow.
  */
+@RestController
+@RequestMapping("/api")
 public class RegistrationController {
 
     private final RegistrationService registrationService;

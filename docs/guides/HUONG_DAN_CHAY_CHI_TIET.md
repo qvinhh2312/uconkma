@@ -50,7 +50,7 @@ Y nghia:
 
 Luu y quan trong:
 
-- `ONGOING_AUTHORIZATION` trong project hien tai la `transaction-level re-check`
+- `ONGOING` trong project hien tai la `transaction-level re-check`
 - nghia la request duoc kiem tra lai sat luc commit
 - no khong phai monitor lien tuc suot mot session dai han
 
@@ -115,30 +115,30 @@ File nguon:
 
 - `dsl/ucon_policy.dsl`
 
-### PRE_AUTHORIZATION
+### PRE
 
-- `P01_TuitionPaid_Pre`
-- `P13a_EmergencyMaintenance_Pre`
-- `P02_TransactionWindow_Pre`
-- `P03_ClassStatusOpen_Pre`
-- `P04_NotAlreadyRegistered_Pre`
-- `P16_DropOnlyIfRegistered_Pre`
-- `P05_CreditLimit_Pre`
-- `P06_Prerequisite_Pre`
-- `P07_ScheduleConflict_Pre`
+- `P01_TuitionPaid_PreA0`
+- `P13a_EmergencyMaintenance_PreC0`
+- `P02_TransactionWindow_PreC0`
+- `P03_ClassStatusOpen_PreA0`
+- `P04_NotAlreadyRegistered_PreA0`
+- `P16_DropOnlyIfRegistered_PreA0`
+- `P05_CreditLimit_PreA0`
+- `P06_Prerequisite_PreA0`
+- `P07_ScheduleConflict_PreA0`
 
-### ONGOING_AUTHORIZATION
+### ONGOING
 
-- `P08_CapacityRecheck_On`
-- `P09_ClassStatusRecheck_On`
-- `P10_StudentHoldRecheck_On`
-- `P13_EmergencyMaintenance_On`
+- `P08_CapacityRecheck_OnA0`
+- `P09_ClassStatusRecheck_OnA0`
+- `P10_StudentHoldRecheck_OnA0`
+- `P13_EmergencyMaintenance_OnC0`
 
-### POST_UPDATE
+### POST
 
-- `P11_RegisterStateUpdate_Post`
-- `P14_DropStateRevert_Post`
-- `P12_AuditAndTrace_Post`
+- `P11_RegisterStateUpdate_PostA3`
+- `P14_DropStateRevert_PostA3`
+- `P12_AuditAndTrace_PostB3`
 
 ## 9. Runtime database
 
@@ -217,7 +217,7 @@ Invoke-RestMethod `
 Ket qua mong doi:
 
 - `decision = ALLOW`
-- `phase = POST_UPDATE`
+- `phase = POST`
 - `message = Successfully enrolled.`
 
 ### 12.2. REGISTER bi tu choi do hoc phi
@@ -243,8 +243,8 @@ try {
 Ket qua mong doi:
 
 - `decision = DENY`
-- `phase = PRE_AUTHORIZATION`
-- `failedPolicy = P01_TuitionPaid_Pre`
+- `phase = PRE`
+- `failedPolicy = P01_TuitionPaid_PreA0`
 - `denyReason = TUITION_NOT_PAID`
 
 ### 12.3. DROP thanh cong
@@ -278,7 +278,7 @@ Invoke-RestMethod `
 Ket qua mong doi:
 
 - `decision = ALLOW`
-- `phase = POST_UPDATE`
+- `phase = POST`
 - `message = Successfully dropped.`
 
 ## 13. Mau response runtime
@@ -290,13 +290,13 @@ Ket qua mong doi:
   "requestId": "demo-register-deny-tuition",
   "action": "REGISTER",
   "decision": "DENY",
-  "phase": "PRE_AUTHORIZATION",
+  "phase": "PRE",
   "studentId": "SV002",
   "classId": "CS102_01",
-  "failedPolicy": "P01_TuitionPaid_Pre",
+  "failedPolicy": "P01_TuitionPaid_PreA0",
   "denyReason": "TUITION_NOT_PAID",
   "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra.",
-  "message": "DENIED_PREAUTH: TUITION_NOT_PAID"
+  "message": "DENIED_PRE: TUITION_NOT_PAID"
 }
 ```
 
@@ -307,12 +307,12 @@ Ket qua mong doi:
   "requestId": "demo-register-success",
   "action": "REGISTER",
   "decision": "ALLOW",
-  "phase": "POST_UPDATE",
+  "phase": "POST",
   "studentId": "SV001",
   "classId": "CS102_01",
   "failedPolicy": null,
   "denyReason": null,
-  "explanation": "Request da vuot qua PRE_AUTHORIZATION, ONGOING_AUTHORIZATION va da thuc thi POST_UPDATE thanh cong.",
+  "explanation": "Request da vuot qua PRE, ONGOING va da thuc thi POST thanh cong.",
   "message": "Successfully enrolled."
 }
 ```

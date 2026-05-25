@@ -93,7 +93,7 @@ Y nghia:
   "failedPolicy": "P01_TuitionPaid_PreA0",
   "denyReason": "TUITION_NOT_PAID",
   "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra.",
-  "message": "DENIED_PREAUTH: TUITION_NOT_PAID",
+  "message": "DENIED_PRE: TUITION_NOT_PAID",
   "decisionTrace": {
     "requestId": "demo-register-deny-tuition",
     "action": "REGISTER",
