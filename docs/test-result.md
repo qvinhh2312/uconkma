@@ -17,13 +17,21 @@ cd e:\UCON_KMA\dsl
 ## Result
 
 ```text
-Engine: Tests run: 35, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 36, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 
-DSL: BUILD SUCCESS
+DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
 ```
 
 Full engine suite completed locally in about `44.285 s` on the current machine snapshot.
+
+## Coverage
+
+```text
+JaCoCo line coverage: 79.97% (1609 covered / 403 missed)
+JaCoCo branch coverage: 60.57% (530 covered / 345 missed)
+```
 
 ## Y nghia
 
@@ -42,6 +50,12 @@ Full engine suite completed locally in about `44.285 s` on the current machine s
 - `PolicyLifecycleService` ho tro chuoi `DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED`
 - `OngoingMonitor` / `SessionRecheckService` cho event-driven revoke
 - XMI explicit hon va nhat quan hon voi Ecore metamodel
+- co test rieng xac nhan `xmi/ucon_policy.xmi` load dung theo `metamodel/ucon.ecore` va vuot qua semantic validation
+- co parser test rieng cho:
+  - `DSL -> XMI`
+  - syntax error ro rang
+  - duplicate `policyId`
+- `JaCoCo` report duoc sinh sau `engine mvn test` tai `engine/target/site/jacoco`
 
 ## Benchmark command da xac nhan
 

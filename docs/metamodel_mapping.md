@@ -77,6 +77,12 @@ Tai runtime:
 4. `PolicyAdministrationPoint` loai bo moi policy khong o trang thai `ACTIVE`
 5. `OngoingMonitor` + `SessionRecheckService` co the re-evaluate `ACTIVE` sessions khi event moi truong / subject / object xay ra
 
+Kiem chung conformity tren repo hien tai:
+
+- `test36_XmiPolicyModelConformsToEcoreAndSemanticRules`
+- test nay load truc tiep `ucon.ecore` va `ucon_policy.xmi` bang EMF `ResourceSet`
+- sau do chay `semanticValidator` va `policyValidator` de xac nhan model co the dua vao runtime
+
 ## 6. Vi sao metamodel nay quan trong
 
 Metamodel la cau noi hoc thuat giua:

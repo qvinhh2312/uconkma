@@ -617,6 +617,23 @@ $cases = @{
             "PAP khong cho active policy chua validate"
         )
     }
+    "T36" = @{
+        Method = "test36_XmiPolicyModelConformsToEcoreAndSemanticRules"
+        Title = "XMI policy model hop le voi Ecore va semantic rules"
+        Goal = "Chung minh file xmi/ucon_policy.xmi tren dia duoc load dung theo metamodel ucon.ecore va vuot qua semantic validation."
+        Phase = "PAP / MODEL CONFORMANCE"
+        Policies = "ucon.ecore, ucon_policy.xmi, PolicyValidator"
+        Checks = @(
+            "Load truc tiep file ucon.ecore bang EMF ResourceSet"
+            "Load truc tiep file xmi/ucon_policy.xmi"
+            "Kiem tra Resource khong co parse error"
+            "Chay semanticValidator va policyValidator tren model vua load"
+        )
+        Result = @(
+            "XMI tren dia conform voi Ecore"
+            "Policy model vuot qua semantic validation va san sang cho PDP runtime"
+        )
+    }
 }
 
 $aliases = @{
@@ -752,7 +769,7 @@ if ($id -eq "REPORT" -or $id -eq "TABLE") {
 }
 elseif ($id -eq "ALL") {
     Write-Section "[ALL] Chay toan bo bo test UCON"
-    Write-Host "Tong quan: Bo 35 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0, PAP lifecycle va continuous monitoring." -ForegroundColor Yellow
+    Write-Host "Tong quan: Bo 36 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0, PAP lifecycle, XMI conformance va continuous monitoring." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
@@ -830,8 +847,8 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T35"
+    Write-Host "  T01..T36"
     Write-Host "  P01..P27"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 35 tests)"
+    Write-Host "  all       (chay toan bo 36 tests)"
 }

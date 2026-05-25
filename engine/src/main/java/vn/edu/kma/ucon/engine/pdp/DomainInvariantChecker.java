@@ -9,6 +9,10 @@ import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 
 @Component
+/**
+ * Runtime safety net for mutable domain invariants after UCON updates and
+ * commit/rollback steps.
+ */
 public class DomainInvariantChecker {
 
     public List<ValidationError> validate(Student student, ClassSection cls) {

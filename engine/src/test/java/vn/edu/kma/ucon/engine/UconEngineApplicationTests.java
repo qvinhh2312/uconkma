@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -14,10 +15,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EEnumLiteral;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EPackage;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -900,6 +908,33 @@ class UconEngineApplicationTests {
         }
     }
 
+    @Test
+    @DisplayName("XMI policy model conforms to Ecore metamodel and semantic validation rules")
+    void test36_XmiPolicyModelConformsToEcoreAndSemanticRules() {
+        Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("ecore", new EcoreResourceFactoryImpl());
+        Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("xmi", new XMIResourceFactoryImpl());
+
+        ResourceSet resourceSet = new ResourceSetImpl();
+        File ecoreFile = resolveExistingFile("../metamodel/ucon.ecore", "metamodel/ucon.ecore");
+        Resource ecoreResource = resourceSet.getResource(URI.createFileURI(ecoreFile.getAbsolutePath()), true);
+        assertTrue(ecoreResource.getErrors().isEmpty());
+
+        EPackage ePackage = (EPackage) ecoreResource.getContents().get(0);
+        EPackage.Registry.INSTANCE.put(ePackage.getNsURI(), ePackage);
+
+        File xmiFile = resolveExistingFile("../xmi/ucon_policy.xmi", "xmi/ucon_policy.xmi");
+        Resource xmiResource = resourceSet.getResource(URI.createFileURI(xmiFile.getAbsolutePath()), true);
+        assertTrue(xmiResource.getErrors().isEmpty());
+        assertEquals(1, xmiResource.getContents().size());
+
+        EObject xmiRoot = xmiResource.getContents().get(0);
+        semanticValidator.validate(xmiRoot);
+        policyValidator.validate(xmiRoot);
+
+        assertNotNull(findPolicyById(xmiRoot, "P27_SessionLease_OnB0"));
+        assertNotNull(findPolicyById(xmiRoot, "P12_AuditAndTrace_PostB3"));
+    }
+
     private void runConcurrentRegister(String studentId,
                                        AtomicInteger successCount,
                                        AtomicInteger failCount,
@@ -1031,6 +1066,20 @@ class UconEngineApplicationTests {
                 enumLiteral(variableAccess, "EntityScope", entityLiteral));
         variableAccess.eSet(variableAccess.eClass().getEStructuralFeature("path"), path);
         return variableAccess;
+    }
+
+    private File resolveExistingFile(String... candidates) {
+        for (String candidate : candidates) {
+            File file = new File(candidate);
+            if (file.exists()) {
+                return file;
+            }
+            file = new File(System.getProperty("user.dir"), candidate);
+            if (file.exists()) {
+                return file;
+            }
+        }
+        throw new IllegalStateException("Unable to resolve required file from candidates: " + String.join(", ", candidates));
     }
 
     private EEnumLiteral enumLiteral(EObject context, String enumName, String literalName) {

@@ -10,6 +10,10 @@ import org.eclipse.emf.ecore.EObject;
 import org.springframework.stereotype.Component;
 
 @Component
+/**
+ * Static quality analysis for policy sets beyond validity checks, such as
+ * collisions, redundancy, shadowing, and mutation risks.
+ */
 public class PolicyAnalyzer {
 
     @SuppressWarnings("unchecked")

@@ -7,6 +7,10 @@ import org.eclipse.emf.ecore.EObject;
 import org.springframework.stereotype.Component;
 
 @Component
+/**
+ * Enforces semantic, schema, and mutability rules so only valid policy models
+ * are accepted into the runtime PDP.
+ */
 public class PolicyValidator {
 
     private final PolicyModelSemanticValidator semanticValidator;

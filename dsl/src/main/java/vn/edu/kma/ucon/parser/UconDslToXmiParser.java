@@ -4,8 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,8 +17,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EClass;
@@ -35,49 +40,84 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-
-
+/**
+ * Parses the UCON DSL into an EMF policy model and serializes the result as
+ * XMI. The serializer keeps required/default fields explicit so the generated
+ * XMI stays readable and consistent with the Ecore metamodel.
+ */
 public class UconDslToXmiParser {
 
     public static void main(String[] args) throws Exception {
         System.out.println("Starting: DSL to XMI Serialization...");
 
-        // 1. Setup EMF and Load ucon.ecore
+        File ecoreFile = new File("metamodel/ucon.ecore");
+        File dslFile = new File("dsl/ucon_policy.dsl");
+        ResourceSet resSet = createConfiguredResourceSet(ecoreFile);
+        EObject rootModel = parsePolicyModel(ecoreFile, dslFile);
+
+        File xmiOutputFile = new File("xmi/ucon_policy.xmi");
+        writePolicyModel(resSet, rootModel, xmiOutputFile);
+        System.out.println("Serialization complete! File saved at: " + xmiOutputFile.getAbsolutePath());
+
+        Resource checkResource = resSet.getResource(URI.createFileURI(xmiOutputFile.getAbsolutePath()), true);
+        checkResource.load(Collections.EMPTY_MAP);
+        System.out.println("Round-trip validation success. Loaded elements: " + checkResource.getContents().size());
+    }
+
+    public static ResourceSet createConfiguredResourceSet(File ecoreFile) {
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("ecore", new EcoreResourceFactoryImpl());
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("xmi", new XMIResourceFactoryImpl());
-        
-        ResourceSet resSet = new ResourceSetImpl();
-        File ecoreFile = new File("metamodel/ucon.ecore");
-        Resource ecoreResource = resSet.getResource(URI.createFileURI(ecoreFile.getAbsolutePath()), true);
+
+        ResourceSet resourceSet = new ResourceSetImpl();
+        Resource ecoreResource = resourceSet.getResource(URI.createFileURI(ecoreFile.getAbsolutePath()), true);
         EPackage uconPackage = (EPackage) ecoreResource.getContents().get(0);
         EPackage.Registry.INSTANCE.put(uconPackage.getNsURI(), uconPackage);
+        return resourceSet;
+    }
 
-        // 2. Parse the DSL file using ANTLR
-        File dslFile = new File("dsl/ucon_policy.dsl");
+    public static EObject parsePolicyModel(File ecoreFile, File dslFile) throws Exception {
+        ResourceSet resourceSet = createConfiguredResourceSet(ecoreFile);
+        Resource ecoreResource = resourceSet.getResource(URI.createFileURI(ecoreFile.getAbsolutePath()), true);
+        EPackage uconPackage = (EPackage) ecoreResource.getContents().get(0);
+
         UconPolicyLexer lexer = new UconPolicyLexer(CharStreams.fromFileName(dslFile.getAbsolutePath()));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(ThrowingErrorListener.INSTANCE);
+
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         UconPolicyParser parser = new UconPolicyParser(tokens);
-        ParseTree tree = parser.policyModel();
+        parser.removeErrorListeners();
+        parser.addErrorListener(ThrowingErrorListener.INSTANCE);
 
-        // 3. Visit the AST and build EObjects
+        ParseTree tree = parser.policyModel();
         UconAstVisitor visitor = new UconAstVisitor(uconPackage);
         EObject rootModel = visitor.visit(tree);
+        validateUniquePolicyIds(rootModel);
+        return rootModel;
+    }
 
-        // 4. Serialize to XMI
-        File xmiOutputFile = new File("xmi/ucon_policy.xmi");
-        Resource xmiResource = resSet.createResource(URI.createFileURI(xmiOutputFile.getAbsolutePath()));
+    public static Resource writePolicyModel(ResourceSet resourceSet, EObject rootModel, File xmiOutputFile) throws Exception {
+        Resource xmiResource = resourceSet.createResource(URI.createFileURI(xmiOutputFile.getAbsolutePath()));
         xmiResource.getContents().add(rootModel);
         Map<String, Object> saveOptions = new HashMap<>();
         saveOptions.put(XMLResource.OPTION_KEEP_DEFAULT_CONTENT, Boolean.TRUE);
         saveOptions.put(XMLResource.OPTION_FORMATTED, Boolean.TRUE);
         xmiResource.save(saveOptions);
         normalizeSerializedXmi(xmiOutputFile);
-        System.out.println("Serialization complete! File saved at: " + xmiOutputFile.getAbsolutePath());
+        return xmiResource;
+    }
 
-        // 5. Round-trip validation
-        Resource checkResource = resSet.getResource(URI.createFileURI(xmiOutputFile.getAbsolutePath()), true);
-        checkResource.load(Collections.EMPTY_MAP);
-        System.out.println("Round-trip validation success. Loaded elements: " + checkResource.getContents().size());
+    private static void validateUniquePolicyIds(EObject rootModel) {
+        @SuppressWarnings("unchecked")
+        List<EObject> policies = (List<EObject>) rootModel.eGet(rootModel.eClass().getEStructuralFeature("policies"));
+        Set<String> seenPolicyIds = new LinkedHashSet<>();
+        for (EObject policy : policies) {
+            Object policyId = policy.eGet(policy.eClass().getEStructuralFeature("policyId"));
+            String value = policyId == null ? null : policyId.toString();
+            if (value != null && !seenPolicyIds.add(value)) {
+                throw new IllegalStateException("Duplicate policyId detected in DSL: " + value);
+            }
+        }
     }
 
     private static void normalizeSerializedXmi(File xmiOutputFile) throws Exception {
@@ -146,6 +186,22 @@ public class UconDslToXmiParser {
             return "INTEGER";
         }
         return "STRING";
+    }
+
+    private static final class ThrowingErrorListener extends BaseErrorListener {
+
+        private static final ThrowingErrorListener INSTANCE = new ThrowingErrorListener();
+
+        @Override
+        public void syntaxError(Recognizer<?, ?> recognizer,
+                                Object offendingSymbol,
+                                int line,
+                                int charPositionInLine,
+                                String msg,
+                                RecognitionException e) {
+            throw new IllegalArgumentException(
+                    "Invalid DSL syntax at line " + line + ", column " + charPositionInLine + ": " + msg, e);
+        }
     }
 }
 

@@ -45,7 +45,8 @@ Project the hien ro:
 flowchart LR
     PAP[DSL + Ecore + XMI] --> PDP[PolicyDecisionPoint / PolicyEngine]
     PIP[Repositories + Environment + Request] --> PDP
-    PEP[RegistrationController] --> PDP
+    API[RegistrationController] --> PEP[RegistrationService / UconPepService]
+    PEP --> PDP
     PDP --> UPD[UpdateManager / RollbackManager]
     PDP --> TRACE[DecisionTrace / AuditLog]
     UPD --> TRACE
@@ -59,6 +60,9 @@ Thanh phan chinh:
   - `xmi/ucon_policy.xmi`
 - `PEP`
   - `RegistrationController`
+  - `RegistrationService`
+  - `UconPepService`
+  - `UconExecutionWorkflow`
 - `PDP`
   - `PolicyDecisionPoint`
   - `PolicyEngine`
@@ -66,6 +70,7 @@ Thanh phan chinh:
   - `ConditionEvaluator`
   - `ObligationEvaluator`
 - `PIP`
+  - `PolicyInformationPoint`
   - `StudentRepository`
   - `ClassSectionRepository`
   - `RegistrationRepository`
@@ -138,6 +143,11 @@ Artifact chinh:
 3. policy analyze
 4. `PolicyAdministrationPoint` loc chi giu `ACTIVE` policies cho runtime
 
+Kiem chung phu hop metamodel da co test rieng:
+
+- `test36_XmiPolicyModelConformsToEcoreAndSemanticRules`
+- test nay load truc tiep `metamodel/ucon.ecore` va `xmi/ucon_policy.xmi` bang EMF, sau do chay `semanticValidator` va `policyValidator`
+
 ## 6. Policy coverage
 
 Nhung bien the UCONABC da bao phu tot:
@@ -187,6 +197,13 @@ Project da co:
   - `enrolled <= capacity`
   - `tuitionDebt >= 0`
   - `currentCredits <= maxCreditsEffective`
+- explicit build tooling:
+  - `maven-surefire-plugin`
+  - `maven-enforcer-plugin`
+  - `jacoco-maven-plugin`
+- local coverage from `JaCoCo`:
+  - line coverage: `79.97%`
+  - branch coverage: `60.57%`
 
 ## 8. Build / test / run
 
@@ -202,6 +219,13 @@ cd e:\UCON_KMA\dsl
 ```powershell
 cd e:\UCON_KMA\engine
 .\apache-maven-3.9.6\bin\mvn.cmd clean test
+```
+
+### Test DSL parser
+
+```powershell
+cd e:\UCON_KMA\dsl
+.\apache-maven-3.9.6\bin\mvn.cmd test
 ```
 
 ### Run theo test / policy id
@@ -253,6 +277,7 @@ Neu can viet bao cao / bao ve:
 5. [docs/validation_rules.md](docs/validation_rules.md)
 6. [docs/decision_trace_examples.md](docs/decision_trace_examples.md)
 7. [docs/test-result.md](docs/test-result.md)
+8. [docs/final_code_quality_checklist.md](docs/final_code_quality_checklist.md)
 8. [docs/benchmark_result.md](docs/benchmark_result.md)
 9. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
 
@@ -266,7 +291,7 @@ Neu can chay demo:
 
 Baseline da verify:
 
-- `engine`: `Tests run: 35, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 36, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`

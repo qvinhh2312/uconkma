@@ -14,6 +14,10 @@ import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 
 @Service
+/**
+ * Builds and executes rollback compensation plans for stateful ONGOING update
+ * policies.
+ */
 public class RollbackManager {
 
     private final PolicyEngine policyEngine;
