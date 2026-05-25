@@ -17,8 +17,13 @@ class ArtifactFormattingTest {
 
     private static final List<String> IMPORTANT_ARTIFACTS = List.of(
             "README.md",
+            ".github/workflows/maven.yml",
             "dsl/UconPolicy.g4",
             "dsl/ucon_policy.dsl",
+            "engine/src/main/java/vn/edu/kma/ucon/engine/pep/RegistrationController.java",
+            "engine/src/main/java/vn/edu/kma/ucon/engine/pep/RegistrationService.java",
+            "engine/src/main/java/vn/edu/kma/ucon/engine/pep/UconPepService.java",
+            "engine/src/main/java/vn/edu/kma/ucon/engine/pep/UconExecutionWorkflow.java",
             "xmi/ucon_policy.xmi",
             "metamodel/ucon.ecore",
             "docs/ucon_mapping.md",

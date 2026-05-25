@@ -17,14 +17,14 @@ mvn test
 ## Result
 
 ```text
-Engine: Tests run: 48, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 51, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 
 DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Full engine suite completed locally in about `60 s` on the current machine snapshot.
+Full engine suite completed locally in about `50 s` on the current machine snapshot.
 
 ## Coverage
 
