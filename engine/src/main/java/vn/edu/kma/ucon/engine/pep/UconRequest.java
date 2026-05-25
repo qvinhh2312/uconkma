@@ -10,6 +10,7 @@ public class UconRequest {
     private Boolean confirmedRegistrationRule;
     private Boolean adminOverride;
     private String overrideReason;
+    private Boolean sessionLeaseValid;
 
     public UconRequest() {}
 
@@ -39,4 +40,7 @@ public class UconRequest {
 
     public String getOverrideReason() { return overrideReason; }
     public void setOverrideReason(String overrideReason) { this.overrideReason = overrideReason; }
+
+    public Boolean getSessionLeaseValid() { return sessionLeaseValid; }
+    public void setSessionLeaseValid(Boolean sessionLeaseValid) { this.sessionLeaseValid = sessionLeaseValid; }
 }

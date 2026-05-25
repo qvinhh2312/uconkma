@@ -314,6 +314,21 @@ policy P10_StudentHoldRecheck_OnA0 {
     condition: isEmpty(subject.holds)
 }
 
+policy P27_SessionLease_OnB0 {
+    predicate: OBLIGATION
+    phase: ONGOING
+    updateTiming: NONE
+    targetAction: ANY
+    effect: PERMIT
+    priority: 18
+    description: "Usage session phai con hop le trong suot qua trinh xu ly giao dich"
+    subjectType: "Student"
+    objectType: "ClassSection"
+    denyReason: "USAGE_SESSION_EXPIRED"
+
+    condition: request.sessionLeaseValid == true
+}
+
 // POST phase
 
 policy P11_RegisterStateUpdate_PostA3 {
@@ -417,6 +432,7 @@ policySet RegistrationPolicySet {
               P23_DropLockedClass_OnA0,
               P09_ClassStatusRecheck_OnA0,
               P10_StudentHoldRecheck_OnA0,
+              P27_SessionLease_OnB0,
               P11_RegisterStateUpdate_PostA3,
               P14_DropStateRevert_PostA3,
               P12_AuditAndTrace_PostB3

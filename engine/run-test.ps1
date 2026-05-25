@@ -460,6 +460,24 @@ $cases = @{
             "Rang buoc usage-count cho DROP duoc ap dung"
         )
     }
+    "T27" = @{
+        Method = "test27_RegisterDenied_WhenSessionLeaseExpiresDuringOngoing"
+        Title = "Tu choi request khi ongoing obligation ve session lease that bai"
+        Goal = "Chung minh onB0 co the revoke request khi usage session khong con hop le trong luc dang xu ly."
+        Phase = "ONGOING"
+        Policies = "P27, UsageSession"
+        Checks = @(
+            "Tao request REGISTER hop le nhung dat sessionLeaseValid = false"
+            "Cho request di qua PRE va tao UsageSession ACTIVE"
+            "Kiem tra fail o ONGOING OBLIGATION"
+            "Kiem tra failedPolicy la P27_SessionLease_OnB0"
+            "Kiem tra sessionStatus = REVOKED va khong tao Registration"
+        )
+        Result = @(
+            "Coverage UCON duoc bo sung them onB0"
+            "Usage session co the bi revoke do nghia vu ongoing khong con duoc dap ung"
+        )
+    }
 }
 
 $aliases = @{
@@ -485,6 +503,7 @@ $aliases = @{
     "P23" = "T26"
     "P25" = "T25"
     "P26" = "T26"
+    "P27" = "T27"
     "P14" = "T12"
     "P16" = "T12"
 }
@@ -594,7 +613,7 @@ if ($id -eq "REPORT" -or $id -eq "TABLE") {
 }
 elseif ($id -eq "ALL") {
     Write-Section "[ALL] Chay toan bo bo test UCON"
-    Write-Host "Tong quan: Bo 26 test bao phu business policy, session, update, validator, concurrency, usage-count va trace." -ForegroundColor Yellow
+    Write-Host "Tong quan: Bo 27 test bao phu business policy, session, update, validator, concurrency, usage-count, onB0 va trace." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
@@ -672,8 +691,8 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T26"
-    Write-Host "  P01..P26"
+    Write-Host "  T01..T27"
+    Write-Host "  P01..P27"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 26 tests)"
+    Write-Host "  all       (chay toan bo 27 tests)"
 }

@@ -38,7 +38,27 @@ Nhom nay dung cho:
 - ghi chu ve response JSON traceability
 - ghi chu ongoing authorization o muc transaction-level re-check
 
-## 3. Thu tu nen dung
+## 3. Tai lieu hoc thuat bo sung
+
+- `ucon_mapping.md`
+- `ucon_coverage_report.md`
+- `policy_catalog.md`
+- `metamodel_mapping.md`
+- `validation_rules.md`
+- `decision_trace_examples.md`
+- `test-result.md`
+
+Nhom nay dung cho:
+
+- bang mapping policy -> predicate -> phase -> UCON variant -> test
+- bao cao coverage UCONABC va gioi han hien tai
+- policy catalog theo ID thuc te trong repo
+- giai thich pipeline `DSL -> Ecore -> XMI -> Engine`
+- tong hop luat validator, invariant, analyzer
+- mau `DecisionTrace` de dua vao bao cao
+- ket qua test chinh thuc cua ban hien tai
+
+## 4. Thu tu nen dung
 
 Neu can hoc tong quan:
 
@@ -53,3 +73,13 @@ Neu can chay va demo:
 2. `guides/HUONG_DAN_REST_API_CHUAN.md`
 3. `guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md`
 4. `guides/UCONABC_MAPPING.md`
+
+Neu can viet bao cao / bao ve:
+
+1. `ucon_mapping.md`
+2. `ucon_coverage_report.md`
+3. `policy_catalog.md`
+4. `metamodel_mapping.md`
+5. `validation_rules.md`
+6. `decision_trace_examples.md`
+7. `test-result.md`

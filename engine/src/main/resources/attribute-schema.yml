@@ -116,3 +116,6 @@ request:
   overrideReason:
     type: string
     mutable: false
+  sessionLeaseValid:
+    type: boolean
+    mutable: false

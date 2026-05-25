@@ -186,3 +186,13 @@ Neu can doc ly thuyet:
 2. [docs/chapter3_kma_model/chapter_3_logic.md](docs/chapter3_kma_model/chapter_3_logic.md)
 3. [docs/chapter4_dsl/chapter_4_1_metamodel.md](docs/chapter4_dsl/chapter_4_1_metamodel.md)
 4. [docs/chapter4_dsl/chapter_4_2_grammar.md](docs/chapter4_dsl/chapter_4_2_grammar.md)
+
+Neu can bo sung noi dung hoc thuat de viet bao cao hoac bao ve:
+
+1. [docs/ucon_mapping.md](docs/ucon_mapping.md)
+2. [docs/ucon_coverage_report.md](docs/ucon_coverage_report.md)
+3. [docs/policy_catalog.md](docs/policy_catalog.md)
+4. [docs/metamodel_mapping.md](docs/metamodel_mapping.md)
+5. [docs/validation_rules.md](docs/validation_rules.md)
+6. [docs/decision_trace_examples.md](docs/decision_trace_examples.md)
+7. [docs/test-result.md](docs/test-result.md)

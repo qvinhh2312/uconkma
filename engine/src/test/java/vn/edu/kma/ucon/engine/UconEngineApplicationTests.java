@@ -703,6 +703,28 @@ class UconEngineApplicationTests {
         assertEquals("P26_MaxDropTimes_PreA0", response.getBody().getFailedPolicy());
     }
 
+    @Test
+    @DisplayName("Register is revoked in ONGOING obligation when the usage session lease expires")
+    void test27_RegisterDenied_WhenSessionLeaseExpiresDuringOngoing() {
+        UconRequest req = registerRequest();
+        req.setSessionLeaseValid(false);
+
+        ResponseEntity<ApiDecisionResponse> response = regController.register(req);
+        assertEquals(403, response.getStatusCode().value());
+        assertEquals("USAGE_SESSION_EXPIRED", response.getBody().getDenyReason());
+        assertEquals("P27_SessionLease_OnB0", response.getBody().getFailedPolicy());
+        assertNotNull(response.getBody().getDecisionTrace());
+        assertEquals("DENY", response.getBody().getDecisionTrace().decision());
+        assertEquals("REVOKED", response.getBody().getDecisionTrace().sessionStatus());
+        assertTrue(response.getBody().getDecisionTrace().phases().stream()
+                .anyMatch(phase -> "ONGOING".equals(phase.phase())
+                        && "OBLIGATION".equals(phase.predicate())
+                        && "P27_SessionLease_OnB0".equals(phase.failedPolicy())));
+        assertEquals(0, registrationRepo.count());
+        assertEquals(1, usageSessionRepository.count());
+        assertEquals(SessionStatus.REVOKED, usageSessionRepository.findAll().get(0).getStatus());
+    }
+
     private void runConcurrentRegister(String studentId,
                                        AtomicInteger successCount,
                                        AtomicInteger failCount,
@@ -732,6 +754,7 @@ class UconEngineApplicationTests {
         req.setClassId("CS102_01");
         req.setConfirmedRegistrationRule(true);
         req.setAdminOverride(false);
+        req.setSessionLeaseValid(true);
         return req;
     }
 

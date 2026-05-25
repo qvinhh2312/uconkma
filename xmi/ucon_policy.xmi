@@ -167,6 +167,12 @@
       <arguments xsi:type="ucon:VariableAccess" path="holds"/>
     </condition>
   </policies>
+  <policies policyId="P27_SessionLease_OnB0" description="Usage session phai con hop le trong suot qua trinh xu ly giao dich" subjectType="Student" objectType="ClassSection" predicate="OBLIGATION" phase="ONGOING" targetAction="ANY" priority="18" denyReason="USAGE_SESSION_EXPIRED">
+    <condition xsi:type="ucon:RelationalOperator">
+      <left xsi:type="ucon:VariableAccess" entity="REQUEST" path="sessionLeaseValid"/>
+      <right xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
+    </condition>
+  </policies>
   <policies policyId="P11_RegisterStateUpdate_PostA3" description="Commit dang ky: transaction, state subject object, tuition debt" subjectType="Student" objectType="ClassSection" phase="POST" updateTiming="POST" priority="8">
     <condition xsi:type="ucon:Constant" value="true" type="BOOLEAN"/>
     <postUpdates xsi:type="ucon:CreateTransactionStatement" entityName="Transaction">
@@ -248,5 +254,5 @@
       <arguments xsi:type="ucon:VariableAccess" entity="REQUEST" path="failedPolicyCodes"/>
     </postUpdates>
   </policies>
-  <policySets policySetId="RegistrationPolicySet" combiningAlgorithm="DENY_OVERRIDES" policyIds="P01_TuitionPaid_PreA0 P13a_EmergencyMaintenance_PreC0 P02_TransactionWindow_PreC0 P03_ClassStatusOpen_PreA0 P04_NotAlreadyRegistered_PreA0 P16_DropOnlyIfRegistered_PreA0 P21_DropWindow_PreC0 P26_MaxDropTimes_PreA0 P05_CreditLimit_PreA0 P25_MaxRegisterAttempts_PreA0 P06_Prerequisite_PreA0 P17_AgreeRegistrationRule_PreB0 P07_ScheduleConflict_PreA0 P18_AdminOverrideReason_PreB0 P19_RegisterAttempt_PreA1 P13_EmergencyMaintenance_OnC0 P08_CapacityRecheck_OnA0 P20_ReserveSeat_OnA2 P23_DropLockedClass_OnA0 P09_ClassStatusRecheck_OnA0 P10_StudentHoldRecheck_OnA0 P11_RegisterStateUpdate_PostA3 P14_DropStateRevert_PostA3 P12_AuditAndTrace_PostB3"/>
+  <policySets policySetId="RegistrationPolicySet" combiningAlgorithm="DENY_OVERRIDES" policyIds="P01_TuitionPaid_PreA0 P13a_EmergencyMaintenance_PreC0 P02_TransactionWindow_PreC0 P03_ClassStatusOpen_PreA0 P04_NotAlreadyRegistered_PreA0 P16_DropOnlyIfRegistered_PreA0 P21_DropWindow_PreC0 P26_MaxDropTimes_PreA0 P05_CreditLimit_PreA0 P25_MaxRegisterAttempts_PreA0 P06_Prerequisite_PreA0 P17_AgreeRegistrationRule_PreB0 P07_ScheduleConflict_PreA0 P18_AdminOverrideReason_PreB0 P19_RegisterAttempt_PreA1 P13_EmergencyMaintenance_OnC0 P08_CapacityRecheck_OnA0 P20_ReserveSeat_OnA2 P23_DropLockedClass_OnA0 P09_ClassStatusRecheck_OnA0 P10_StudentHoldRecheck_OnA0 P27_SessionLease_OnB0 P11_RegisterStateUpdate_PostA3 P14_DropStateRevert_PostA3 P12_AuditAndTrace_PostB3"/>
 </ucon:PolicyModel>

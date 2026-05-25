@@ -26,9 +26,10 @@
 | P23 | Drop locked class re-check | AUTHORIZATION | ONGOING | NONE | onA0 | T26 |
 | P25 | Max register attempts | AUTHORIZATION | PRE | NONE | preA0 | T25 |
 | P26 | Max drop times | AUTHORIZATION | PRE | NONE | preA0 | T26 |
+| P27 | Session lease obligation | OBLIGATION | ONGOING | NONE | onB0 | T27 |
 
 ## Ghi chu
 
-- Ban v2 hien tai da co du dai dien cho: `preA0`, `preA1`, `preB0`, `preC0`, `onA0`, `onA2`, `onC0`, `postA3`, `postB3`.
+- Ban v2 hien tai da co du dai dien cho: `preA0`, `preA1`, `preB0`, `preC0`, `onA0`, `onA2`, `onB0`, `onC0`, `postA3`, `postB3`.
 - `ONGOING` hien tai van la `transaction-level re-check`; project da co `UsageSession` de theo doi `ACTIVE / COMMITTED / REVOKED / FAILED`, nhung chua mo rong thanh continuous monitoring.
 - `PolicyAnalyzer`, `PolicyValidator`, `attribute-schema.yml`, `DecisionTrace` la cac lop bo sung cho `Verification` va `Traceability`.

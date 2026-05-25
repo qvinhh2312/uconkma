@@ -455,6 +455,7 @@ public class RegistrationController {
                 Map.entry("CLASS_STATUS_CHANGED", "Trang thai lop da thay doi giua PRE va ONGOING nen request khong con hop le."),
                 Map.entry("STUDENT_ON_HOLD", "Sinh vien dang co hold hoc vu/ky luat nen khong duoc thuc hien giao dich."),
                 Map.entry("SYSTEM_UNDER_MAINTENANCE", "He thong da chuyen sang trang thai maintenance trong luc giao dich dang duoc xu ly."),
+                Map.entry("USAGE_SESSION_EXPIRED", "Usage session khong con hop le trong qua trinh xu ly nen request bi revoke o ONGOING."),
                 Map.entry("NOT_REGISTERED", "Khong ton tai giao dich dang ky hop le de thuc hien thao tac DROP."));
         return explanations.getOrDefault(failedCode, "Policy da tu choi request o pha hien tai.");
     }
@@ -469,6 +470,9 @@ public class RegistrationController {
         }
         if (req.getAdminOverride() == null) {
             req.setAdminOverride(Boolean.FALSE);
+        }
+        if (req.getSessionLeaseValid() == null) {
+            req.setSessionLeaseValid(Boolean.TRUE);
         }
         req.setOverrideReason(trimToNull(req.getOverrideReason()));
     }

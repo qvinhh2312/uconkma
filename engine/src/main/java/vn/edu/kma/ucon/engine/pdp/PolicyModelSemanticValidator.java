@@ -348,7 +348,7 @@ public class PolicyModelSemanticValidator {
         String path = stringValue(expr, "path");
 
         if ("REQUEST".equals(entity) && !ALLOWED_REQUEST_AUDIT_PATHS.contains(path)
-                && !Set.of("studentId", "classId", "actionType", "confirmedRegistrationRule", "adminOverride", "overrideReason").contains(path)) {
+                && !Set.of("studentId", "classId", "actionType", "confirmedRegistrationRule", "adminOverride", "overrideReason", "sessionLeaseValid").contains(path)) {
             throw new IllegalStateException("Policy " + policyId + " uses unsupported REQUEST path '" + path + "' at " + usageLabel);
         }
 
