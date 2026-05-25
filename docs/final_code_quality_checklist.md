@@ -37,12 +37,12 @@ Tai lieu nay tong hop trang thai ky thuat cua repo truoc khi nop/bao ve.
 | CI | GitHub Actions pass | Co | `x` | `.github/workflows/maven.yml` |
 | Quality | Khong file minified mot dong | Co | `x` | README/grammar/DSL/XMI/docs da format |
 | Quality | Khong hard-code policy ngoai DSL | Co | `x` | Controller khong tu quyet rule; workflow danh gia qua evaluators/PolicyEngine |
-| Quality | Formatting guard | Nen | `x` | `.editorconfig` + `ArtifactFormattingTest` |
+| Quality | Formatting guard | Nen | `x` | `.editorconfig` + `ArtifactFormattingTest` + optional Spotless profile `mvn -Pformat-check spotless:check` |
 
 ## Kiem tra bo sung
 
 - `DSL` co parser error ro rang va chan `policyId` trung.
-- `engine/pom.xml` da khai bao ro `maven-surefire-plugin`, `maven-enforcer-plugin`, `jacoco-maven-plugin`.
+- `engine/pom.xml` da khai bao ro `maven-surefire-plugin`, `maven-enforcer-plugin`, `jacoco-maven-plugin`, va optional `spotless-maven-plugin` profile `format-check`.
 - `dsl/pom.xml` da khai bao `maven-surefire-plugin`, `maven-enforcer-plugin`, va parser tests.
 - Event-driven monitoring da co cho `maintenance`, `class status`, `student hold`.
 - `JaCoCo` local coverage:
@@ -52,5 +52,5 @@ Tai lieu nay tong hop trang thai ky thuat cua repo truoc khi nop/bao ve.
 ## Ghi chu gioi han con lai
 
 - Test engine van duoc giu trong mot suite tong hop lon; co the tach nho hon neu can toi uu presentation.
-- `DecisionTrace` chua serialise snapshot before/after day du vao API; snapshot hien da co trong logging va `DemoStateController`.
+- `DecisionTrace` da co `snapshotBefore` va `snapshotAfter` trong API response; snapshot hien dang tap trung vao cac mutable attributes chinh cua subject/object.
 - Benchmark hien la micro-benchmark cho pipeline validator/analyzer/runtime filter, khong phai load test phan tan.

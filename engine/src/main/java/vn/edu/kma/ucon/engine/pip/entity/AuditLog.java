@@ -11,21 +11,21 @@ public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String requestId;
     private String studentId;
     private String classId;
-    
+
     // e.g. "ALLOW" or "DENY"
     private String decision;
-    
+
     // Comma-separated rule IDs that failed
     private String failedPolicyCodes;
-    
+
     public AuditLog() {}
 
     public Long getId() { return id; }
-    
+
     public String getRequestId() { return requestId; }
     public void setRequestId(String requestId) { this.requestId = requestId; }
 

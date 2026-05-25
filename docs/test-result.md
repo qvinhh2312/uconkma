@@ -6,12 +6,17 @@ Tai lieu nay ghi lai ket qua kiem thu tong hop cho ban hien tai cua repo.
 
 ```powershell
 cd engine
-mvn test
+mvn clean test
 ```
 
 ```powershell
 cd dsl
-mvn test
+mvn clean test
+```
+
+```powershell
+cd engine
+mvn -Pformat-check spotless:check
 ```
 
 ## Result
@@ -24,7 +29,14 @@ DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Full engine suite completed locally in about `50 s` on the current machine snapshot.
+Full engine suite completed locally in about `70 s` on the current machine snapshot.
+
+Spotless format check:
+
+```text
+BUILD SUCCESS
+Spotless.Format is keeping 78 files clean - 0 needs changes to be clean
+```
 
 ## Coverage
 

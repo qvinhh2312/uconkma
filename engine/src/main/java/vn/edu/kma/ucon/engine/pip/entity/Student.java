@@ -10,7 +10,7 @@ public class Student {
 
     @Id
     private String studentId;
-    
+
     private int currentCredits;
     private boolean tuitionPaid;
     private boolean academicWarning;
@@ -30,10 +30,10 @@ public class Student {
 
     @Column(length = 1000)
     private String holds;
-    
+
     @Version
     private Long version;
-    
+
     public Student() {}
 
     public String getStudentId() { return studentId; }

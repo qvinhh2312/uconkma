@@ -11,16 +11,16 @@ public class ClassSection {
 
     @Id
     private String classId;
-    
+
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
-    
+
     private int capacity;
     private int enrolled;
     private int reservedSeats;
     private String status; // e.g. "OPEN", "LOCKED", "CANCELLED"
-    
+
     // Comma-separated slots e.g. "T2_1-3,T4_4-6"
     private String scheduleSlots;
 

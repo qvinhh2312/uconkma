@@ -31,7 +31,9 @@ class ArtifactFormattingTest {
             "docs/policy_catalog.md",
             "docs/validation_rules.md",
             "docs/decision_trace_examples.md",
-            "docs/test-result.md");
+            "docs/test-result.md",
+            "docs/final_code_quality_checklist.md",
+            "docs/final_release_checklist.md");
 
     @Test
     @DisplayName("Important artifacts are readable and not minified into one line")

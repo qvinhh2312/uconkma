@@ -25,7 +25,7 @@ public class PolicyDecisionPoint {
     private final PolicyValidator policyValidator;
     private final PolicyAnalyzer policyAnalyzer;
     private final PolicyAdministrationPoint policyAdministrationPoint;
-    
+
     private EObject authoringPolicyModelRoot;
     private EObject policyModelRoot;
     private EPackage uconPackage;
@@ -59,7 +59,7 @@ public class PolicyDecisionPoint {
             this.uconPackage = (EPackage) ecoreResource.getContents().get(0);
             EPackage.Registry.INSTANCE.put(uconPackage.getNsURI(), uconPackage);
             log.info("Ecore metamodel loaded.");
-            
+
             File xmiFile = new File("../xmi/ucon_policy.xmi");
             if (!xmiFile.exists()) xmiFile = new File("xmi/ucon_policy.xmi");
             if (!xmiFile.exists()) xmiFile = new File(System.getProperty("user.dir"), "xmi/ucon_policy.xmi");

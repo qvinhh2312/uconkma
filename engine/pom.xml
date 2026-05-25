@@ -111,4 +111,39 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>format-check</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <version>2.43.0</version>
+                        <configuration>
+                            <lineEndings>UNIX</lineEndings>
+                            <formats>
+                                <format>
+                                    <includes>
+                                        <include>../README.md</include>
+                                        <include>../.github/workflows/maven.yml</include>
+                                        <include>../dsl/UconPolicy.g4</include>
+                                        <include>../dsl/ucon_policy.dsl</include>
+                                        <include>../docs/**/*.md</include>
+                                        <include>../xmi/ucon_policy.xmi</include>
+                                        <include>../metamodel/ucon.ecore</include>
+                                        <include>src/main/java/**/*.java</include>
+                                        <include>src/test/java/**/*.java</include>
+                                    </includes>
+                                    <trimTrailingWhitespace/>
+                                    <endWithNewline/>
+                                </format>
+                            </formats>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

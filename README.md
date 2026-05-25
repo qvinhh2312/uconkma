@@ -244,6 +244,13 @@ cd engine
 mvn spring-boot:run
 ```
 
+### Optional format check
+
+```bash
+cd engine
+mvn -Pformat-check spotless:check
+```
+
 Neu dung Windows va Maven bundle trong repo, co the thay `mvn` bang
 `.\apache-maven-3.9.6\bin\mvn.cmd` sau khi `cd` vao module tuong ung.
 
@@ -281,12 +288,13 @@ Neu can viet bao cao / bao ve:
 6. [docs/decision_trace_examples.md](docs/decision_trace_examples.md)
 7. [docs/test-result.md](docs/test-result.md)
 8. [docs/final_code_quality_checklist.md](docs/final_code_quality_checklist.md)
-9. [docs/benchmark_result.md](docs/benchmark_result.md)
-10. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
-11. [docs/mutation_testing.md](docs/mutation_testing.md)
-12. [docs/generated/policies.md](docs/generated/policies.md)
-13. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
-14. [docs/generated/validation_report.md](docs/generated/validation_report.md)
+9. [docs/final_release_checklist.md](docs/final_release_checklist.md)
+10. [docs/benchmark_result.md](docs/benchmark_result.md)
+11. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
+12. [docs/mutation_testing.md](docs/mutation_testing.md)
+13. [docs/generated/policies.md](docs/generated/policies.md)
+14. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
+15. [docs/generated/validation_report.md](docs/generated/validation_report.md)
 
 Neu can chay demo:
 
