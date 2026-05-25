@@ -47,5 +47,5 @@ Quy che hoc vu
 -> XMI policy model trong xmi/ucon_policy.xmi
 -> PDP/PolicyEngine evaluate runtime
 -> DecisionTrace + AuditLog
--> JUnit test T01..T27
+-> JUnit test T01..T29
 ```

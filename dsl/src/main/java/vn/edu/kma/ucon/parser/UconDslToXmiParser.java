@@ -1,9 +1,11 @@
 package vn.edu.kma.ucon.parser;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -17,6 +19,7 @@ import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 
@@ -52,7 +55,10 @@ public class UconDslToXmiParser {
         File xmiOutputFile = new File("xmi/ucon_policy.xmi");
         Resource xmiResource = resSet.createResource(URI.createFileURI(xmiOutputFile.getAbsolutePath()));
         xmiResource.getContents().add(rootModel);
-        xmiResource.save(Collections.EMPTY_MAP);
+        Map<String, Object> saveOptions = new HashMap<>();
+        saveOptions.put(XMLResource.OPTION_KEEP_DEFAULT_CONTENT, Boolean.TRUE);
+        saveOptions.put(XMLResource.OPTION_FORMATTED, Boolean.TRUE);
+        xmiResource.save(saveOptions);
         System.out.println("Serialization complete! File saved at: " + xmiOutputFile.getAbsolutePath());
 
         // 5. Round-trip validation

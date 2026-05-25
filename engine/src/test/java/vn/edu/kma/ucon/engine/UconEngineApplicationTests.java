@@ -725,6 +725,39 @@ class UconEngineApplicationTests {
         assertEquals(SessionStatus.REVOKED, usageSessionRepository.findAll().get(0).getStatus());
     }
 
+    @Test
+    @DisplayName("PolicyAnalyzer warns when equivalent policies shadow one another by priority")
+    void test28_PolicyAnalyzerWarnsWhenEquivalentPoliciesShadowEachOther() {
+        EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        @SuppressWarnings("unchecked")
+        List<EObject> policies = (List<EObject>) copiedRoot.eGet(copiedRoot.eClass().getEStructuralFeature("policies"));
+
+        EObject duplicate = EcoreUtil.copy(findPolicyById(copiedRoot, "P03_ClassStatusOpen_PreA0"));
+        duplicate.eSet(duplicate.eClass().getEStructuralFeature("policyId"), "P03_ClassStatusOpen_PreA0_Copy");
+        duplicate.eSet(duplicate.eClass().getEStructuralFeature("priority"), 79);
+        policies.add(duplicate);
+
+        PolicyAnalysisReport report = policyAnalyzer.analyze(copiedRoot);
+        assertTrue(report.warnings().stream().anyMatch(w -> "SHADOWING".equals(w.type())));
+    }
+
+    @Test
+    @DisplayName("PolicyAnalyzer warns when policies share the same priority but disagree on effect")
+    void test29_PolicyAnalyzerWarnsWhenPoliciesConflictOnEffect() {
+        EObject copiedRoot = EcoreUtil.copy(policyDecisionPoint.getPolicyModelRoot());
+        @SuppressWarnings("unchecked")
+        List<EObject> policies = (List<EObject>) copiedRoot.eGet(copiedRoot.eClass().getEStructuralFeature("policies"));
+
+        EObject duplicate = EcoreUtil.copy(findPolicyById(copiedRoot, "P01_TuitionPaid_PreA0"));
+        duplicate.eSet(duplicate.eClass().getEStructuralFeature("policyId"), "P01_TuitionPaid_PreA0_DenyTwin");
+        duplicate.eSet(duplicate.eClass().getEStructuralFeature("effect"),
+                enumLiteral(duplicate, "PolicyEffect", "DENY"));
+        policies.add(duplicate);
+
+        PolicyAnalysisReport report = policyAnalyzer.analyze(copiedRoot);
+        assertTrue(report.warnings().stream().anyMatch(w -> "CONFLICTING_PRIORITY".equals(w.type())));
+    }
+
     private void runConcurrentRegister(String studentId,
                                        AtomicInteger successCount,
                                        AtomicInteger failCount,

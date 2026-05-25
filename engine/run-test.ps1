@@ -478,6 +478,40 @@ $cases = @{
             "Usage session co the bi revoke do nghia vu ongoing khong con duoc dap ung"
         )
     }
+    "T28" = @{
+        Method = "test28_PolicyAnalyzerWarnsWhenEquivalentPoliciesShadowEachOther"
+        Title = "PolicyAnalyzer canh bao shadowing khi policy tuong duong khac priority"
+        Goal = "Chung minh analyzer phat hien cac policy co cung semantics nhung de priority khac nhau, de gay shadowing."
+        Phase = "POLICY ANALYSIS"
+        Policies = "PolicyAnalyzer"
+        Checks = @(
+            "Sao chep policy model hien tai"
+            "Nhan doi P03_ClassStatusOpen_PreA0 thanh mot policy moi"
+            "Dat priority khac voi policy goc"
+            "Chay PolicyAnalyzer va kiem tra warning SHADOWING"
+        )
+        Result = @(
+            "Analyzer phat hien nguy co shadowing"
+            "Policy set de duoc review de tranh logic trung lap kho doc"
+        )
+    }
+    "T29" = @{
+        Method = "test29_PolicyAnalyzerWarnsWhenPoliciesConflictOnEffect"
+        Title = "PolicyAnalyzer canh bao conflict khi hai policy cung priority nhung trai effect"
+        Goal = "Chung minh analyzer phat hien xung dot effect tren cung phase/predicate/action/priority."
+        Phase = "POLICY ANALYSIS"
+        Policies = "PolicyAnalyzer"
+        Checks = @(
+            "Sao chep policy model hien tai"
+            "Nhan doi P01_TuitionPaid_PreA0 thanh mot policy moi"
+            "Doi effect cua policy moi thanh DENY nhung giu nguyen priority"
+            "Chay PolicyAnalyzer va kiem tra warning CONFLICTING_PRIORITY"
+        )
+        Result = @(
+            "Analyzer phat hien conflict ve effect"
+            "Policy set co them thong tin de xu ly xung dot truoc khi dua vao runtime"
+        )
+    }
 }
 
 $aliases = @{
@@ -613,7 +647,7 @@ if ($id -eq "REPORT" -or $id -eq "TABLE") {
 }
 elseif ($id -eq "ALL") {
     Write-Section "[ALL] Chay toan bo bo test UCON"
-    Write-Host "Tong quan: Bo 27 test bao phu business policy, session, update, validator, concurrency, usage-count, onB0 va trace." -ForegroundColor Yellow
+    Write-Host "Tong quan: Bo 29 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0 va trace." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
@@ -691,8 +725,8 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T27"
+    Write-Host "  T01..T29"
     Write-Host "  P01..P27"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 27 tests)"
+    Write-Host "  all       (chay toan bo 29 tests)"
 }

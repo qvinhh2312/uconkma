@@ -47,6 +47,8 @@ Nhom nay dung cho:
 - `validation_rules.md`
 - `decision_trace_examples.md`
 - `test-result.md`
+- `benchmark_result.md`
+- `rbac_abac_ucon_comparison.md`
 
 Nhom nay dung cho:
 
@@ -57,6 +59,8 @@ Nhom nay dung cho:
 - tong hop luat validator, invariant, analyzer
 - mau `DecisionTrace` de dua vao bao cao
 - ket qua test chinh thuc cua ban hien tai
+- benchmark plan va baseline thuc nghiem
+- so sanh `RBAC / ABAC / UCONKMA`
 
 ## 4. Thu tu nen dung
 
@@ -83,3 +87,5 @@ Neu can viet bao cao / bao ve:
 5. `validation_rules.md`
 6. `decision_trace_examples.md`
 7. `test-result.md`
+8. `benchmark_result.md`
+9. `rbac_abac_ucon_comparison.md`

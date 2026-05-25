@@ -106,7 +106,7 @@ Project da co them:
 - `PolicyValidator`
   - validate policy model theo semantic rules va schema rules
 - `PolicyAnalyzer`
-  - canh bao thieu audit, missing rollback, stateful mutation can invariant-check
+  - canh bao thieu audit, missing rollback, priority collision, shadowing, conflict, stateful mutation can invariant-check
 - `DomainInvariantChecker`
   - giu cac bat bien runtime nhu `enrolled <= capacity`, `tuitionDebt >= 0`
 
@@ -196,3 +196,5 @@ Neu can bo sung noi dung hoc thuat de viet bao cao hoac bao ve:
 5. [docs/validation_rules.md](docs/validation_rules.md)
 6. [docs/decision_trace_examples.md](docs/decision_trace_examples.md)
 7. [docs/test-result.md](docs/test-result.md)
+8. [docs/benchmark_result.md](docs/benchmark_result.md)
+9. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)

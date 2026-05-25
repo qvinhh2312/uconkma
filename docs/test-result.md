@@ -9,12 +9,21 @@ cd e:\UCON_KMA\engine
 .\apache-maven-3.9.6\bin\mvn.cmd clean test
 ```
 
+```powershell
+cd e:\UCON_KMA\dsl
+.\apache-maven-3.9.6\bin\mvn.cmd test
+```
+
 ## Result
 
 ```text
-Tests run: 27, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 29, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
+
+DSL: BUILD SUCCESS
 ```
+
+Full engine suite completed locally in about `50.653 s` on the current machine snapshot.
 
 ## Y nghia
 
@@ -27,6 +36,8 @@ BUILD SUCCESS
 - decision trace
 - race condition tests
 - `onB0` ongoing obligation
+- `PolicyAnalyzer` warnings cho `shadowing` va `conflicting priority`
+- XMI explicit hon va nhat quan hon voi Ecore metamodel
 
 ## Luu y
 
