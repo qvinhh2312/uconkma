@@ -71,11 +71,12 @@ Thanh phan chinh:
   - `RegistrationRepository`
   - `AuditLogRepository`
 - `Continuous monitoring`
-  - `OngoingMonitor`
-  - `SessionRecheckService`
-  - `ClassStatusChangedEvent`
-  - `MaintenanceEnabledEvent`
-  - `StudentHoldAddedEvent`
+    - `OngoingMonitor`
+    - `SessionRecheckService`
+    - `ClassStatusChangedEvent`
+    - `MaintenanceEnabledEvent`
+    - `StudentHoldAddedEvent`
+    - `PolicyAdministrationController`
 
 ## 4. DSL policy example
 
@@ -265,8 +266,10 @@ Neu can chay demo:
 
 Baseline da verify:
 
-- `engine`: `Tests run: 33, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 35, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
+- `benchmark suite`: `BUILD SUCCESS`
+- `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`
 
 ## 12. Known limitations
 
@@ -276,7 +279,7 @@ Repo hien tai da rat gan tinh than UCON, nhung van con gioi han ro rang:
 - `ONGOING` hien da co ca `transaction-level re-check` va `event-driven revoke` cho `ACTIVE` sessions, nhung chua la mot monitoring ha tang dai han phuc tap
 - chua co scheduler / distributed event bus cho `long-running continuous monitoring` day du
 - `PolicyAnalyzer` la heuristic analyzer, chua dung `SMT/solver`
-- benchmark hien tai moi o muc baseline thuc nghiem nho
-- PAP/lifecycle hien da co `policyStatus` va runtime chi load `ACTIVE` policies, nhung chua day du toi muc `DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED`
+- benchmark hien tai moi o muc micro-benchmark cho pipeline `validate -> analyze -> PAP filter`, chua la end-to-end load test
+- PAP/lifecycle hien da co `policyStatus`, `PolicyLifecycleService`, `PolicyAdministrationController` va runtime chi load `ACTIVE` policies, nhung chua co persistence/versioning day du nhu mot PAP san xuat
 
 Nhung gioi han nay da duoc ghi ro trong docs de tranh mo ta qua muc so voi pham vi do an.

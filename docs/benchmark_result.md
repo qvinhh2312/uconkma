@@ -1,56 +1,72 @@
 # Benchmark Result
 
-Tai lieu nay mo ta cach do va baseline benchmark nho cho `UCONKMA`.
+Tai lieu nay ghi lai benchmark thuc nghiem nho cho `UCONKMA`.
 
 ## Muc tieu
 
-Benchmark khong nham chay dua hieu nang, ma de tra loi cau hoi hoc thuat:
+Benchmark tra loi 2 cau hoi:
 
-- policy engine co van kha thi khi so luong policy tang len khong
-- validator, decision trace va update/rollback co lam runtime qua nang khong
+- pipeline `validate -> analyze -> PAP filter` co con kha thi khi so policy tang len khong
+- chi phi tang co gan tuyen tinh va con chap nhan duoc cho bai toan dang ky hoc phan khong
 
 ## Pham vi do
 
-Ban hien tai tap trung vao 3 thao tac:
+Harness hien tai do chi phi cua pipeline policy-model:
 
-1. `PRE + ONGOING + POST` cho `REGISTER`
-2. `PRE + POST` cho `DROP`
-3. khoi dong `PolicyDecisionPoint` de load `Ecore + XMI + validator + analyzer`
+1. `PolicyValidator`
+2. `PolicyAnalyzer`
+3. `PolicyAdministrationPoint` loc chi giu `ACTIVE` policies
 
-## Cach do de xuat
+Khong do latency REST end-to-end. Muc tieu cua benchmark nay la chi phi enforcement/model-processing o tang policy.
 
-1. Giu nguyen policy set hien tai trong `xmi/ucon_policy.xmi`
-2. Tao them cac ban sao policy khong thay doi semantics de nang tong so policy len cac moc:
-   - `25` policy (baseline hien tai)
-   - `50` policy
-   - `100` policy
-   - `500` policy
-3. Do rieng:
-   - average latency
-   - p95
-   - p99
-   - policy-model load + validation time
-   - trace/update overhead
+## Cach do
 
-## Ket qua baseline hien tai
+- lenh chay:
 
-Ban repo hien tai da duoc xac nhan o muc `functional baseline`:
+```powershell
+cd e:\UCON_KMA\engine
+.\apache-maven-3.9.6\bin\mvn.cmd -Dtest=PolicyBenchmarkSuite test
+```
 
-- `mvn clean test` trong `engine` xanh
-- `Tests run: 33, Failures: 0, Errors: 0, Skipped: 0`
-- full engine test suite hoan tat tren may hien tai trong khoang `43.088 s`
-- co `Authorization`, `Condition`, `Obligation`
-- co `preUpdates`, `ongoingUpdates`, `rollbackUpdates`, `postUpdates`
-- co `UsageSession`, `DecisionTrace`, `PolicyValidator`, `PolicyAnalyzer`
-- co `policy metadata` va `ACTIVE-only PAP filtering`
-- co `event-driven revoke` baseline qua `OngoingMonitor`
+- policy goc duoc nhan ban trong bo nho de tao cac moc:
+  - `25`
+  - `50`
+  - `100`
+  - `500`
+- clone benchmark duoc doi `policyId` va `priority` de van hop le voi semantic validator
+- warm-up: `3`
+- sample: `10`
+- so do:
+  - `Avg`
+  - `P95`
+  - `P99`
 
-## Doc so lieu benchmark the nao
+## Moi truong do
 
-- neu latency tang tuyen tinh theo so policy, he thong van chap nhan duoc voi bai toan dang ky hoc phan
-- neu `validator/analyzer` tang chi phi luc khoi dong nhung runtime request van on dinh, kien truc hien tai van hop ly
-- neu `trace/update` la chi phi chinh, can toi uu o tang `POST` va `ONGOING`
+- ngay do: `2026-05-25`
+- may local: workspace `E:\UCON_KMA`
+- JDK: `21.0.9`
+- Maven local repo: `E:\UCON_KMA\.m2\repository`
+- trace runtime va DB web flow khong duoc dua vao benchmark nay
 
-## Ghi chu
+## Ket qua
 
-Tai lieu nay la baseline benchmark plan chinh thuc cua repo. Khi bo sung harness do hieu nang rieng, cap nhat file nay bang bang so lieu thuc do tren may test cu the.
+| Policy count | Avg ms | P95 ms | P99 ms | Notes |
+|---|---:|---:|---:|---|
+| 25 | 3.389 | 4.599 | 4.599 | validate + analyze + PAP filter |
+| 50 | 4.402 | 5.696 | 5.696 | validate + analyze + PAP filter |
+| 100 | 5.075 | 7.001 | 7.001 | validate + analyze + PAP filter |
+| 500 | 23.026 | 32.336 | 32.336 | validate + analyze + PAP filter |
+
+## Nhan xet
+
+- tu `25 -> 100` policy, latency tang nhe va van o muc vai milliseconds
+- moc `500` policy van chay on dinh, nhung bat dau thay ro chi phi validator/analyzer tang len
+- doi voi quy mo policy hien tai cua do an, pipeline nay van kha thi
+- chi phi benchmark nay nghieng ve `model validation/analyze`, khong phai chi phi `REST + DB + trace` end-to-end
+
+## Gioi han
+
+- benchmark dung policy clone trong bo nho, khong phai 500 policy duoc thiet ke tay hoan toan khac nhau
+- chua tach rieng `validator time`, `analyzer time`, `trace overhead`
+- chua do throughput song song

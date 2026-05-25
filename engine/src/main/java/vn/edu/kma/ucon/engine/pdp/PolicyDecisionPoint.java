@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
@@ -25,6 +26,7 @@ public class PolicyDecisionPoint {
     private final PolicyAnalyzer policyAnalyzer;
     private final PolicyAdministrationPoint policyAdministrationPoint;
     
+    private EObject authoringPolicyModelRoot;
     private EObject policyModelRoot;
     private EPackage uconPackage;
 
@@ -39,12 +41,16 @@ public class PolicyDecisionPoint {
     @PostConstruct
     public void init() {
         log.info("Initializing UCON Policy Decision Point...");
-        
+
+        reload();
+    }
+
+    public synchronized void reload() {
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("ecore", new EcoreResourceFactoryImpl());
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("xmi", new XMIResourceFactoryImpl());
-        
+
         ResourceSet resSet = new ResourceSetImpl();
-        
+
         try {
             File ecoreFile = new File("../metamodel/ucon.ecore");
             if (!ecoreFile.exists()) ecoreFile = new File("metamodel/ucon.ecore");
@@ -59,25 +65,45 @@ public class PolicyDecisionPoint {
             if (!xmiFile.exists()) xmiFile = new File(System.getProperty("user.dir"), "xmi/ucon_policy.xmi");
             Resource xmiResource = resSet.getResource(URI.createFileURI(xmiFile.getAbsolutePath()), true);
             EObject rawPolicyModel = xmiResource.getContents().get(0);
-            policyValidator.validate(rawPolicyModel);
-            PolicyAnalysisReport analysisReport = policyAnalyzer.analyze(rawPolicyModel);
-            analysisReport.warnings().forEach(warning ->
-                    log.warn("Policy analysis warning [{}] {}: {}",
-                            warning.type(), warning.policy(), warning.message()));
-            this.policyModelRoot = policyAdministrationPoint.activateValidatedPolicies(rawPolicyModel);
-
-            @SuppressWarnings("unchecked")
-            List<EObject> policies = (List<EObject>) policyModelRoot.eGet(((org.eclipse.emf.ecore.EClass) uconPackage.getEClassifier("PolicyModel")).getEStructuralFeature("policies"));
-            log.info("Loaded {} ACTIVE policies with {} analysis warnings.", policies.size(), analysisReport.warnings().size());
-            
+            applyPolicyModel(rawPolicyModel);
         } catch (Exception e) {
             log.error("Failed to load UCON Policy Engine files!", e);
             throw new IllegalStateException("UCON PDP startup failed because metamodel, policy model, or semantic validation is invalid.", e);
         }
     }
 
+    public synchronized void replacePolicyModel(EObject policyModelRoot) {
+        if (policyModelRoot == null) {
+            throw new IllegalArgumentException("policyModelRoot must not be null");
+        }
+        applyPolicyModel(policyModelRoot);
+    }
+
+    private void applyPolicyModel(EObject rawPolicyModel) {
+        try {
+            policyValidator.validate(rawPolicyModel);
+            PolicyAnalysisReport analysisReport = policyAnalyzer.analyze(rawPolicyModel);
+            analysisReport.warnings().forEach(warning ->
+                    log.warn("Policy analysis warning [{}] {}: {}",
+                            warning.type(), warning.policy(), warning.message()));
+            this.authoringPolicyModelRoot = EcoreUtil.copy(rawPolicyModel);
+            this.policyModelRoot = policyAdministrationPoint.activateValidatedPolicies(this.authoringPolicyModelRoot);
+
+            @SuppressWarnings("unchecked")
+            List<EObject> policies = (List<EObject>) policyModelRoot.eGet(((org.eclipse.emf.ecore.EClass) uconPackage.getEClassifier("PolicyModel")).getEStructuralFeature("policies"));
+            log.info("Loaded {} ACTIVE policies with {} analysis warnings.", policies.size(), analysisReport.warnings().size());
+        } catch (Exception e) {
+            log.error("Failed to apply policy model!", e);
+            throw new IllegalStateException("UCON PDP failed to apply the policy model because validation or analysis failed.", e);
+        }
+    }
+
     public EObject getPolicyModelRoot() {
         return policyModelRoot;
+    }
+
+    public EObject getAuthoringPolicyModelRoot() {
+        return authoringPolicyModelRoot;
     }
 
     public EPackage getUconPackage() {

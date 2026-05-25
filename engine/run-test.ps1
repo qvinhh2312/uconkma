@@ -584,6 +584,39 @@ $cases = @{
             "ACTIVE session bi thu hoi khi student state khong con hop le"
         )
     }
+    "T34" = @{
+        Method = "test34_PolicyLifecycleServiceSupportsFullTransitionChain"
+        Title = "PAP lifecycle ho tro day du transition hop le"
+        Goal = "Chung minh policy co the di qua chuoi DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED va chi ACTIVE moi nam trong runtime."
+        Phase = "PAP / LIFECYCLE"
+        Policies = "PolicyLifecycleService, PolicyAdministrationPoint"
+        Checks = @(
+            "Nhan ban mot policy tu authoring model"
+            "Dat policyStatus = DRAFT"
+            "Transition lan luot sang VALIDATED, ACTIVE, DEPRECATED, ARCHIVED"
+            "Kiem tra runtime chi chua policy khi status = ACTIVE"
+        )
+        Result = @(
+            "Lifecycle transition hop le duoc ho tro"
+            "Runtime PDP chi load ACTIVE policies"
+        )
+    }
+    "T35" = @{
+        Method = "test35_PolicyLifecycleServiceRejectsInvalidTransition"
+        Title = "PAP lifecycle tu choi transition khong hop le"
+        Goal = "Chung minh runtime khong cho bo qua thu tu lifecycle, vi du DRAFT -> ACTIVE truc tiep."
+        Phase = "PAP / LIFECYCLE"
+        Policies = "PolicyLifecycleService"
+        Checks = @(
+            "Nhan ban mot policy va dat status = DRAFT"
+            "Thu transition truc tiep sang ACTIVE"
+            "Kiem tra service nem IllegalStateException"
+        )
+        Result = @(
+            "Lifecycle duoc rang buoc theo thu tu hop le"
+            "PAP khong cho active policy chua validate"
+        )
+    }
 }
 
 $aliases = @{
@@ -719,7 +752,7 @@ if ($id -eq "REPORT" -or $id -eq "TABLE") {
 }
 elseif ($id -eq "ALL") {
     Write-Section "[ALL] Chay toan bo bo test UCON"
-    Write-Host "Tong quan: Bo 29 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0 va trace." -ForegroundColor Yellow
+    Write-Host "Tong quan: Bo 35 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0, PAP lifecycle va continuous monitoring." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
@@ -797,8 +830,8 @@ else {
     Write-Host ""
     Write-Host "Cach dung: .\run-test.ps1 <ID>"
     Write-Host ""
-    Write-Host "  T01..T33"
+    Write-Host "  T01..T35"
     Write-Host "  P01..P27"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 29 tests)"
+    Write-Host "  all       (chay toan bo 35 tests)"
 }

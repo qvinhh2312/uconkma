@@ -40,6 +40,7 @@ import vn.edu.kma.ucon.engine.pdp.PolicyAnalyzer;
 import vn.edu.kma.ucon.engine.pdp.PolicyDecisionPoint;
 import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
 import vn.edu.kma.ucon.engine.pdp.PolicyFunctionRegistry;
+import vn.edu.kma.ucon.engine.pdp.PolicyLifecycleService;
 import vn.edu.kma.ucon.engine.pdp.PolicyModelSemanticValidator;
 import vn.edu.kma.ucon.engine.pdp.PolicyValidator;
 import vn.edu.kma.ucon.engine.pdp.Phase;
@@ -95,6 +96,8 @@ class UconEngineApplicationTests {
     PolicyAnalyzer policyAnalyzer;
     @Autowired
     PolicyAdministrationPoint policyAdministrationPoint;
+    @Autowired
+    PolicyLifecycleService policyLifecycleService;
     @Autowired
     AttributeSchema attributeSchema;
     @Autowired
@@ -504,9 +507,14 @@ class UconEngineApplicationTests {
                 new PolicyAdministrationPoint());
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, pdp::init);
-        assertTrue(ex.getMessage().contains("PDP startup failed"));
+        assertTrue(ex.getMessage().contains("failed to apply")
+                || ex.getMessage().contains("PDP startup failed"));
         assertNotNull(ex.getCause());
-        assertTrue(ex.getCause().getMessage().contains("forced semantic failure"));
+        Throwable rootCause = ex;
+        while (rootCause.getCause() != null) {
+            rootCause = rootCause.getCause();
+        }
+        assertTrue(rootCause.getMessage().contains("forced semantic failure"));
     }
 
     @Test
@@ -836,6 +844,60 @@ class UconEngineApplicationTests {
         assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
         assertEquals("STUDENT_ON_HOLD", reloaded.getRevokeReason());
         assertEquals("DENY", auditRepo.findTopByRequestIdOrderByIdDesc(session.getRequestId()).orElseThrow().getDecision());
+    }
+
+    @Test
+    @DisplayName("Policy lifecycle service supports DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED")
+    void test34_PolicyLifecycleServiceSupportsFullTransitionChain() {
+        EObject originalRoot = EcoreUtil.copy(policyDecisionPoint.getAuthoringPolicyModelRoot());
+        try {
+            EObject workingRoot = EcoreUtil.copy(originalRoot);
+            @SuppressWarnings("unchecked")
+            List<EObject> policies = (List<EObject>) workingRoot.eGet(workingRoot.eClass().getEStructuralFeature("policies"));
+
+            EObject draftCopy = EcoreUtil.copy(findPolicyById(workingRoot, "P01_TuitionPaid_PreA0"));
+            draftCopy.eSet(draftCopy.eClass().getEStructuralFeature("policyId"), "P01_TuitionPaid_LifecycleDemo");
+            draftCopy.eSet(draftCopy.eClass().getEStructuralFeature("priority"), 101);
+            draftCopy.eSet(draftCopy.eClass().getEStructuralFeature("policyStatus"),
+                    enumLiteral(draftCopy, "PolicyStatus", "DRAFT"));
+            policies.add(draftCopy);
+            policyDecisionPoint.replacePolicyModel(workingRoot);
+
+            assertEquals("DRAFT", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "DRAFT").status());
+            assertEquals("VALIDATED", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "VALIDATED").status());
+            assertEquals("ACTIVE", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "ACTIVE").status());
+            assertTrue(policyLifecycleService.listRuntimePolicyIds().contains("P01_TuitionPaid_LifecycleDemo"));
+            assertEquals("DEPRECATED", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "DEPRECATED").status());
+            assertFalse(policyLifecycleService.listRuntimePolicyIds().contains("P01_TuitionPaid_LifecycleDemo"));
+            assertEquals("ARCHIVED", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "ARCHIVED").status());
+        } finally {
+            policyDecisionPoint.replacePolicyModel(originalRoot);
+        }
+    }
+
+    @Test
+    @DisplayName("Policy lifecycle service rejects invalid transition")
+    void test35_PolicyLifecycleServiceRejectsInvalidTransition() {
+        EObject originalRoot = EcoreUtil.copy(policyDecisionPoint.getAuthoringPolicyModelRoot());
+        try {
+            EObject workingRoot = EcoreUtil.copy(originalRoot);
+            @SuppressWarnings("unchecked")
+            List<EObject> policies = (List<EObject>) workingRoot.eGet(workingRoot.eClass().getEStructuralFeature("policies"));
+
+            EObject draftCopy = EcoreUtil.copy(findPolicyById(workingRoot, "P01_TuitionPaid_PreA0"));
+            draftCopy.eSet(draftCopy.eClass().getEStructuralFeature("policyId"), "P01_TuitionPaid_InvalidLifecycle");
+            draftCopy.eSet(draftCopy.eClass().getEStructuralFeature("priority"), 101);
+            draftCopy.eSet(draftCopy.eClass().getEStructuralFeature("policyStatus"),
+                    enumLiteral(draftCopy, "PolicyStatus", "DRAFT"));
+            policies.add(draftCopy);
+            policyDecisionPoint.replacePolicyModel(workingRoot);
+
+            IllegalStateException ex = assertThrows(IllegalStateException.class,
+                    () -> policyLifecycleService.transitionPolicy("P01_TuitionPaid_InvalidLifecycle", "ACTIVE"));
+            assertTrue(ex.getMessage().contains("Invalid lifecycle transition"));
+        } finally {
+            policyDecisionPoint.replacePolicyModel(originalRoot);
+        }
     }
 
     private void runConcurrentRegister(String studentId,
