@@ -3,8 +3,8 @@ Chuan bi
 Mo terminal 1:
 
 ```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+cd engine
+mvn spring-boot:run
 ```
 
 Cho app len, thay cac dong:
@@ -303,7 +303,7 @@ Cach demo nhanh nhat bang script
 Neu khong muon go tung request:
 
 ```powershell
-cd e:\UCON_KMA\engine
+cd engine
 .\run-rest-demo.bat all
 ```
 

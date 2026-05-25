@@ -30,8 +30,8 @@ Student or ClassSection not found.
 ## 3. Cach chay app
 
 ```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+cd engine
+mvn spring-boot:run
 ```
 
 ## 4. Kien truc runtime lien quan den REST

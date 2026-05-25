@@ -27,13 +27,17 @@ Tai lieu nay tong hop trang thai ky thuat cua repo truoc khi nop/bao ve.
 | Tests | Validator test | Co | `x` | Semantic + schema validation tests co san |
 | Tests | Trace test | Co | `x` | Decision trace pass/fail/update/rollback da duoc assert |
 | Tests | DSL -> XMI test | Nen | `x` | `UconDslToXmiParserTest` |
-| Tests | Runtime controller flow test | Co | `x` | `test37` xac nhan controller dung `PRE/ONGOING/POST`; `test38` xac nhan DROP fail boi P16 |
+| Tests | Runtime controller flow test | Co | `x` | `ControllerRuntimeFlowTest` + `test37/test38` |
+| Tests | Artifact formatting guard | Co | `x` | `ArtifactFormattingTest` chan file chinh bi minify mot dong |
 | Docs | README sach | Co | `x` | Badge, architecture, DSL/XMI, docs, limitations |
 | Docs | Mapping UCONABC | Co | `x` | `docs/ucon_mapping.md` |
 | Docs | Coverage report | Co | `x` | `docs/ucon_coverage_report.md` |
+| Docs | Generated docs tu DSL/XMI | Nen | `x` | `tools/generate-docs.ps1` sinh `docs/generated/*` |
+| Docs | Mutation testing notes | Nen | `x` | `docs/mutation_testing.md` |
 | CI | GitHub Actions pass | Co | `x` | `.github/workflows/maven.yml` |
 | Quality | Khong file minified mot dong | Co | `x` | README/grammar/DSL/XMI/docs da format |
 | Quality | Khong hard-code policy ngoai DSL | Co | `x` | Controller khong tu quyet rule; workflow danh gia qua evaluators/PolicyEngine |
+| Quality | Formatting guard | Nen | `x` | `.editorconfig` + `ArtifactFormattingTest` |
 
 ## Kiem tra bo sung
 
@@ -42,8 +46,8 @@ Tai lieu nay tong hop trang thai ky thuat cua repo truoc khi nop/bao ve.
 - `dsl/pom.xml` da khai bao `maven-surefire-plugin`, `maven-enforcer-plugin`, va parser tests.
 - Event-driven monitoring da co cho `maintenance`, `class status`, `student hold`.
 - `JaCoCo` local coverage:
-  - line coverage: `80.15%`
-  - branch coverage: `60.57%`
+  - line coverage: `80.39%`
+  - branch coverage: `60.66%`
 
 ## Ghi chu gioi han con lai
 

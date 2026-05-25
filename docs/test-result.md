@@ -5,32 +5,32 @@ Tai lieu nay ghi lai ket qua kiem thu tong hop cho ban hien tai cua repo.
 ## Command
 
 ```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd test
+cd engine
+mvn test
 ```
 
 ```powershell
-cd e:\UCON_KMA\dsl
-.\apache-maven-3.9.6\bin\mvn.cmd test
+cd dsl
+mvn test
 ```
 
 ## Result
 
 ```text
-Engine: Tests run: 38, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 48, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 
 DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Full engine suite completed locally in `42.25 s` on the current machine snapshot.
+Full engine suite completed locally in about `60 s` on the current machine snapshot.
 
 ## Coverage
 
 ```text
-JaCoCo line coverage: 80.15% (1611 covered / 399 missed)
-JaCoCo branch coverage: 60.57% (530 covered / 345 missed)
+JaCoCo line coverage: 80.39% (1636 covered / 399 missed)
+JaCoCo branch coverage: 60.66% (532 covered / 345 missed)
 ```
 
 ## Y nghia
@@ -53,6 +53,10 @@ JaCoCo branch coverage: 60.57% (530 covered / 345 missed)
 - co test rieng xac nhan `xmi/ucon_policy.xmi` load dung theo `metamodel/ucon.ecore` va vuot qua semantic validation
 - co test hoi quy xac nhan endpoint public dung `PRE/ONGOING/POST`, khong dung phase legacy
 - co test hoi quy xac nhan `DROP` chua dang ky bi tu choi boi `P16_DropOnlyIfRegistered_PreA0`, khong hard-code trong controller
+- co `ControllerRuntimeFlowTest` rieng cho controller runtime flow
+- co `XmiEcoreConformanceTest` rieng cho metamodel/XMI conformance
+- co `ArtifactFormattingTest` chan artifact quan trong bi minify mot dong hoac quay lai phase legacy
+- co `docs/generated/*` sinh tu `tools/generate-docs.ps1` de giam lech giua XMI/DSL va docs
 - co parser test rieng cho:
   - `DSL -> XMI`
   - syntax error ro rang
@@ -62,8 +66,8 @@ JaCoCo branch coverage: 60.57% (530 covered / 345 missed)
 ## Benchmark command da xac nhan
 
 ```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd -Dtest=PolicyBenchmarkSuite test
+cd engine
+mvn -Dtest=PolicyBenchmarkSuite test
 ```
 
 ```text

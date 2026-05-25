@@ -188,6 +188,12 @@ class UconEngineApplicationTests {
         assertEquals(200, response.getStatusCode().value());
         assertEquals("Successfully enrolled.", response.getBody().getMessage());
         assertNotNull(response.getBody().getDecisionTrace());
+        assertNotNull(response.getBody().getDecisionTrace().snapshotBefore());
+        assertNotNull(response.getBody().getDecisionTrace().snapshotAfter());
+        assertEquals(0, response.getBody().getDecisionTrace().snapshotBefore().get("subject.currentCredits"));
+        assertEquals(4, response.getBody().getDecisionTrace().snapshotAfter().get("subject.currentCredits"));
+        assertEquals(4, response.getBody().getDecisionTrace().snapshotBefore().get("object.enrolled"));
+        assertEquals(5, response.getBody().getDecisionTrace().snapshotAfter().get("object.enrolled"));
         assertEquals(8, response.getBody().getDecisionTrace().phases().size());
         assertEquals("COMMITTED", response.getBody().getDecisionTrace().sessionStatus());
         assertEquals("PRE", response.getBody().getDecisionTrace().phases().get(0).phase());

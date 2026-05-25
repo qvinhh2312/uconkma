@@ -202,36 +202,36 @@ Project da co:
   - `maven-enforcer-plugin`
   - `jacoco-maven-plugin`
 - local coverage from `JaCoCo`:
-  - line coverage: `80.15%`
-  - branch coverage: `60.57%`
+  - line coverage: `80.39%`
+  - branch coverage: `60.66%`
 
 ## 8. Build / test / run
 
 ### Build DSL
 
-```powershell
-cd e:\UCON_KMA\dsl
-.\apache-maven-3.9.6\bin\mvn.cmd clean install
+```bash
+cd dsl
+mvn clean install
 ```
 
 ### Test engine
 
-```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd clean test
+```bash
+cd engine
+mvn clean test
 ```
 
 ### Test DSL parser
 
-```powershell
-cd e:\UCON_KMA\dsl
-.\apache-maven-3.9.6\bin\mvn.cmd test
+```bash
+cd dsl
+mvn test
 ```
 
 ### Run theo test / policy id
 
 ```powershell
-cd e:\UCON_KMA\engine
+cd engine
 .\run-test.ps1 T01
 .\run-test.ps1 P20
 .\run-test.ps1 REPORT
@@ -239,10 +239,13 @@ cd e:\UCON_KMA\engine
 
 ### Run Spring Boot app
 
-```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+```bash
+cd engine
+mvn spring-boot:run
 ```
+
+Neu dung Windows va Maven bundle trong repo, co the thay `mvn` bang
+`.\apache-maven-3.9.6\bin\mvn.cmd` sau khi `cd` vao module tuong ung.
 
 ## 9. REST API demo
 
@@ -278,8 +281,12 @@ Neu can viet bao cao / bao ve:
 6. [docs/decision_trace_examples.md](docs/decision_trace_examples.md)
 7. [docs/test-result.md](docs/test-result.md)
 8. [docs/final_code_quality_checklist.md](docs/final_code_quality_checklist.md)
-8. [docs/benchmark_result.md](docs/benchmark_result.md)
-9. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
+9. [docs/benchmark_result.md](docs/benchmark_result.md)
+10. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
+11. [docs/mutation_testing.md](docs/mutation_testing.md)
+12. [docs/generated/policies.md](docs/generated/policies.md)
+13. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
+14. [docs/generated/validation_report.md](docs/generated/validation_report.md)
 
 Neu can chay demo:
 
@@ -291,7 +298,7 @@ Neu can chay demo:
 
 Baseline da verify:
 
-- `engine`: `Tests run: 38, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 48, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`

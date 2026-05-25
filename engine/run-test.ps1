@@ -1,7 +1,11 @@
 param([string]$id = "all")
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = Split-Path -Parent $scriptRoot
 $mvn = Join-Path $scriptRoot "apache-maven-3.9.6\bin\mvn.cmd"
+if (-not (Test-Path $mvn)) {
+    $mvn = "mvn"
+}
 $cls = "UconEngineApplicationTests"
 
 $cases = @{
@@ -720,10 +724,11 @@ function Show-CaseInfo($displayId, $canonicalId, $case) {
 }
 
 function Run-Maven($arguments) {
-    $env:MAVEN_OPTS = "-Dmaven.repo.local=e:\UCON_KMA\.m2\repository"
-    $env:MAVEN_USER_HOME = "e:\UCON_KMA\.m2"
-    $env:USERPROFILE = "e:\UCON_KMA"
-    $env:HOME = "e:\UCON_KMA"
+    $mavenHome = Join-Path $repoRoot ".m2"
+    $env:MAVEN_OPTS = "-Dmaven.repo.local=$mavenHome\repository"
+    $env:MAVEN_USER_HOME = $mavenHome
+    $env:USERPROFILE = $repoRoot
+    $env:HOME = $repoRoot
     Push-Location $scriptRoot
     try {
         & $mvn @arguments 2>&1 | ForEach-Object { $_.ToString() }
@@ -803,7 +808,7 @@ if ($id -eq "REPORT" -or $id -eq "TABLE") {
 }
 elseif ($id -eq "ALL") {
     Write-Section "[ALL] Chay toan bo bo test UCON"
-    Write-Host "Tong quan: Bo 38 test bao phu business policy, session, update, validator, analyzer, concurrency, usage-count, onB0, PAP lifecycle, XMI conformance, runtime controller flow va continuous monitoring." -ForegroundColor Yellow
+    Write-Host "Tong quan: Bo 48 automated tests bao phu 38 scenario cases va 10 structural/controller/XMI/format tests." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "[RUNNING CHECK]" -ForegroundColor Green
     Write-Bullets "-" @(
@@ -884,5 +889,5 @@ else {
     Write-Host "  T01..T38"
     Write-Host "  P01..P27"
     Write-Host "  REPORT    (xem bang tong hop test/policy)"
-    Write-Host "  all       (chay toan bo 38 tests)"
+    Write-Host "  all       (chay toan bo automated test suite, hien tai 48 tests)"
 }

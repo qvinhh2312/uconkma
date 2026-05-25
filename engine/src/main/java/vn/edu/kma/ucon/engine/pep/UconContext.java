@@ -2,6 +2,7 @@ package vn.edu.kma.ucon.engine.pep;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import vn.edu.kma.ucon.engine.pdp.Environment;
 import vn.edu.kma.ucon.engine.pdp.PhaseTrace;
@@ -22,6 +23,8 @@ public class UconContext {
     private Environment ongoingEnvironment;
     private UsageSession usageSession;
     private final List<PhaseTrace> traces = new ArrayList<>();
+    private Map<String, Object> snapshotBefore;
+    private Map<String, Object> snapshotAfter;
 
     public UconContext(UconRequest request,
                        Student student,
@@ -71,5 +74,21 @@ public class UconContext {
 
     public List<PhaseTrace> getTraces() {
         return traces;
+    }
+
+    public Map<String, Object> getSnapshotBefore() {
+        return snapshotBefore;
+    }
+
+    public void setSnapshotBefore(Map<String, Object> snapshotBefore) {
+        this.snapshotBefore = snapshotBefore;
+    }
+
+    public Map<String, Object> getSnapshotAfter() {
+        return snapshotAfter;
+    }
+
+    public void setSnapshotAfter(Map<String, Object> snapshotAfter) {
+        this.snapshotAfter = snapshotAfter;
     }
 }

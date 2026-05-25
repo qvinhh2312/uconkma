@@ -114,6 +114,18 @@ Y nghia:
   "classId": "CS102_01",
   "sessionId": "session-003",
   "sessionStatus": "COMMITTED",
+  "snapshotBefore": {
+    "subject.currentCredits": 0,
+    "subject.tuitionDebt": 0,
+    "object.enrolled": 4,
+    "object.reservedSeats": 0
+  },
+  "snapshotAfter": {
+    "subject.currentCredits": 4,
+    "subject.tuitionDebt": 4000000,
+    "object.enrolled": 5,
+    "object.reservedSeats": 0
+  },
   "phases": [
     {
       "phase": "PRE",
@@ -147,3 +159,4 @@ Y nghia:
 
 - request duoc commit thanh cong
 - trace cho thay ro pha nao da update state, pha nao la obligation
+- `snapshotBefore` va `snapshotAfter` cho thay mutable attributes thay doi nhu the nao sau enforcement

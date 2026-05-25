@@ -24,8 +24,8 @@ Khong do latency REST end-to-end. Muc tieu cua benchmark nay la chi phi enforcem
 - lenh chay:
 
 ```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd -Dtest=PolicyBenchmarkSuite test
+cd engine
+mvn -Dtest=PolicyBenchmarkSuite test
 ```
 
 - policy goc duoc nhan ban trong bo nho de tao cac moc:

@@ -16,11 +16,11 @@ import vn.edu.kma.ucon.engine.pip.entity.Student;
 import vn.edu.kma.ucon.engine.update.PlannedPolicyUpdate;
 import vn.edu.kma.ucon.engine.update.UpdatePlan;
 
-@Service
 /**
  * Core runtime evaluator that filters active policies by phase/predicate/action,
  * executes conditions, combines decisions, and prepares update plans.
  */
+@Service
 public class PolicyEngine {
 
     private static final Logger log = LoggerFactory.getLogger(PolicyEngine.class);

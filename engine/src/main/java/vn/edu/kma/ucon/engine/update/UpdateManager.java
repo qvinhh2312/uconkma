@@ -13,11 +13,11 @@ import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 
-@Service
 /**
  * Builds and executes mutable update plans emitted by the policy engine for a
  * given UCON phase.
  */
+@Service
 public class UpdateManager {
 
     private final PolicyEngine policyEngine;

@@ -9,11 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import vn.edu.kma.ucon.engine.pep.UconRequest;
 
-@Service
 /**
  * Manages usage-session lifecycle state independently from the main business
  * transaction so revocation/failure status is preserved for tracing.
  */
+@Service
 public class UsageSessionService {
 
     private final UsageSessionRepository repository;

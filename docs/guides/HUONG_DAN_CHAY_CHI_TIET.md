@@ -69,8 +69,8 @@ java -version
 ## 5. Build DSL
 
 ```powershell
-cd e:\UCON_KMA\dsl
-.\apache-maven-3.9.6\bin\mvn.cmd clean install
+cd dsl
+mvn clean install
 ```
 
 Ket qua mong doi:
@@ -82,8 +82,8 @@ BUILD SUCCESS
 ## 6. Build va test engine
 
 ```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd clean test
+cd engine
+mvn clean test
 ```
 
 Ket qua mong doi:
@@ -96,7 +96,7 @@ BUILD SUCCESS
 ## 7. Chay theo test ID / policy ID
 
 ```powershell
-cd e:\UCON_KMA\engine
+cd engine
 .\run.bat T01
 .\run.bat P01
 .\run.bat REPORT
@@ -166,8 +166,8 @@ Du lieu mau co san:
 ## 10. Chay Spring Boot app
 
 ```powershell
-cd e:\UCON_KMA\engine
-.\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+cd engine
+mvn spring-boot:run
 ```
 
 Ket qua mong doi:
@@ -339,7 +339,7 @@ Day la cach nhin thay doi state de demo ro hon response chuoi don le.
 ## 15. Chay script demo runtime
 
 ```powershell
-cd e:\UCON_KMA\engine
+cd engine
 .\run-rest-demo.bat 1
 .\run-rest-demo.bat 2
 .\run-rest-demo.bat 3

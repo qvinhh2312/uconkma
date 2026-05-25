@@ -2,6 +2,9 @@ package vn.edu.kma.ucon.engine.pdp;
 
 import java.util.List;
 
+/**
+ * Detailed result for one phase/predicate slice of a UCON decision.
+ */
 public record PhaseTrace(
         String phase,
         String predicate,

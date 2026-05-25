@@ -1,6 +1,7 @@
 package vn.edu.kma.ucon.engine.pep;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -77,6 +78,7 @@ public class UconExecutionWorkflow {
     }
 
     public UconWorkflowResult execute(UconContext context, String successMessage, String successExplanation) {
+        context.setSnapshotBefore(snapshot(context.getStudent(), context.getClassSection()));
         logRequestStart(context);
 
         UconWorkflowResult deniedPre = evaluatePrePhase(context);
@@ -210,6 +212,7 @@ public class UconExecutionWorkflow {
             entityManager.flush();
             invariantChecker.assertValid(context.getStudent(), context.getClassSection());
             usageSessionService.markCommitted(context.getUsageSession());
+            context.setSnapshotAfter(snapshot(context.getStudent(), context.getClassSection()));
         } catch (RuntimeException ex) {
             rollbackApplied = rollbackManager.apply(
                     rollbackPlan,
@@ -429,6 +432,9 @@ public class UconExecutionWorkflow {
 
     private DecisionTrace traceFor(UconContext context) {
         UsageSession session = context.getUsageSession();
+        if (context.getSnapshotAfter() == null) {
+            context.setSnapshotAfter(snapshot(context.getStudent(), context.getClassSection()));
+        }
         return new DecisionTrace(
                 context.getRequest().getRequestId(),
                 context.getRequest().getActionType(),
@@ -437,7 +443,25 @@ public class UconExecutionWorkflow {
                 context.getRequest().getClassId(),
                 session != null ? session.getSessionId() : null,
                 session != null && session.getStatus() != null ? session.getStatus().name() : null,
+                context.getSnapshotBefore(),
+                context.getSnapshotAfter(),
                 List.copyOf(context.getTraces()));
+    }
+
+    private Map<String, Object> snapshot(Student student, ClassSection classSection) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("subject.studentId", student.getStudentId());
+        snapshot.put("subject.currentCredits", student.getCurrentCredits());
+        snapshot.put("subject.tuitionDebt", student.getTuitionDebt());
+        snapshot.put("subject.registerAttemptCount", student.getRegisterAttemptCount());
+        snapshot.put("subject.dropCountForSemester", student.getDropCountForSemester());
+        snapshot.put("subject.registeredClassIds", safe(student.getRegisteredClassIds()));
+        snapshot.put("object.classId", classSection.getClassId());
+        snapshot.put("object.status", safe(classSection.getStatus()));
+        snapshot.put("object.enrolled", classSection.getEnrolled());
+        snapshot.put("object.reservedSeats", classSection.getReservedSeats());
+        snapshot.put("object.capacity", classSection.getCapacity());
+        return snapshot;
     }
 
     private String studentSnapshot(Student student) {

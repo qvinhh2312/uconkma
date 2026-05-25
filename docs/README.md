@@ -49,6 +49,10 @@ Nhom nay dung cho:
 - `test-result.md`
 - `benchmark_result.md`
 - `rbac_abac_ucon_comparison.md`
+- `mutation_testing.md`
+- `generated/policies.md`
+- `generated/ucon_coverage.md`
+- `generated/validation_report.md`
 
 Nhom nay dung cho:
 
@@ -63,6 +67,8 @@ Nhom nay dung cho:
 - ket qua test chinh thuc cua ban hien tai
 - benchmark plan va baseline thuc nghiem
 - so sanh `RBAC / ABAC / UCONKMA`
+- mutation testing nhe cho validator/analyzer
+- generated docs tu `DSL/XMI`
 
 ## 4. Thu tu nen dung
 
@@ -91,3 +97,7 @@ Neu can viet bao cao / bao ve:
 7. `test-result.md`
 8. `benchmark_result.md`
 9. `rbac_abac_ucon_comparison.md`
+10. `mutation_testing.md`
+11. `generated/policies.md`
+12. `generated/ucon_coverage.md`
+13. `generated/validation_report.md`
