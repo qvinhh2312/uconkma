@@ -46,7 +46,7 @@ Tai lieu nay tong hop trang thai ky thuat cua repo truoc khi nop/bao ve.
 - `dsl/pom.xml` da khai bao `maven-surefire-plugin`, `maven-enforcer-plugin`, va parser tests.
 - Event-driven monitoring da co cho `maintenance`, `class status`, `student hold`.
 - `JaCoCo` local coverage:
-  - line coverage: `80.70%`
+  - line coverage: `80.72%`
   - branch coverage: `60.98%`
 
 ## Ghi chu gioi han con lai

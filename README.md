@@ -203,7 +203,7 @@ Project da co:
   - `jacoco-maven-plugin`
   - `spotless-maven-plugin` profile `format-check`
 - local coverage from `JaCoCo`:
-  - line coverage: `80.70%`
+  - line coverage: `80.72%`
   - branch coverage: `60.98%`
 
 ## 8. Build / test / run
@@ -297,17 +297,18 @@ Neu can viet bao cao / bao ve:
 4. [docs/metamodel_mapping.md](docs/metamodel_mapping.md)
 5. [docs/validation_rules.md](docs/validation_rules.md)
 6. [docs/decision_trace_examples.md](docs/decision_trace_examples.md)
-7. [docs/test-result.md](docs/test-result.md)
-8. [docs/final_code_quality_checklist.md](docs/final_code_quality_checklist.md)
-9. [docs/final_release_checklist.md](docs/final_release_checklist.md)
-10. [docs/raw_github_format_verification.md](docs/raw_github_format_verification.md)
-11. [docs/benchmark_result.md](docs/benchmark_result.md)
-12. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
-13. [docs/mutation_testing.md](docs/mutation_testing.md)
-14. [docs/current_vs_maximum_version.md](docs/current_vs_maximum_version.md)
-15. [docs/generated/policies.md](docs/generated/policies.md)
-16. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
-17. [docs/generated/validation_report.md](docs/generated/validation_report.md)
+7. [docs/formal_semantics.md](docs/formal_semantics.md)
+8. [docs/test-result.md](docs/test-result.md)
+9. [docs/final_code_quality_checklist.md](docs/final_code_quality_checklist.md)
+10. [docs/final_release_checklist.md](docs/final_release_checklist.md)
+11. [docs/raw_github_format_verification.md](docs/raw_github_format_verification.md)
+12. [docs/benchmark_result.md](docs/benchmark_result.md)
+13. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
+14. [docs/mutation_testing.md](docs/mutation_testing.md)
+15. [docs/current_vs_maximum_version.md](docs/current_vs_maximum_version.md)
+16. [docs/generated/policies.md](docs/generated/policies.md)
+17. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
+18. [docs/generated/validation_report.md](docs/generated/validation_report.md)
 
 Neu can chay demo:
 

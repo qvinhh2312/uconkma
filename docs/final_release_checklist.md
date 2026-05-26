@@ -10,7 +10,7 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | Engine tests pass | `[x]` | `mvn clean test`: 54 tests pass |
 | DSL tests pass | `[x]` | `mvn clean test`: 3 tests pass |
 | Spotless check pass | `[x]` | `mvn -Pformat-check spotless:check` |
-| JaCoCo coverage >= 80% line | `[x]` | line coverage `80.70%`, branch coverage `60.98%` |
+| JaCoCo coverage >= 80% line | `[x]` | line coverage `80.72%`, branch coverage `60.98%` |
 | No minified artifact | `[x]` | `ArtifactFormattingTest` + Spotless profile |
 | Raw GitHub files readable | `[x]` | `tools/verify-raw-format.ps1`, see `docs/raw_github_format_verification.md` |
 | XMI/Ecore conformance test pass | `[x]` | `XmiEcoreConformanceTest` |
@@ -21,6 +21,7 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | README updated | `[x]` | README has goal, UCON mapping, architecture, run/test commands, docs links, limitations |
 | Known limitations documented | `[x]` | README section `Known limitations` |
 | Current vs maximum documented | `[x]` | `docs/current_vs_maximum_version.md` |
+| Formal semantics documented | `[x]` | `docs/formal_semantics.md` |
 | Docs generated updated | `[x]` | `docs/generated/policies.md`, `docs/generated/ucon_coverage.md`, `docs/generated/validation_report.md` |
 
 ## A-O Coverage Summary
@@ -32,7 +33,7 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | C. UconContext | `PASS` | `UconContext` gom request, subject, object, pre/ongoing environment, session, snapshots, traces |
 | D. Transaction/concurrency/database | `PASS` | `@Transactional`, `@Version`, unique registration constraint, race tests |
 | E. Update/rollback | `PASS` | `UpdateManager`, `RollbackManager`, `UpdatePlan`, invariant check sau mutation |
-| F. DecisionTrace/explainability | `PASS` | `DecisionTrace`, `PhaseTrace`, `PolicyTraceEntry` co policy metadata, updates/rollback/snapshot |
+| F. DecisionTrace/explainability | `PASS` | `DecisionTrace`, `PhaseTrace`, `PolicyTraceEntry` co phase/updateTiming/conditionResult/policy metadata, updates/rollback/snapshot |
 | G. API/error handling | `PASS` | `ApiDecisionResponse`, `ErrorResponse`, `GlobalExceptionHandler` |
 | H. Validator/analyzer | `PASS` | semantic validator, schema validator, analyzer warnings, mutation-style docs |
 | I. DSL/XMI/Ecore | `PASS` | formatted grammar/DSL, explicit XMI, metadata, `XmiEcoreConformanceTest` |
@@ -87,6 +88,6 @@ mvn -Dtest=EndToEndApiBenchmarkTest test
 Result:
 
 ```text
-POST /api/register avg=21.089 ms, p95=25.944 ms, p99=25.944 ms
-POST /api/drop avg=15.922 ms, p95=18.651 ms, p99=18.651 ms
+POST /api/register avg=19.945 ms, p95=22.910 ms, p99=22.910 ms
+POST /api/drop avg=18.137 ms, p95=20.113 ms, p99=20.113 ms
 ```

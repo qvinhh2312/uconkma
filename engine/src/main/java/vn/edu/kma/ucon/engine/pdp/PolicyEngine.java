@@ -114,11 +114,14 @@ public class PolicyEngine {
             entries.add(new PolicyTraceEntry(
                     ruleId,
                     predicate.name(),
+                    phase.name(),
+                    enumName(policy, "updateTiming"),
                     effect.getName(),
                     stringValue(policy, "source"),
                     stringValue(policy, "version"),
                     stringValue(policy, "uconVariant"),
                     enumName(policy, "policyStatus"),
+                    match,
                     match,
                     blocked,
                     denyReason));

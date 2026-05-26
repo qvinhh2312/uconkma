@@ -71,8 +71,8 @@ mvn -Dtest=EndToEndApiBenchmarkTest test
 
 | Endpoint | Avg ms | P95 ms | P99 ms | Notes |
 |---|---:|---:|---:|---|
-| POST /api/register | 21.089 | 25.944 | 25.944 | controller + PEP/PDP + DB + trace |
-| POST /api/drop | 15.922 | 18.651 | 18.651 | controller + PEP/PDP + DB + trace |
+| POST /api/register | 19.945 | 22.910 | 22.910 | controller + PEP/PDP + DB + trace |
+| POST /api/drop | 18.137 | 20.113 | 20.113 | controller + PEP/PDP + DB + trace |
 
 ## Nhan xet
 

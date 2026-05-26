@@ -105,6 +105,9 @@ class ControllerRuntimeFlowTest extends AbstractUconIntegrationTest {
         assertEquals("1.0", entry.version());
         assertEquals("preA0", entry.uconVariant());
         assertEquals("ACTIVE", entry.policyStatus());
+        assertEquals("PRE", entry.phase());
+        assertEquals("NONE", entry.updateTiming());
+        assertFalse(entry.conditionResult());
     }
 
     @Test

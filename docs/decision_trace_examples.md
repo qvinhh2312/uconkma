@@ -29,11 +29,14 @@ Tai lieu nay ghi lai mot so mau `DecisionTrace` rut gon de phuc vu bao cao va de
         {
           "policyId": "P06_Prerequisite_PreA0",
           "predicate": "AUTHORIZATION",
+          "phase": "PRE",
+          "updateTiming": "NONE",
           "effect": "PERMIT",
           "source": "Quy che dang ky hoc phan KMA",
           "version": "1.0",
           "uconVariant": "preA0",
           "policyStatus": "ACTIVE",
+          "conditionResult": false,
           "matched": false,
           "blocked": true,
           "denyReason": "PREREQUISITE_NOT_MET"
@@ -49,7 +52,7 @@ Y nghia:
 - request bi chan truoc khi tao `UsageSession`
 - khong co update nghiep vu nao duoc ap dung
 - van co `AuditLog` o POST obligation
-- moi `PolicyTraceEntry` co metadata `source`, `version`, `uconVariant`, `policyStatus` de truy vet ve quy che va policy goc
+- moi `PolicyTraceEntry` co `phase`, `updateTiming`, `conditionResult` va metadata `source`, `version`, `uconVariant`, `policyStatus` de truy vet ve quy che va policy goc
 
 ## 2. ONGOING revoke do maintenance
 
@@ -175,3 +178,41 @@ Y nghia:
 - request duoc commit thanh cong
 - trace cho thay ro pha nao da update state, pha nao la obligation
 - `snapshotBefore` va `snapshotAfter` cho thay mutable attributes thay doi nhu the nao sau enforcement
+
+## 5. Event-driven ongoing recheck trace
+
+Event-driven revoke khong phai request moi cua sinh vien, ma la recheck mot `UsageSession` dang `ACTIVE`
+khi subject/object/environment thay doi.
+
+```json
+{
+  "event": "ClassStatusChangedEvent",
+  "eventPayload": {
+    "classId": "CS102_01",
+    "newStatus": "LOCKED"
+  },
+  "activeSessionsFound": 1,
+  "ongoingPoliciesReevaluated": [
+    {
+      "policyId": "P09_ClassStatusRecheck_OnA0",
+      "phase": "ONGOING",
+      "predicate": "AUTHORIZATION",
+      "updateTiming": "NONE",
+      "uconVariant": "onA0",
+      "conditionResult": false,
+      "blocked": true,
+      "denyReason": "CLASS_STATUS_CHANGED"
+    }
+  ],
+  "sessionStatus": "REVOKED",
+  "rollbackApplied": true
+}
+```
+
+Y nghia:
+
+- monitor nhan event thay doi state
+- tim session `ACTIVE` lien quan
+- evaluate lai ONGOING policies
+- revoke session neu ONGOING fail
+- ap dung rollback neu session da co ongoing mutation can bu tru

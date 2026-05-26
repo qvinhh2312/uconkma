@@ -73,3 +73,39 @@ Schema giup `PolicyValidator` bat cac loi cap nhat vao field immutable.
 - `UNSAFE_UPDATE`
 
 Day la lop phan tich chat luong policy, khac voi validator dung/sai.
+
+## 5. OCL-like well-formedness rules
+
+Nhung rule duoi day la cach dien dat chinh thuc hon cua cac WFR. Repo hien tai khong chay OCL engine rieng,
+nhung cac constraint nay da duoc hien thuc bang validator Java va test hoi quy.
+
+```ocl
+context Policy
+  inv ConditionHasNoUpdate:
+    self.predicate = CONDITION implies
+      self.preUpdates->isEmpty() and
+      self.ongoingUpdates->isEmpty() and
+      self.postUpdates->isEmpty()
+
+context UpdateStatement
+  inv NoEnvironmentOrRequestMutation:
+    self.target.entity <> ENVIRONMENT and self.target.entity <> REQUEST
+
+context Policy
+  inv OngoingUpdateNeedsRollback:
+    self.updateTiming = ONGOING implies self.rollbackUpdates->notEmpty()
+
+context Policy
+  inv ExplicitMetadata:
+    self.source <> '' and
+    self.version <> '' and
+    self.uconVariant <> '' and
+    self.policyStatus <> null
+
+context Policy
+  inv UpdateTimingMatchesBlocks:
+    self.updateTiming = NONE implies
+      self.preUpdates->isEmpty() and
+      self.ongoingUpdates->isEmpty() and
+      self.postUpdates->isEmpty()
+```
