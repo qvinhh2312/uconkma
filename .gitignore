@@ -11,6 +11,7 @@ target/
 # Maven wrapper cache
 .mvn/
 .m2/
+.m2dsl/
 
 # Maven binary (đừng commit vào git)
 **/apache-maven-3.9.6/

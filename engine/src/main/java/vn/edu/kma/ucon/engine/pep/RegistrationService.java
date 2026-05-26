@@ -1,11 +1,14 @@
 package vn.edu.kma.ucon.engine.pep;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import vn.edu.kma.ucon.engine.pdp.DecisionTrace;
 import vn.edu.kma.ucon.engine.pdp.Environment;
 import vn.edu.kma.ucon.engine.pip.PolicyInformationPoint;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
@@ -74,14 +77,30 @@ public class RegistrationService {
                 action,
                 "DENY",
                 "VALIDATION",
+                "REQUEST",
                 studentId,
                 classId,
                 null,
                 "BAD_REQUEST",
+                "FAILED",
                 message,
                 message,
-                null);
+                validationTrace(requestId, action, studentId, classId));
         return ResponseEntity.badRequest().body(response);
+    }
+
+    private DecisionTrace validationTrace(String requestId, String action, String studentId, String classId) {
+        return new DecisionTrace(
+                requestId,
+                action,
+                "DENY",
+                studentId,
+                classId,
+                null,
+                "FAILED",
+                Map.of(),
+                Map.of(),
+                List.of());
     }
 
     private void initializeRequest(UconRequest request, String actionType) {

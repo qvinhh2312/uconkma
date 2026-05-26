@@ -203,8 +203,8 @@ Project da co:
   - `jacoco-maven-plugin`
   - `spotless-maven-plugin` profile `format-check`
 - local coverage from `JaCoCo`:
-  - line coverage: `80.39%`
-  - branch coverage: `60.66%`
+  - line coverage: `80.70%`
+  - branch coverage: `60.98%`
 
 ## 8. Build / test / run
 
@@ -273,9 +273,17 @@ Response deny co traceability:
   "action": "REGISTER",
   "decision": "DENY",
   "phase": "PRE",
+  "predicate": "AUTHORIZATION",
   "failedPolicy": "P01_TuitionPaid_PreA0",
   "denyReason": "TUITION_NOT_PAID",
-  "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra."
+  "sessionStatus": "FAILED",
+  "explanation": "Sinh vien chua hoan tat hoc phi nen request bi chan truoc khi dang ky xay ra.",
+  "decisionTrace": {
+    "requestId": "demo-1",
+    "action": "REGISTER",
+    "decision": "DENY",
+    "phases": []
+  }
 }
 ```
 
@@ -310,7 +318,7 @@ Neu can chay demo:
 
 Baseline da verify:
 
-- `engine`: `Tests run: 51, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 54, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`
@@ -323,7 +331,7 @@ Repo hien tai da rat gan tinh than UCON, nhung van con gioi han ro rang:
 - `ONGOING` hien da co ca `transaction-level re-check` va `event-driven revoke` cho `ACTIVE` sessions, nhung chua la mot monitoring ha tang dai han phuc tap
 - chua co scheduler / distributed event bus cho `long-running continuous monitoring` day du
 - `PolicyAnalyzer` la heuristic analyzer, chua dung `SMT/solver`
-- benchmark hien tai moi o muc micro-benchmark cho pipeline `validate -> analyze -> PAP filter`, chua la end-to-end load test
+- benchmark hien tai co micro-benchmark policy pipeline va benchmark API nho cho `register/drop`, chua la end-to-end load test nhieu client song song
 - PAP/lifecycle hien da co `policyStatus`, `PolicyLifecycleService`, `PolicyAdministrationController` va runtime chi load `ACTIVE` policies, nhung chua co persistence/versioning day du nhu mot PAP san xuat
 
 Nhung gioi han nay da duoc ghi ro trong docs de tranh mo ta qua muc so voi pham vi do an.

@@ -24,7 +24,21 @@ Tai lieu nay ghi lai mot so mau `DecisionTrace` rut gon de phuc vu bao cao va de
       "predicate": "AUTHORIZATION",
       "decision": "DENY",
       "failedPolicy": "P06_Prerequisite_PreA0",
-      "failedReason": "PREREQUISITE_NOT_MET"
+      "failedReason": "PREREQUISITE_NOT_MET",
+      "policies": [
+        {
+          "policyId": "P06_Prerequisite_PreA0",
+          "predicate": "AUTHORIZATION",
+          "effect": "PERMIT",
+          "source": "Quy che dang ky hoc phan KMA",
+          "version": "1.0",
+          "uconVariant": "preA0",
+          "policyStatus": "ACTIVE",
+          "matched": false,
+          "blocked": true,
+          "denyReason": "PREREQUISITE_NOT_MET"
+        }
+      ]
     }
   ]
 }
@@ -35,6 +49,7 @@ Y nghia:
 - request bi chan truoc khi tao `UsageSession`
 - khong co update nghiep vu nao duoc ap dung
 - van co `AuditLog` o POST obligation
+- moi `PolicyTraceEntry` co metadata `source`, `version`, `uconVariant`, `policyStatus` de truy vet ve quy che va policy goc
 
 ## 2. ONGOING revoke do maintenance
 

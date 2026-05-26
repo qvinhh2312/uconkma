@@ -111,7 +111,17 @@ public class PolicyEngine {
             log.info("[POLICY CHECK] phase={} predicate={} policy={} effect={} matched={} denyReason={}",
                     phase.name(), predicate.name(), ruleId, effect.getName(), match, denyReason);
 
-            entries.add(new PolicyTraceEntry(ruleId, predicate.name(), effect.getName(), match, blocked, denyReason));
+            entries.add(new PolicyTraceEntry(
+                    ruleId,
+                    predicate.name(),
+                    effect.getName(),
+                    stringValue(policy, "source"),
+                    stringValue(policy, "version"),
+                    stringValue(policy, "uconVariant"),
+                    enumName(policy, "policyStatus"),
+                    match,
+                    blocked,
+                    denyReason));
             evaluations.add(new PolicyEvaluation(ruleId, predicate.name(), effect.getName(), match, denyReason));
         }
 

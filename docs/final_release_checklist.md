@@ -7,10 +7,10 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | Muc | Trang thai | Bang chung |
 | --- | --- | --- |
 | GitHub Actions xanh | `[x]` | `.github/workflows/maven.yml` chay format check, DSL build, engine test |
-| Engine tests pass | `[x]` | `mvn clean test`: 51 tests pass |
+| Engine tests pass | `[x]` | `mvn clean test`: 54 tests pass |
 | DSL tests pass | `[x]` | `mvn clean test`: 3 tests pass |
 | Spotless check pass | `[x]` | `mvn -Pformat-check spotless:check` |
-| JaCoCo coverage >= 80% line | `[x]` | line coverage `80.39%`, branch coverage `60.66%` |
+| JaCoCo coverage >= 80% line | `[x]` | line coverage `80.70%`, branch coverage `60.98%` |
 | No minified artifact | `[x]` | `ArtifactFormattingTest` + Spotless profile |
 | Raw GitHub files readable | `[x]` | `tools/verify-raw-format.ps1`, see `docs/raw_github_format_verification.md` |
 | XMI/Ecore conformance test pass | `[x]` | `XmiEcoreConformanceTest` |
@@ -30,7 +30,7 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | C. UconContext | `PASS` | `UconContext` gom request, subject, object, pre/ongoing environment, session, snapshots, traces |
 | D. Transaction/concurrency/database | `PASS` | `@Transactional`, `@Version`, unique registration constraint, race tests |
 | E. Update/rollback | `PASS` | `UpdateManager`, `RollbackManager`, `UpdatePlan`, invariant check sau mutation |
-| F. DecisionTrace/explainability | `PASS` | `DecisionTrace`, `PhaseTrace`, `PolicyTraceEntry`, updates/rollback/snapshot |
+| F. DecisionTrace/explainability | `PASS` | `DecisionTrace`, `PhaseTrace`, `PolicyTraceEntry` co policy metadata, updates/rollback/snapshot |
 | G. API/error handling | `PASS` | `ApiDecisionResponse`, `ErrorResponse`, `GlobalExceptionHandler` |
 | H. Validator/analyzer | `PASS` | semantic validator, schema validator, analyzer warnings, mutation-style docs |
 | I. DSL/XMI/Ecore | `PASS` | formatted grammar/DSL, explicit XMI, metadata, `XmiEcoreConformanceTest` |
@@ -51,7 +51,7 @@ mvn clean test
 Result:
 
 ```text
-Tests run: 51, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
 ```
 
 ```powershell
@@ -74,5 +74,17 @@ Result:
 
 ```text
 BUILD SUCCESS
-Spotless.Format is keeping 78 files clean - 0 needs changes to be clean
+Spotless.Format is keeping 79 files clean - 0 needs changes to be clean
+```
+
+```powershell
+cd engine
+mvn -Dtest=EndToEndApiBenchmarkTest test
+```
+
+Result:
+
+```text
+POST /api/register avg=21.089 ms, p95=25.944 ms, p99=25.944 ms
+POST /api/drop avg=15.922 ms, p95=18.651 ms, p99=18.651 ms
 ```

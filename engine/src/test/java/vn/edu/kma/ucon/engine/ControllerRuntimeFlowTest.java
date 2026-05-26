@@ -12,7 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
 import vn.edu.kma.ucon.engine.pdp.DecisionTrace;
+import vn.edu.kma.ucon.engine.pdp.PolicyTraceEntry;
 import vn.edu.kma.ucon.engine.pep.ApiDecisionResponse;
+import vn.edu.kma.ucon.engine.pep.UconRequest;
 
 /**
  * Regression tests for the public controller flow. These tests lock the API to
@@ -86,5 +88,44 @@ class ControllerRuntimeFlowTest extends AbstractUconIntegrationTest {
                 .anyMatch(phase -> "PRE".equals(phase.phase())
                         && "AUTHORIZATION".equals(phase.predicate())
                         && "P16_DropOnlyIfRegistered_PreA0".equals(phase.failedPolicy())));
+    }
+
+    @Test
+    @DisplayName("Controller decision trace includes policy metadata")
+    void controller_decisionTrace_shouldIncludePolicyMetadata() {
+        ResponseEntity<ApiDecisionResponse> response = registrationController.drop(dropRequest());
+
+        PolicyTraceEntry entry = response.getBody().getDecisionTrace().phases().stream()
+                .flatMap(phase -> phase.policies().stream())
+                .filter(policy -> "P16_DropOnlyIfRegistered_PreA0".equals(policy.policyId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("Quy che dang ky hoc phan KMA", entry.source());
+        assertEquals("1.0", entry.version());
+        assertEquals("preA0", entry.uconVariant());
+        assertEquals("ACTIVE", entry.policyStatus());
+    }
+
+    @Test
+    @DisplayName("Controller validation failure still returns ApiDecisionResponse object")
+    void controller_validationFailure_shouldReturnDecisionObject() {
+        UconRequest request = new UconRequest();
+        request.setRequestId("bad-request-1");
+        request.setStudentId("SV001");
+
+        ResponseEntity<ApiDecisionResponse> response = registrationController.register(request);
+
+        assertEquals(400, response.getStatusCode().value());
+        assertNotNull(response.getBody());
+        assertEquals("bad-request-1", response.getBody().getRequestId());
+        assertEquals("REGISTER", response.getBody().getAction());
+        assertEquals("DENY", response.getBody().getDecision());
+        assertEquals("VALIDATION", response.getBody().getPhase());
+        assertEquals("REQUEST", response.getBody().getPredicate());
+        assertEquals("BAD_REQUEST", response.getBody().getDenyReason());
+        assertEquals("FAILED", response.getBody().getSessionStatus());
+        assertNotNull(response.getBody().getDecisionTrace());
+        assertEquals("DENY", response.getBody().getDecisionTrace().decision());
     }
 }
