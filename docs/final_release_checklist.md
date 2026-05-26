@@ -19,6 +19,8 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | PAP lifecycle test pass | `[x]` | active-only policy loading and lifecycle tests |
 | Ongoing monitor test pass | `[x]` | event-driven revoke tests in integration suite |
 | README updated | `[x]` | README has goal, UCON mapping, architecture, run/test commands, docs links, limitations |
+| Known limitations documented | `[x]` | README section `Known limitations` |
+| Current vs maximum documented | `[x]` | `docs/current_vs_maximum_version.md` |
 | Docs generated updated | `[x]` | `docs/generated/policies.md`, `docs/generated/ucon_coverage.md`, `docs/generated/validation_report.md` |
 
 ## A-O Coverage Summary

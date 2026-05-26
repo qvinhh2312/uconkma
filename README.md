@@ -304,9 +304,10 @@ Neu can viet bao cao / bao ve:
 11. [docs/benchmark_result.md](docs/benchmark_result.md)
 12. [docs/rbac_abac_ucon_comparison.md](docs/rbac_abac_ucon_comparison.md)
 13. [docs/mutation_testing.md](docs/mutation_testing.md)
-14. [docs/generated/policies.md](docs/generated/policies.md)
-15. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
-16. [docs/generated/validation_report.md](docs/generated/validation_report.md)
+14. [docs/current_vs_maximum_version.md](docs/current_vs_maximum_version.md)
+15. [docs/generated/policies.md](docs/generated/policies.md)
+16. [docs/generated/ucon_coverage.md](docs/generated/ucon_coverage.md)
+17. [docs/generated/validation_report.md](docs/generated/validation_report.md)
 
 Neu can chay demo:
 
