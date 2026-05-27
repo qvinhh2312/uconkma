@@ -109,7 +109,7 @@ public class RegistrationService {
         request.setClassId(trimToNull(request.getClassId()));
         request.setRequestId(normalizeRequestId(request.getRequestId()));
         if (request.getConfirmedRegistrationRule() == null) {
-            request.setConfirmedRegistrationRule(Boolean.TRUE);
+            request.setConfirmedRegistrationRule(Boolean.FALSE);
         }
         if (request.getAdminOverride() == null) {
             request.setAdminOverride(Boolean.FALSE);

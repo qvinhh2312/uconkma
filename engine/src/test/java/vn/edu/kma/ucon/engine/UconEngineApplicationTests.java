@@ -183,6 +183,7 @@ class UconEngineApplicationTests {
         UconRequest req = new UconRequest();
         req.setStudentId("SV001");
         req.setClassId("CS102_01");
+        req.setConfirmedRegistrationRule(true);
 
         ResponseEntity<ApiDecisionResponse> response = regController.register(req);
         assertEquals(200, response.getStatusCode().value());

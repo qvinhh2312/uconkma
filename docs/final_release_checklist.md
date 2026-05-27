@@ -54,7 +54,7 @@ mvn clean test
 Result:
 
 ```text
-Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 55, Failures: 0, Errors: 0, Skipped: 0
 ```
 
 ```powershell

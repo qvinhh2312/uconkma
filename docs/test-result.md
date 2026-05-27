@@ -30,7 +30,7 @@ GitHub Actions also runs the same format check before building DSL and testing e
 ## Result
 
 ```text
-Engine: Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 55, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 
 DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0

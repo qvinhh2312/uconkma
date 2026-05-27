@@ -91,6 +91,22 @@ class ControllerRuntimeFlowTest extends AbstractUconIntegrationTest {
     }
 
     @Test
+    @DisplayName("Controller register requires explicit registration-rule confirmation")
+    void controller_register_shouldDenyWhenRegistrationRuleIsNotConfirmed() {
+        UconRequest request = registerRequest();
+        request.setConfirmedRegistrationRule(null);
+
+        ResponseEntity<ApiDecisionResponse> response = registrationController.register(request);
+
+        assertEquals(403, response.getStatusCode().value());
+        assertEquals("DENY", response.getBody().getDecision());
+        assertEquals("PRE", response.getBody().getPhase());
+        assertEquals("OBLIGATION", response.getBody().getPredicate());
+        assertEquals("P17_AgreeRegistrationRule_PreB0", response.getBody().getFailedPolicy());
+        assertEquals("REGULATION_NOT_CONFIRMED", response.getBody().getDenyReason());
+    }
+
+    @Test
     @DisplayName("Controller decision trace includes policy metadata")
     void controller_decisionTrace_shouldIncludePolicyMetadata() {
         ResponseEntity<ApiDecisionResponse> response = registrationController.drop(dropRequest());

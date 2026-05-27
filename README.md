@@ -320,7 +320,7 @@ Neu can chay demo:
 
 Baseline da verify:
 
-- `engine`: `Tests run: 54, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 55, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`
