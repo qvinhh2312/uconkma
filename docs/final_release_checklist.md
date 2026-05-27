@@ -10,7 +10,7 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | Engine tests pass | `[x]` | `mvn clean test`: 59 tests pass |
 | DSL tests pass | `[x]` | `mvn clean test`: 3 tests pass |
 | Spotless check pass | `[x]` | `mvn -Pformat-check spotless:check` |
-| JaCoCo coverage >= 80% line | `[x]` | line coverage `82.67%`, branch coverage `61.55%` |
+| JaCoCo coverage >= 80% line | `[x]` | line coverage `82.68%`, branch coverage `61.58%` |
 | No minified artifact | `[x]` | `ArtifactFormattingTest` + Spotless profile |
 | Raw GitHub files readable | `[x]` | `tools/verify-raw-format.ps1`, see `docs/raw_github_format_verification.md` |
 | XMI/Ecore conformance test pass | `[x]` | `XmiEcoreConformanceTest` |
@@ -54,7 +54,7 @@ mvn clean test
 Result:
 
 ```text
-Tests run: 59, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 60, Failures: 0, Errors: 0, Skipped: 0
 ```
 
 ```powershell

@@ -990,8 +990,16 @@ class UconEngineApplicationTests {
     }
 
     @Test
+    @DisplayName("Policy lifecycle service rejects invalid policy status names")
+    void test40_PolicyLifecycleServiceRejectsInvalidStatusName() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> policyLifecycleService.transitionPolicy("P01_TuitionPaid_PreA0", "BROKEN_STATUS"));
+        assertEquals("Invalid policy status: BROKEN_STATUS", ex.getMessage());
+    }
+
+    @Test
     @DisplayName("XMI policy model conforms to Ecore metamodel and semantic validation rules")
-    void test40_XmiPolicyModelConformsToEcoreAndSemanticRules() {
+    void test41_XmiPolicyModelConformsToEcoreAndSemanticRules() {
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("ecore", new EcoreResourceFactoryImpl());
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("xmi", new XMIResourceFactoryImpl());
 
@@ -1018,7 +1026,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Controller register runtime uses canonical PRE/ONGOING/POST phases")
-    void test41_ControllerRegisterUsesCanonicalUconPhasesAndReturnsTrace() {
+    void test42_ControllerRegisterUsesCanonicalUconPhasesAndReturnsTrace() {
         ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
 
         assertEquals(200, response.getStatusCode().value());
@@ -1042,7 +1050,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Drop not registered is denied by P16 policy through the UCON pipeline")
-    void test42_DropNotRegisteredDeniedByP16PolicyThroughPipeline() {
+    void test43_DropNotRegisteredDeniedByP16PolicyThroughPipeline() {
         ResponseEntity<ApiDecisionResponse> response = regController.drop(dropRequest());
 
         assertEquals(403, response.getStatusCode().value());

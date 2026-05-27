@@ -48,6 +48,7 @@ public class PolicyLifecycleService {
     }
 
     public synchronized PolicyLifecycleInfo transitionPolicy(String policyId, String targetStatus) {
+        String normalizedTargetStatus = normalizeTargetStatus(targetStatus);
         EObject root = policyDecisionPoint.getAuthoringPolicyModelRoot();
         if (root == null) {
             throw new IllegalStateException("No authoring policy model is loaded.");
@@ -60,20 +61,31 @@ public class PolicyLifecycleService {
         }
 
         String currentStatus = enumName(policy, "policyStatus");
-        if (targetStatus.equals(currentStatus)) {
+        if (normalizedTargetStatus.equals(currentStatus)) {
             policyDecisionPoint.replacePolicyModel(workingRoot);
             return toInfo(findPolicyById(policyDecisionPoint.getAuthoringPolicyModelRoot(), policyId));
         }
 
         List<String> allowedTargets = ALLOWED_TRANSITIONS.getOrDefault(currentStatus, List.of());
-        if (!allowedTargets.contains(targetStatus)) {
+        if (!allowedTargets.contains(normalizedTargetStatus)) {
             throw new IllegalStateException("Invalid lifecycle transition for policy " + policyId
-                    + ": " + currentStatus + " -> " + targetStatus);
+                    + ": " + currentStatus + " -> " + normalizedTargetStatus);
         }
 
-        policy.eSet(policy.eClass().getEStructuralFeature("policyStatus"), enumLiteral(policy, "PolicyStatus", targetStatus));
+        policy.eSet(policy.eClass().getEStructuralFeature("policyStatus"), enumLiteral(policy, "PolicyStatus", normalizedTargetStatus));
         policyDecisionPoint.replacePolicyModel(workingRoot);
         return toInfo(findPolicyById(policyDecisionPoint.getAuthoringPolicyModelRoot(), policyId));
+    }
+
+    private String normalizeTargetStatus(String targetStatus) {
+        if (targetStatus == null || targetStatus.isBlank()) {
+            throw new IllegalArgumentException("Policy status is required.");
+        }
+        String normalized = targetStatus.trim().toUpperCase();
+        if (!ALLOWED_TRANSITIONS.containsKey(normalized)) {
+            throw new IllegalArgumentException("Invalid policy status: " + targetStatus);
+        }
+        return normalized;
     }
 
     @SuppressWarnings("unchecked")

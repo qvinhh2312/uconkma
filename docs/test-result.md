@@ -30,7 +30,7 @@ GitHub Actions also runs the same format check before building DSL and testing e
 ## Result
 
 ```text
-Engine: Tests run: 59, Failures: 0, Errors: 0, Skipped: 0
+Engine: Tests run: 60, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 
 DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
@@ -55,8 +55,8 @@ Raw GitHub formatting verification passed.
 ## Coverage
 
 ```text
-JaCoCo line coverage: 82.67% (1703 covered / 357 missed)
-JaCoCo branch coverage: 61.55% (541 covered / 338 missed)
+JaCoCo line coverage: 82.68% (1709 covered / 358 missed)
+JaCoCo branch coverage: 61.58% (545 covered / 340 missed)
 ```
 
 ## Y nghia
