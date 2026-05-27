@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -33,8 +34,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import vn.edu.kma.ucon.engine.pep.ApiDecisionResponse;
+import vn.edu.kma.ucon.engine.pep.ErrorResponse;
+import vn.edu.kma.ucon.engine.pep.GlobalExceptionHandler;
+import vn.edu.kma.ucon.engine.pep.MonitoringDemoController;
 import vn.edu.kma.ucon.engine.pep.RegistrationController;
 import vn.edu.kma.ucon.engine.pep.UconRequest;
 import vn.edu.kma.ucon.engine.pdp.AuthDecision;
@@ -118,6 +123,10 @@ class UconEngineApplicationTests {
     UpdateManager updateManager;
     @Autowired
     RollbackManager rollbackManager;
+    @Autowired
+    MonitoringDemoController monitoringDemoController;
+    @Autowired
+    GlobalExceptionHandler globalExceptionHandler;
 
     @BeforeEach
     void setUp() {
@@ -862,8 +871,73 @@ class UconEngineApplicationTests {
     }
 
     @Test
+    @DisplayName("Monitoring demo maintenance endpoint returns checked and revoked session counts")
+    void test34_MonitoringDemoMaintenanceEndpointReturnsRecheckCounts() {
+        UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
+
+        ResponseEntity<Map<String, Object>> response = monitoringDemoController.maintenance(true);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(1, response.getBody().get("checkedSessions"));
+        assertEquals(1, response.getBody().get("revokedSessions"));
+        UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
+        assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
+        assertEquals("SYSTEM_UNDER_MAINTENANCE", reloaded.getRevokeReason());
+    }
+
+    @Test
+    @DisplayName("Monitoring demo class-status endpoint returns checked and revoked session counts")
+    void test35_MonitoringDemoClassStatusEndpointReturnsRecheckCounts() {
+        UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
+
+        ResponseEntity<Map<String, Object>> response = monitoringDemoController.classStatus("CS102_01", "LOCKED");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(1, response.getBody().get("checkedSessions"));
+        assertEquals(1, response.getBody().get("revokedSessions"));
+        UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
+        assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
+        assertEquals("CLASS_STATUS_CHANGED", reloaded.getRevokeReason());
+    }
+
+    @Test
+    @DisplayName("Monitoring demo student-hold endpoint returns checked and revoked session counts")
+    void test36_MonitoringDemoStudentHoldEndpointReturnsRecheckCounts() {
+        UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
+
+        ResponseEntity<Map<String, Object>> response = monitoringDemoController.studentHold("SV001", "DISCIPLINARY_HOLD");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(1, response.getBody().get("checkedSessions"));
+        assertEquals(1, response.getBody().get("revokedSessions"));
+        UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
+        assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
+        assertEquals("STUDENT_ON_HOLD", reloaded.getRevokeReason());
+    }
+
+    @Test
+    @DisplayName("Global exception handler maps invalid argument and unexpected errors to JSON payloads")
+    void test37_GlobalExceptionHandlerMapsArgumentAndFallbackErrors() {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/demo/error");
+
+        ResponseEntity<ErrorResponse> badRequest = globalExceptionHandler.handleIllegalArgument(
+                new IllegalArgumentException("Bad policy argument"),
+                request);
+        assertEquals(400, badRequest.getStatusCode().value());
+        assertEquals("INVALID_ARGUMENT", badRequest.getBody().getErrorCode());
+        assertEquals("/api/demo/error", badRequest.getBody().getPath());
+
+        ResponseEntity<ErrorResponse> fallback = globalExceptionHandler.handleUnexpected(
+                new RuntimeException("boom"),
+                request);
+        assertEquals(500, fallback.getStatusCode().value());
+        assertEquals("INTERNAL_ERROR", fallback.getBody().getErrorCode());
+        assertEquals("Unexpected backend error.", fallback.getBody().getMessage());
+    }
+
+    @Test
     @DisplayName("Policy lifecycle service supports DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED")
-    void test34_PolicyLifecycleServiceSupportsFullTransitionChain() {
+    void test38_PolicyLifecycleServiceSupportsFullTransitionChain() {
         EObject originalRoot = EcoreUtil.copy(policyDecisionPoint.getAuthoringPolicyModelRoot());
         try {
             EObject workingRoot = EcoreUtil.copy(originalRoot);
@@ -892,7 +966,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Policy lifecycle service rejects invalid transition")
-    void test35_PolicyLifecycleServiceRejectsInvalidTransition() {
+    void test39_PolicyLifecycleServiceRejectsInvalidTransition() {
         EObject originalRoot = EcoreUtil.copy(policyDecisionPoint.getAuthoringPolicyModelRoot());
         try {
             EObject workingRoot = EcoreUtil.copy(originalRoot);
@@ -917,7 +991,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("XMI policy model conforms to Ecore metamodel and semantic validation rules")
-    void test36_XmiPolicyModelConformsToEcoreAndSemanticRules() {
+    void test40_XmiPolicyModelConformsToEcoreAndSemanticRules() {
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("ecore", new EcoreResourceFactoryImpl());
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap().put("xmi", new XMIResourceFactoryImpl());
 
@@ -944,7 +1018,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Controller register runtime uses canonical PRE/ONGOING/POST phases")
-    void test37_ControllerRegisterUsesCanonicalUconPhasesAndReturnsTrace() {
+    void test41_ControllerRegisterUsesCanonicalUconPhasesAndReturnsTrace() {
         ResponseEntity<ApiDecisionResponse> response = regController.register(registerRequest());
 
         assertEquals(200, response.getStatusCode().value());
@@ -968,7 +1042,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Drop not registered is denied by P16 policy through the UCON pipeline")
-    void test38_DropNotRegisteredDeniedByP16PolicyThroughPipeline() {
+    void test42_DropNotRegisteredDeniedByP16PolicyThroughPipeline() {
         ResponseEntity<ApiDecisionResponse> response = regController.drop(dropRequest());
 
         assertEquals(403, response.getStatusCode().value());

@@ -203,8 +203,8 @@ Project da co:
   - `jacoco-maven-plugin`
   - `spotless-maven-plugin` profile `format-check`
 - local coverage from `JaCoCo`:
-  - line coverage: `80.72%`
-  - branch coverage: `60.98%`
+  - line coverage: `82.67%`
+  - branch coverage: `61.55%`
 
 ## 8. Build / test / run
 
@@ -320,7 +320,7 @@ Neu can chay demo:
 
 Baseline da verify:
 
-- `engine`: `Tests run: 55, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 59, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`

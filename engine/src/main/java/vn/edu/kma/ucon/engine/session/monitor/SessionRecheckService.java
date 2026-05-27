@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.edu.kma.ucon.engine.pep.UconRequest;
 import vn.edu.kma.ucon.engine.pdp.AuthDecision;
 import vn.edu.kma.ucon.engine.pdp.Environment;
-import vn.edu.kma.ucon.engine.pdp.MaintenanceFlag;
 import vn.edu.kma.ucon.engine.pdp.PolicyEngine;
+import vn.edu.kma.ucon.engine.pip.PolicyInformationPoint;
 import vn.edu.kma.ucon.engine.pip.entity.AuditLog;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
@@ -29,19 +29,13 @@ import vn.edu.kma.ucon.engine.session.UsageSessionService;
 @Service
 public class SessionRecheckService {
 
-    private static final String MONITOR_SEMESTER = "2026_FALL";
-    private static final String MONITOR_PHASE = "NORMAL";
-    private static final String MONITOR_DATE = "2026-03-27";
-    private static final String MONITOR_OPEN = "2026-01-01";
-    private static final String MONITOR_CLOSE = "2026-12-31";
-
     private final UsageSessionRepository usageSessionRepository;
     private final UsageSessionService usageSessionService;
     private final StudentRepository studentRepository;
     private final ClassSectionRepository classSectionRepository;
     private final AuditLogRepository auditLogRepository;
     private final PolicyEngine policyEngine;
-    private final MaintenanceFlag maintenanceFlag;
+    private final PolicyInformationPoint policyInformationPoint;
 
     public SessionRecheckService(UsageSessionRepository usageSessionRepository,
                                  UsageSessionService usageSessionService,
@@ -49,14 +43,14 @@ public class SessionRecheckService {
                                  ClassSectionRepository classSectionRepository,
                                  AuditLogRepository auditLogRepository,
                                  PolicyEngine policyEngine,
-                                 MaintenanceFlag maintenanceFlag) {
+                                 PolicyInformationPoint policyInformationPoint) {
         this.usageSessionRepository = usageSessionRepository;
         this.usageSessionService = usageSessionService;
         this.studentRepository = studentRepository;
         this.classSectionRepository = classSectionRepository;
         this.auditLogRepository = auditLogRepository;
         this.policyEngine = policyEngine;
-        this.maintenanceFlag = maintenanceFlag;
+        this.policyInformationPoint = policyInformationPoint;
     }
 
     @Transactional
@@ -121,14 +115,7 @@ public class SessionRecheckService {
     }
 
     private Environment buildEnvironment() {
-        Environment env = new Environment(MONITOR_PHASE, MONITOR_DATE);
-        env.setOpenTime(MONITOR_OPEN);
-        env.setCloseTime(MONITOR_CLOSE);
-        env.setSemester(MONITOR_SEMESTER);
-        env.setIsMaintenance(maintenanceFlag.isActive());
-        env.setMaxRegisterAttempts(5);
-        env.setMaxDropTimes(2);
-        return env;
+        return policyInformationPoint.buildEnvironment();
     }
 
     private void writeAudit(UsageSession session, String decision, String failedPolicyCodes, String triggerReason) {

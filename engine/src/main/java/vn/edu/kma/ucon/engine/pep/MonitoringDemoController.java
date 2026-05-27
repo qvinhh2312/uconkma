@@ -3,7 +3,6 @@ package vn.edu.kma.ucon.engine.pep;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,10 +14,8 @@ import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 import vn.edu.kma.ucon.engine.pip.repository.ClassSectionRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
-import vn.edu.kma.ucon.engine.session.monitor.ClassStatusChangedEvent;
-import vn.edu.kma.ucon.engine.session.monitor.MaintenanceEnabledEvent;
+import vn.edu.kma.ucon.engine.session.monitor.SessionRecheckResult;
 import vn.edu.kma.ucon.engine.session.monitor.SessionRecheckService;
-import vn.edu.kma.ucon.engine.session.monitor.StudentHoldAddedEvent;
 
 @RestController
 @RequestMapping("/api/demo/monitor")
@@ -27,27 +24,28 @@ public class MonitoringDemoController {
     private final MaintenanceFlag maintenanceFlag;
     private final StudentRepository studentRepository;
     private final ClassSectionRepository classSectionRepository;
-    private final ApplicationEventPublisher eventPublisher;
     private final SessionRecheckService sessionRecheckService;
 
     public MonitoringDemoController(MaintenanceFlag maintenanceFlag,
                                     StudentRepository studentRepository,
                                     ClassSectionRepository classSectionRepository,
-                                    ApplicationEventPublisher eventPublisher,
                                     SessionRecheckService sessionRecheckService) {
         this.maintenanceFlag = maintenanceFlag;
         this.studentRepository = studentRepository;
         this.classSectionRepository = classSectionRepository;
-        this.eventPublisher = eventPublisher;
         this.sessionRecheckService = sessionRecheckService;
     }
 
     @PostMapping("/maintenance")
     public ResponseEntity<Map<String, Object>> maintenance(@RequestParam boolean active) {
         maintenanceFlag.setActive(active);
-        eventPublisher.publishEvent(new MaintenanceEnabledEvent(active));
+        SessionRecheckResult result = sessionRecheckService.recheckAllActiveSessions("MAINTENANCE_ENABLED");
         return ResponseEntity.ok(response("maintenance",
-                Map.of("active", active, "message", "Maintenance event published for active-session recheck.")));
+                Map.of(
+                        "active", active,
+                        "checkedSessions", result.checkedSessions(),
+                        "revokedSessions", result.revokedSessions(),
+                        "message", "Maintenance state changed and active sessions were rechecked.")));
     }
 
     @PostMapping("/class-status")
@@ -58,9 +56,14 @@ public class MonitoringDemoController {
         }
         classSection.setStatus(status);
         classSectionRepository.save(classSection);
-        eventPublisher.publishEvent(new ClassStatusChangedEvent(classId, status));
+        SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForClass(classId, "CLASS_STATUS_CHANGED");
         return ResponseEntity.ok(response("class-status",
-                Map.of("classId", classId, "status", status, "message", "Class-status event published for active-session recheck.")));
+                Map.of(
+                        "classId", classId,
+                        "status", status,
+                        "checkedSessions", result.checkedSessions(),
+                        "revokedSessions", result.revokedSessions(),
+                        "message", "Class status changed and related active sessions were rechecked.")));
     }
 
     @PostMapping("/student-hold")
@@ -72,9 +75,14 @@ public class MonitoringDemoController {
         String current = student.getHolds();
         student.setHolds(current == null || current.isBlank() ? holdCode : current + "," + holdCode);
         studentRepository.save(student);
-        eventPublisher.publishEvent(new StudentHoldAddedEvent(studentId, holdCode));
+        SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForStudent(studentId, "STUDENT_HOLD_ADDED");
         return ResponseEntity.ok(response("student-hold",
-                Map.of("studentId", studentId, "holdCode", holdCode, "message", "Student-hold event published for active-session recheck.")));
+                Map.of(
+                        "studentId", studentId,
+                        "holdCode", holdCode,
+                        "checkedSessions", result.checkedSessions(),
+                        "revokedSessions", result.revokedSessions(),
+                        "message", "Student hold changed and related active sessions were rechecked.")));
     }
 
     @PostMapping("/recheck")
