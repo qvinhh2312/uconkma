@@ -315,17 +315,60 @@ Neu can chay demo:
 1. [docs/guides/HUONG_DAN_CHAY_CHI_TIET.md](docs/guides/HUONG_DAN_CHAY_CHI_TIET.md)
 2. [docs/guides/HUONG_DAN_REST_API_CHUAN.md](docs/guides/HUONG_DAN_REST_API_CHUAN.md)
 3. [docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md](docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md)
+4. [docs/guides/KICH_BAN_DEMO_FRONTEND_5P.md](docs/guides/KICH_BAN_DEMO_FRONTEND_5P.md)
 
-## 11. Ket qua hien tai
+## 11. Frontend demo app
+
+Thu muc `frontend/` la mini app React + Vite + Tailwind dung de demo truc quan UCON runtime. App khong co login, khong phai LMS day du, chi tap trung vao policy decision va explainability.
+
+Backend:
+
+```powershell
+cd engine
+mvn spring-boot:run
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+Mini app hien co:
+
+- Dashboard tong quan UCON coverage
+- Policy Explorer voi filter theo predicate / phase / action / variant
+- Register / Drop Simulator goi API that `POST /api/register` va `POST /api/drop`
+- Decision Trace Viewer hien phase, predicate, policy result, snapshot before/after neu response co
+- Monitoring Demo goi `/api/demo/monitor/*` va hien `checkedSessions` / `revokedSessions`
+- PAP Lifecycle goi `/api/pap/*`
+- Validation Report tu snapshot docs/test hien tai
+
+Backend da bat CORS cho:
+
+```text
+http://localhost:5173
+http://127.0.0.1:5173
+```
+
+## 12. Ket qua hien tai
 
 Baseline da verify:
 
-- `engine`: `Tests run: 60, Failures: 0, Errors: 0, Skipped: 0`
+- `engine`: `Tests run: 65, Failures: 0, Errors: 0, Skipped: 0`
 - `dsl`: `BUILD SUCCESS`
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`
 
-## 12. Known limitations
+## 13. Known limitations
 
 Repo hien tai da rat gan tinh than UCON, nhung van con gioi han ro rang:
 

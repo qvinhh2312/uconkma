@@ -55,6 +55,11 @@ logs/
 .jacoco/
 jacoco.exec
 
+# Frontend demo app
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
 # Environment / secrets
 *.env
 application-local.properties
