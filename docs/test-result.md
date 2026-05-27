@@ -25,6 +25,12 @@ mvn -Pformat-check spotless:check
 powershell -ExecutionPolicy Bypass -File .\tools\verify-raw-format.ps1
 ```
 
+```powershell
+cd frontend
+npm install
+npm run build
+```
+
 GitHub Actions also runs the same format check before building DSL and testing engine.
 
 ## Result
@@ -50,6 +56,27 @@ Raw GitHub format check:
 
 ```text
 Raw GitHub formatting verification passed.
+```
+
+Frontend demo app:
+
+```text
+Node.js: v24.16.0
+npm install: 158 packages installed, 0 vulnerabilities
+npm run build: Vite production build SUCCESS
+Vite dev server: http://127.0.0.1:5173 returned HTTP 200
+```
+
+API smoke test with backend running on `http://localhost:8080`:
+
+```text
+POST /api/register without confirmedRegistrationRule -> 403 DENY P17_AgreeRegistrationRule_PreB0
+POST /api/drop before registration -> 403 DENY P16_DropOnlyIfRegistered_PreA0
+POST /api/demo/monitor/maintenance?active=true -> JSON with checkedSessions/revokedSessions
+POST /api/demo/monitor/maintenance?active=false -> JSON with checkedSessions/revokedSessions
+POST /api/demo/monitor/class-status?classId=CS102_01&status=LOCKED -> JSON with checkedSessions/revokedSessions
+POST /api/demo/monitor/student-hold?studentId=SV001&holdCode=ACADEMIC_HOLD -> JSON with checkedSessions/revokedSessions
+POST /api/demo/monitor/recheck -> JSON with checkedSessions/revokedSessions
 ```
 
 ## Coverage
