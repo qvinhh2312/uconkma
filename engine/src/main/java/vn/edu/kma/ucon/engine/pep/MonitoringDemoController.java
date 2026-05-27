@@ -39,13 +39,14 @@ public class MonitoringDemoController {
     @PostMapping("/maintenance")
     public ResponseEntity<Map<String, Object>> maintenance(@RequestParam boolean active) {
         maintenanceFlag.setActive(active);
-        SessionRecheckResult result = sessionRecheckService.recheckAllActiveSessions("MAINTENANCE_ENABLED");
+        SessionRecheckResult result = sessionRecheckService.recheckAllActiveSessions(
+                active ? "MAINTENANCE_ENABLED" : "MAINTENANCE_DISABLED");
         return ResponseEntity.ok(response("maintenance",
                 Map.of(
                         "active", active,
                         "checkedSessions", result.checkedSessions(),
                         "revokedSessions", result.revokedSessions(),
-                        "message", "Maintenance state changed and active sessions were rechecked.")));
+                        "message", "Maintenance recheck completed.")));
     }
 
     @PostMapping("/class-status")
@@ -56,7 +57,9 @@ public class MonitoringDemoController {
         }
         classSection.setStatus(status);
         classSectionRepository.save(classSection);
-        SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForClass(classId, "CLASS_STATUS_CHANGED");
+        SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForClass(
+                classId,
+                "CLASS_STATUS_CHANGED:" + status);
         return ResponseEntity.ok(response("class-status",
                 Map.of(
                         "classId", classId,
@@ -75,7 +78,9 @@ public class MonitoringDemoController {
         String current = student.getHolds();
         student.setHolds(current == null || current.isBlank() ? holdCode : current + "," + holdCode);
         studentRepository.save(student);
-        SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForStudent(studentId, "STUDENT_HOLD_ADDED");
+        SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForStudent(
+                studentId,
+                "STUDENT_HOLD_ADDED:" + holdCode);
         return ResponseEntity.ok(response("student-hold",
                 Map.of(
                         "studentId", studentId,

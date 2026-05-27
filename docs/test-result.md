@@ -2,7 +2,7 @@
 
 Tai lieu nay ghi lai ket qua kiem thu tong hop cho ban hien tai cua repo.
 
-Lan chay gan nhat: `2026-05-26`.
+Lan chay gan nhat: `2026-05-27`.
 
 ## Command
 
@@ -37,7 +37,7 @@ DSL: Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Full engine suite completed locally in about `49 s` on the current machine snapshot.
+Full engine suite completed locally in about `51 s` on the current machine snapshot.
 
 Spotless format check:
 
@@ -55,8 +55,8 @@ Raw GitHub formatting verification passed.
 ## Coverage
 
 ```text
-JaCoCo line coverage: 82.68% (1709 covered / 358 missed)
-JaCoCo branch coverage: 61.58% (545 covered / 340 missed)
+JaCoCo line coverage: 82.69% (1710 covered / 358 missed)
+JaCoCo branch coverage: 61.56% (546 covered / 341 missed)
 ```
 
 ## Y nghia

@@ -7,10 +7,10 @@ Checklist nay chot trang thai repo theo cac nhom yeu cau A-O truoc khi nop/bao v
 | Muc | Trang thai | Bang chung |
 | --- | --- | --- |
 | GitHub Actions xanh | `[x]` | `.github/workflows/maven.yml` chay format check, DSL build, engine test |
-| Engine tests pass | `[x]` | `mvn clean test`: 59 tests pass |
+| Engine tests pass | `[x]` | `mvn clean test`: 60 tests pass |
 | DSL tests pass | `[x]` | `mvn clean test`: 3 tests pass |
 | Spotless check pass | `[x]` | `mvn -Pformat-check spotless:check` |
-| JaCoCo coverage >= 80% line | `[x]` | line coverage `82.68%`, branch coverage `61.58%` |
+| JaCoCo coverage >= 80% line | `[x]` | line coverage `82.69%`, branch coverage `61.56%` |
 | No minified artifact | `[x]` | `ArtifactFormattingTest` + Spotless profile |
 | Raw GitHub files readable | `[x]` | `tools/verify-raw-format.ps1`, see `docs/raw_github_format_verification.md` |
 | XMI/Ecore conformance test pass | `[x]` | `XmiEcoreConformanceTest` |
