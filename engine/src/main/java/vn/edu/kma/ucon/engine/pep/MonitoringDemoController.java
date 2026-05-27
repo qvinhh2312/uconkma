@@ -1,7 +1,10 @@
 package vn.edu.kma.ucon.engine.pep;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +23,8 @@ import vn.edu.kma.ucon.engine.session.monitor.SessionRecheckService;
 @RestController
 @RequestMapping("/api/demo/monitor")
 public class MonitoringDemoController {
+
+    private static final Set<String> VALID_CLASS_STATUSES = Set.of("OPEN", "LOCKED", "CLOSED", "CANCELLED");
 
     private final MaintenanceFlag maintenanceFlag;
     private final StudentRepository studentRepository;
@@ -51,19 +56,20 @@ public class MonitoringDemoController {
 
     @PostMapping("/class-status")
     public ResponseEntity<Map<String, Object>> classStatus(@RequestParam String classId, @RequestParam String status) {
+        String normalizedStatus = normalizeClassStatus(status);
         ClassSection classSection = classSectionRepository.findById(classId).orElse(null);
         if (classSection == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "ClassSection not found", "classId", classId));
         }
-        classSection.setStatus(status);
+        classSection.setStatus(normalizedStatus);
         classSectionRepository.save(classSection);
         SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForClass(
                 classId,
-                "CLASS_STATUS_CHANGED:" + status);
+                "CLASS_STATUS_CHANGED:" + normalizedStatus);
         return ResponseEntity.ok(response("class-status",
                 Map.of(
                         "classId", classId,
-                        "status", status,
+                        "status", normalizedStatus,
                         "checkedSessions", result.checkedSessions(),
                         "revokedSessions", result.revokedSessions(),
                         "message", "Class status changed and related active sessions were rechecked.")));
@@ -71,20 +77,20 @@ public class MonitoringDemoController {
 
     @PostMapping("/student-hold")
     public ResponseEntity<Map<String, Object>> studentHold(@RequestParam String studentId, @RequestParam String holdCode) {
+        String normalizedHoldCode = normalizeRequiredValue("holdCode", holdCode);
         Student student = studentRepository.findById(studentId).orElse(null);
         if (student == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Student not found", "studentId", studentId));
         }
-        String current = student.getHolds();
-        student.setHolds(current == null || current.isBlank() ? holdCode : current + "," + holdCode);
+        student.setHolds(appendUniqueHold(student.getHolds(), normalizedHoldCode));
         studentRepository.save(student);
         SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForStudent(
                 studentId,
-                "STUDENT_HOLD_ADDED:" + holdCode);
+                "STUDENT_HOLD_ADDED:" + normalizedHoldCode);
         return ResponseEntity.ok(response("student-hold",
                 Map.of(
                         "studentId", studentId,
-                        "holdCode", holdCode,
+                        "holdCode", normalizedHoldCode,
                         "checkedSessions", result.checkedSessions(),
                         "revokedSessions", result.revokedSessions(),
                         "message", "Student hold changed and related active sessions were rechecked.")));
@@ -104,5 +110,32 @@ public class MonitoringDemoController {
         response.put("action", action);
         response.putAll(details);
         return response;
+    }
+
+    private String normalizeClassStatus(String status) {
+        String normalizedStatus = normalizeRequiredValue("status", status).toUpperCase();
+        if (!VALID_CLASS_STATUSES.contains(normalizedStatus)) {
+            throw new IllegalArgumentException("Invalid class status: " + status);
+        }
+        return normalizedStatus;
+    }
+
+    private String normalizeRequiredValue(String fieldName, String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " is required.");
+        }
+        return value.trim();
+    }
+
+    private String appendUniqueHold(String current, String holdCode) {
+        Set<String> holds = new LinkedHashSet<>();
+        if (current != null && !current.isBlank()) {
+            Arrays.stream(current.split(","))
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank())
+                    .forEach(holds::add);
+        }
+        holds.add(holdCode);
+        return String.join(",", holds);
     }
 }

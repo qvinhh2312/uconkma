@@ -85,7 +85,7 @@ public class SessionRecheckService {
         ClassSection classSection = classSectionRepository.findById(session.getObjectId()).orElse(null);
         if (student == null || classSection == null) {
             usageSessionService.markRevoked(session, "SESSION_RESOURCE_MISSING");
-            writeAudit(session, "DENY", "SESSION_RESOURCE_MISSING", triggerReason);
+            writeAudit(session, "DENY", "SESSION_RESOURCE_MISSING", "SESSION_RESOURCE_MISSING", triggerReason);
             return true;
         }
 
@@ -94,7 +94,7 @@ public class SessionRecheckService {
         AuthDecision decision = policyEngine.evaluatePhase("ONGOING", student, classSection, environment, request);
         if (!decision.isPermit()) {
             usageSessionService.markRevoked(session, decision.getFailedCode());
-            writeAudit(session, "DENY", decision.getFailedPolicy(), triggerReason + ":" + decision.getFailedCode());
+            writeAudit(session, "DENY", decision.getFailedPolicy(), decision.getFailedCode(), triggerReason);
             return true;
         }
 
@@ -118,15 +118,23 @@ public class SessionRecheckService {
         return policyInformationPoint.buildEnvironment();
     }
 
-    private void writeAudit(UsageSession session, String decision, String failedPolicyCodes, String triggerReason) {
+    private void writeAudit(UsageSession session,
+                            String decision,
+                            String failedPolicyCode,
+                            String failedReason,
+                            String triggerReason) {
         AuditLog auditLog = new AuditLog();
         auditLog.setRequestId(session.getRequestId() != null ? session.getRequestId() : "MONITOR-" + session.getSessionId());
         auditLog.setStudentId(session.getSubjectId());
         auditLog.setClassId(session.getObjectId());
         auditLog.setDecision(decision);
-        auditLog.setFailedPolicyCodes(failedPolicyCodes == null || failedPolicyCodes.isBlank()
-                ? triggerReason
-                : failedPolicyCodes + "|" + triggerReason);
+        auditLog.setFailedPolicyCodes("policy=" + safe(failedPolicyCode)
+                + ";reason=" + safe(failedReason)
+                + ";trigger=" + safe(triggerReason));
         auditLogRepository.save(auditLog);
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "N/A" : value;
     }
 }

@@ -883,11 +883,30 @@ class UconEngineApplicationTests {
         UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
         assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
         assertEquals("SYSTEM_UNDER_MAINTENANCE", reloaded.getRevokeReason());
+        String auditDetails = auditRepo.findTopByRequestIdOrderByIdDesc(session.getRequestId()).orElseThrow().getFailedPolicyCodes();
+        assertTrue(auditDetails.contains("policy=P13_EmergencyMaintenance_OnC0"));
+        assertTrue(auditDetails.contains("reason=SYSTEM_UNDER_MAINTENANCE"));
+        assertTrue(auditDetails.contains("trigger=MAINTENANCE_ENABLED"));
+    }
+
+    @Test
+    @DisplayName("Monitoring demo maintenance endpoint uses disabled trigger when maintenance is turned off")
+    void test35_MonitoringDemoMaintenanceEndpointUsesDisabledTrigger() {
+        UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
+
+        ResponseEntity<Map<String, Object>> response = monitoringDemoController.maintenance(false);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(false, response.getBody().get("active"));
+        assertEquals(1, response.getBody().get("checkedSessions"));
+        assertEquals(0, response.getBody().get("revokedSessions"));
+        UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
+        assertEquals(SessionStatus.ACTIVE, reloaded.getStatus());
     }
 
     @Test
     @DisplayName("Monitoring demo class-status endpoint returns checked and revoked session counts")
-    void test35_MonitoringDemoClassStatusEndpointReturnsRecheckCounts() {
+    void test36_MonitoringDemoClassStatusEndpointReturnsRecheckCounts() {
         UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
 
         ResponseEntity<Map<String, Object>> response = monitoringDemoController.classStatus("CS102_01", "LOCKED");
@@ -898,11 +917,24 @@ class UconEngineApplicationTests {
         UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
         assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
         assertEquals("CLASS_STATUS_CHANGED", reloaded.getRevokeReason());
+        String auditDetails = auditRepo.findTopByRequestIdOrderByIdDesc(session.getRequestId()).orElseThrow().getFailedPolicyCodes();
+        assertTrue(auditDetails.contains("policy=P09_ClassStatusRecheck_OnA0"));
+        assertTrue(auditDetails.contains("reason=CLASS_STATUS_CHANGED"));
+        assertTrue(auditDetails.contains("trigger=CLASS_STATUS_CHANGED:LOCKED"));
+    }
+
+    @Test
+    @DisplayName("Monitoring demo class-status endpoint rejects invalid status")
+    void test37_MonitoringDemoClassStatusEndpointRejectsInvalidStatus() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> monitoringDemoController.classStatus("CS102_01", "abc"));
+        assertEquals("Invalid class status: abc", ex.getMessage());
     }
 
     @Test
     @DisplayName("Monitoring demo student-hold endpoint returns checked and revoked session counts")
-    void test36_MonitoringDemoStudentHoldEndpointReturnsRecheckCounts() {
+    void test38_MonitoringDemoStudentHoldEndpointReturnsRecheckCounts() {
         UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
 
         ResponseEntity<Map<String, Object>> response = monitoringDemoController.studentHold("SV001", "DISCIPLINARY_HOLD");
@@ -913,11 +945,25 @@ class UconEngineApplicationTests {
         UsageSession reloaded = usageSessionRepository.findById(session.getSessionId()).orElseThrow();
         assertEquals(SessionStatus.REVOKED, reloaded.getStatus());
         assertEquals("STUDENT_ON_HOLD", reloaded.getRevokeReason());
+        String auditDetails = auditRepo.findTopByRequestIdOrderByIdDesc(session.getRequestId()).orElseThrow().getFailedPolicyCodes();
+        assertTrue(auditDetails.contains("policy=P10_StudentHoldRecheck_OnA0"));
+        assertTrue(auditDetails.contains("reason=STUDENT_ON_HOLD"));
+        assertTrue(auditDetails.contains("trigger=STUDENT_HOLD_ADDED:DISCIPLINARY_HOLD"));
+    }
+
+    @Test
+    @DisplayName("Monitoring demo student-hold endpoint does not add duplicate hold codes")
+    void test39_MonitoringDemoStudentHoldEndpointDoesNotDuplicateHoldCode() {
+        monitoringDemoController.studentHold("SV001", "DISCIPLINARY_HOLD");
+        monitoringDemoController.studentHold("SV001", "DISCIPLINARY_HOLD");
+
+        Student student = studentRepo.findById("SV001").orElseThrow();
+        assertEquals("DISCIPLINARY_HOLD", student.getHolds());
     }
 
     @Test
     @DisplayName("Global exception handler maps invalid argument and unexpected errors to JSON payloads")
-    void test37_GlobalExceptionHandlerMapsArgumentAndFallbackErrors() {
+    void test40_GlobalExceptionHandlerMapsArgumentAndFallbackErrors() {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/demo/error");
 
         ResponseEntity<ErrorResponse> badRequest = globalExceptionHandler.handleIllegalArgument(
@@ -937,7 +983,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Policy lifecycle service supports DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED")
-    void test38_PolicyLifecycleServiceSupportsFullTransitionChain() {
+    void test41_PolicyLifecycleServiceSupportsFullTransitionChain() {
         EObject originalRoot = EcoreUtil.copy(policyDecisionPoint.getAuthoringPolicyModelRoot());
         try {
             EObject workingRoot = EcoreUtil.copy(originalRoot);
