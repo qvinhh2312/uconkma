@@ -933,8 +933,17 @@ class UconEngineApplicationTests {
     }
 
     @Test
+    @DisplayName("Monitoring demo class-status endpoint rejects missing class IDs with JSON-handler friendly exception")
+    void test38_MonitoringDemoClassStatusEndpointRejectsMissingClass() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> monitoringDemoController.classStatus("MISSING_CLASS", "LOCKED"));
+        assertEquals("ClassSection not found: MISSING_CLASS", ex.getMessage());
+    }
+
+    @Test
     @DisplayName("Monitoring demo student-hold endpoint returns checked and revoked session counts")
-    void test38_MonitoringDemoStudentHoldEndpointReturnsRecheckCounts() {
+    void test39_MonitoringDemoStudentHoldEndpointReturnsRecheckCounts() {
         UsageSession session = createActiveUsageSession("SV001", "CS102_01", "REGISTER");
 
         ResponseEntity<Map<String, Object>> response = monitoringDemoController.studentHold("SV001", "DISCIPLINARY_HOLD");
@@ -953,7 +962,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Monitoring demo student-hold endpoint does not add duplicate hold codes")
-    void test39_MonitoringDemoStudentHoldEndpointDoesNotDuplicateHoldCode() {
+    void test40_MonitoringDemoStudentHoldEndpointDoesNotDuplicateHoldCode() {
         monitoringDemoController.studentHold("SV001", "DISCIPLINARY_HOLD");
         monitoringDemoController.studentHold("SV001", "DISCIPLINARY_HOLD");
 
@@ -962,8 +971,17 @@ class UconEngineApplicationTests {
     }
 
     @Test
+    @DisplayName("Monitoring demo student-hold endpoint rejects missing students with JSON-handler friendly exception")
+    void test41_MonitoringDemoStudentHoldEndpointRejectsMissingStudent() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> monitoringDemoController.studentHold("MISSING_STUDENT", "DISCIPLINARY_HOLD"));
+        assertEquals("Student not found: MISSING_STUDENT", ex.getMessage());
+    }
+
+    @Test
     @DisplayName("Global exception handler maps invalid argument and unexpected errors to JSON payloads")
-    void test40_GlobalExceptionHandlerMapsArgumentAndFallbackErrors() {
+    void test42_GlobalExceptionHandlerMapsArgumentAndFallbackErrors() {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/demo/error");
 
         ResponseEntity<ErrorResponse> badRequest = globalExceptionHandler.handleIllegalArgument(
@@ -983,7 +1001,7 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Policy lifecycle service supports DRAFT -> VALIDATED -> ACTIVE -> DEPRECATED -> ARCHIVED")
-    void test41_PolicyLifecycleServiceSupportsFullTransitionChain() {
+    void test43_PolicyLifecycleServiceSupportsFullTransitionChain() {
         EObject originalRoot = EcoreUtil.copy(policyDecisionPoint.getAuthoringPolicyModelRoot());
         try {
             EObject workingRoot = EcoreUtil.copy(originalRoot);
@@ -999,8 +1017,8 @@ class UconEngineApplicationTests {
             policyDecisionPoint.replacePolicyModel(workingRoot);
 
             assertEquals("DRAFT", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "DRAFT").status());
-            assertEquals("VALIDATED", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "VALIDATED").status());
-            assertEquals("ACTIVE", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "ACTIVE").status());
+            assertEquals("VALIDATED", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "validated").status());
+            assertEquals("ACTIVE", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", " Active ").status());
             assertTrue(policyLifecycleService.listRuntimePolicyIds().contains("P01_TuitionPaid_LifecycleDemo"));
             assertEquals("DEPRECATED", policyLifecycleService.transitionPolicy("P01_TuitionPaid_LifecycleDemo", "DEPRECATED").status());
             assertFalse(policyLifecycleService.listRuntimePolicyIds().contains("P01_TuitionPaid_LifecycleDemo"));
@@ -1037,10 +1055,14 @@ class UconEngineApplicationTests {
 
     @Test
     @DisplayName("Policy lifecycle service rejects invalid policy status names")
-    void test40_PolicyLifecycleServiceRejectsInvalidStatusName() {
+    void test44_PolicyLifecycleServiceRejectsInvalidStatusName() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> policyLifecycleService.transitionPolicy("P01_TuitionPaid_PreA0", "BROKEN_STATUS"));
         assertEquals("Invalid policy status: BROKEN_STATUS", ex.getMessage());
+
+        IllegalArgumentException blankEx = assertThrows(IllegalArgumentException.class,
+                () -> policyLifecycleService.transitionPolicy("P01_TuitionPaid_PreA0", " "));
+        assertEquals("targetStatus is required.", blankEx.getMessage());
     }
 
     @Test

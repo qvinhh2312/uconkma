@@ -57,10 +57,8 @@ public class MonitoringDemoController {
     @PostMapping("/class-status")
     public ResponseEntity<Map<String, Object>> classStatus(@RequestParam String classId, @RequestParam String status) {
         String normalizedStatus = normalizeClassStatus(status);
-        ClassSection classSection = classSectionRepository.findById(classId).orElse(null);
-        if (classSection == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "ClassSection not found", "classId", classId));
-        }
+        ClassSection classSection = classSectionRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("ClassSection not found: " + classId));
         classSection.setStatus(normalizedStatus);
         classSectionRepository.save(classSection);
         SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForClass(
@@ -78,10 +76,8 @@ public class MonitoringDemoController {
     @PostMapping("/student-hold")
     public ResponseEntity<Map<String, Object>> studentHold(@RequestParam String studentId, @RequestParam String holdCode) {
         String normalizedHoldCode = normalizeRequiredValue("holdCode", holdCode);
-        Student student = studentRepository.findById(studentId).orElse(null);
-        if (student == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Student not found", "studentId", studentId));
-        }
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
         student.setHolds(appendUniqueHold(student.getHolds(), normalizedHoldCode));
         studentRepository.save(student);
         SessionRecheckResult result = sessionRecheckService.recheckActiveSessionsForStudent(

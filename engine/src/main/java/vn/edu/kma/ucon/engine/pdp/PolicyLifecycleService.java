@@ -79,7 +79,7 @@ public class PolicyLifecycleService {
 
     private String normalizeTargetStatus(String targetStatus) {
         if (targetStatus == null || targetStatus.isBlank()) {
-            throw new IllegalArgumentException("Policy status is required.");
+            throw new IllegalArgumentException("targetStatus is required.");
         }
         String normalized = targetStatus.trim().toUpperCase();
         if (!ALLOWED_TRANSITIONS.containsKey(normalized)) {
