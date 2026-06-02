@@ -85,6 +85,10 @@ public class DemoStateController {
         }
         state.put("exists", true);
         state.put("studentId", student.getStudentId());
+        state.put("fullName", safe(student.getFullName()));
+        state.put("email", safe(student.getEmail()));
+        state.put("major", safe(student.getMajor()));
+        state.put("cohort", safe(student.getCohort()));
         state.put("currentCredits", student.getCurrentCredits());
         state.put("tuitionPaid", student.isTuitionPaid());
         state.put("tuitionDebt", student.getTuitionDebt());

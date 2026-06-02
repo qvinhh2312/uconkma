@@ -11,6 +11,11 @@ public class Student {
     @Id
     private String studentId;
 
+    private String fullName;
+    private String email;
+    private String major;
+    private String cohort;
+
     private int currentCredits;
     private boolean tuitionPaid;
     private boolean academicWarning;
@@ -38,6 +43,18 @@ public class Student {
 
     public String getStudentId() { return studentId; }
     public void setStudentId(String studentId) { this.studentId = studentId; }
+
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getMajor() { return major; }
+    public void setMajor(String major) { this.major = major; }
+
+    public String getCohort() { return cohort; }
+    public void setCohort(String cohort) { this.cohort = cohort; }
 
     public int getCurrentCredits() { return currentCredits; }
     public void setCurrentCredits(int currentCredits) { this.currentCredits = currentCredits; }

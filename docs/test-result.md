@@ -2,7 +2,7 @@
 
 Tai lieu nay ghi lai ket qua kiem thu tong hop cho ban hien tai cua repo.
 
-Lan chay gan nhat: `2026-05-27`.
+Lan chay gan nhat: `2026-06-02`.
 
 ## Command
 
@@ -49,7 +49,7 @@ Spotless format check:
 
 ```text
 BUILD SUCCESS
-Spotless.Format is keeping 79 files clean - 0 needs changes to be clean
+Spotless.Format is keeping 90 files clean - 0 needs changes to be clean
 ```
 
 Raw GitHub format check:
@@ -62,7 +62,7 @@ Frontend demo app:
 
 ```text
 Node.js: v24.16.0
-npm install: 158 packages installed, 0 vulnerabilities
+npm install: 159 packages audited, 0 vulnerabilities
 npm run build: Vite production build SUCCESS
 Vite dev server: http://127.0.0.1:5173 returned HTTP 200
 ```
@@ -77,6 +77,19 @@ POST /api/demo/monitor/maintenance?active=false -> JSON with checkedSessions/rev
 POST /api/demo/monitor/class-status?classId=CS102_01&status=LOCKED -> JSON with checkedSessions/revokedSessions
 POST /api/demo/monitor/student-hold?studentId=SV001&holdCode=ACADEMIC_HOLD -> JSON with checkedSessions/revokedSessions
 POST /api/demo/monitor/recheck -> JSON with checkedSessions/revokedSessions
+```
+
+Auth / SQL-backed portal smoke test:
+
+```text
+POST /api/auth/login sv001/student123 -> STUDENT token
+GET /api/students/me with STUDENT token -> SV001 profile
+GET /api/students/me/grades with STUDENT token -> 2 grades
+GET /api/students with STUDENT token -> 400 INVALID_ARGUMENT
+POST /api/auth/login admin/admin123 -> ADMIN token
+GET /api/students with ADMIN token -> 2 students
+GET /api/students/SV001/grades with ADMIN token -> 2 grades
+POST /api/register for SV002 with SV001 token -> 400 INVALID_ARGUMENT
 ```
 
 ## Coverage

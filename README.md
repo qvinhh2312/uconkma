@@ -316,10 +316,12 @@ Neu can chay demo:
 2. [docs/guides/HUONG_DAN_REST_API_CHUAN.md](docs/guides/HUONG_DAN_REST_API_CHUAN.md)
 3. [docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md](docs/guides/KICH_BAN_NOI_DEMO_RUNTIME_3_5P.md)
 4. [docs/guides/KICH_BAN_DEMO_FRONTEND_5P.md](docs/guides/KICH_BAN_DEMO_FRONTEND_5P.md)
+5. [docs/guides/FRONTEND_DEMO_SCRIPT.md](docs/guides/FRONTEND_DEMO_SCRIPT.md)
+6. [docs/guides/SQL_AUTH_DEMO.md](docs/guides/SQL_AUTH_DEMO.md)
 
 ## 11. Frontend demo app
 
-Thu muc `frontend/` la mini app React + Vite + Tailwind dung de demo truc quan UCON runtime. App khong co login, khong phai LMS day du, chi tap trung vao policy decision va explainability.
+Thu muc `frontend/` la mini app React + Vite + Tailwind dung de demo truc quan UCON runtime. App co login demo theo role `ADMIN` / `STUDENT`, nhung khong phai LMS/SIS day du; trong tam van la policy decision, explainability va UCON enforcement.
 
 Backend:
 
@@ -345,6 +347,9 @@ http://localhost:5173
 Mini app hien co:
 
 - Dashboard tong quan UCON coverage
+- Login demo: `admin/admin123`, `sv001/student123`, `sv002/student123`
+- Student Portal: sinh vien chi xem ho so va diem cua minh
+- Admin Students: quan tri xem danh sach sinh vien va bang diem
 - Policy Explorer voi filter theo predicate / phase / action / variant
 - Register / Drop Simulator goi API that `POST /api/register` va `POST /api/drop`
 - Decision Trace Viewer hien phase, predicate, policy result, snapshot before/after neu response co
@@ -357,7 +362,21 @@ Backend da bat CORS cho:
 ```text
 http://localhost:5173
 http://127.0.0.1:5173
+http://10.0.2.2:5173
 ```
+
+Chay voi MySQL thay H2:
+
+```powershell
+cd engine
+$env:SPRING_PROFILES_ACTIVE="mysql"
+$env:DB_URL="jdbc:mysql://localhost:3306/ucon_kma?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Ho_Chi_Minh"
+$env:DB_USERNAME="root"
+$env:DB_PASSWORD="your_password"
+mvn spring-boot:run
+```
+
+Chi tiet: [docs/guides/SQL_AUTH_DEMO.md](docs/guides/SQL_AUTH_DEMO.md).
 
 ## 12. Ket qua hien tai
 

@@ -4,13 +4,23 @@ import {
   FileCheck2,
   GitBranch,
   Home,
+  LogIn,
+  LogOut,
   Radar,
   ScrollText,
+  Shield,
+  User,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { logout } from "../api/authApi.js";
+import { clearSession, getSession } from "../auth/session.js";
 
 const items = [
   { to: "/", label: "Dashboard", icon: Home },
+  { to: "/login", label: "Login", icon: LogIn },
+  { to: "/me", label: "My Student Portal", icon: User },
+  { to: "/students", label: "Admin Students", icon: Shield },
   { to: "/policies", label: "Policy Explorer", icon: BookOpen },
   { to: "/simulate", label: "Register / Drop", icon: Activity },
   { to: "/trace", label: "Decision Trace", icon: GitBranch },
@@ -20,6 +30,27 @@ const items = [
 ];
 
 export default function Sidebar() {
+  const [session, setSession] = useState(getSession());
+
+  useEffect(() => {
+    const sync = () => setSession(getSession());
+    window.addEventListener("ucon-session-changed", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("ucon-session-changed", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch {
+      // Local logout is enough for this demo if backend token is already gone.
+    }
+    clearSession();
+  }
+
   return (
     <aside className="sticky top-0 flex h-screen w-72 flex-col border-r border-ink/10 bg-ink px-5 py-6 text-paper">
       <div className="mb-8">
@@ -46,6 +77,19 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      <div className="mt-6 rounded-3xl border border-paper/15 bg-paper/10 p-4 text-sm text-paper/70">
+        {session ? (
+          <>
+            <p className="font-semibold text-paper">{session.displayName}</p>
+            <p>{session.role}{session.studentId ? ` / ${session.studentId}` : ""}</p>
+            <button onClick={handleLogout} className="mt-3 flex items-center gap-2 rounded-xl bg-paper px-3 py-2 font-semibold text-ink">
+              <LogOut size={16} /> Logout
+            </button>
+          </>
+        ) : (
+          <p>Login as `sv001` or `admin` to demo SQL-backed role views.</p>
+        )}
+      </div>
       <div className="mt-auto rounded-3xl border border-paper/15 bg-paper/10 p-4 text-sm text-paper/70">
         PRE → ONGOING → POST with Authorization, Obligation, Condition, mutable updates and trace.
       </div>

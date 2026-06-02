@@ -5,6 +5,7 @@ import DecisionBadge from "../components/DecisionBadge.jsx";
 import JsonPanel from "../components/JsonPanel.jsx";
 import SnapshotDiff from "../components/SnapshotDiff.jsx";
 import TraceTree from "../components/TraceTree.jsx";
+import { getSession, isStudent } from "../auth/session.js";
 
 const defaultRegister = {
   requestId: "REQ-001",
@@ -24,9 +25,17 @@ const defaultDrop = {
 };
 
 export default function RegisterDropSimulator() {
+  const session = getSession();
+  const lockedStudentId = isStudent(session) ? session.studentId : null;
   const [mode, setMode] = useState("REGISTER");
-  const [registerPayload, setRegisterPayload] = useState(defaultRegister);
-  const [dropPayload, setDropPayload] = useState(defaultDrop);
+  const [registerPayload, setRegisterPayload] = useState({
+    ...defaultRegister,
+    studentId: lockedStudentId || defaultRegister.studentId,
+  });
+  const [dropPayload, setDropPayload] = useState({
+    ...defaultDrop,
+    studentId: lockedStudentId || defaultDrop.studentId,
+  });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,6 +59,9 @@ export default function RegisterDropSimulator() {
   }
 
   function update(key, value) {
+    if (key === "studentId" && lockedStudentId) {
+      return;
+    }
     setPayload((current) => ({ ...current, [key]: value }));
   }
 
@@ -76,7 +88,12 @@ export default function RegisterDropSimulator() {
           {["requestId", "studentId", "classId"].map((key) => (
             <label key={key} className="mb-4 block text-sm text-ink/60">
               {key}
-              <input className="mt-1 w-full rounded-xl border border-ink/10 px-3 py-2" value={payload[key]} onChange={(event) => update(key, event.target.value)} />
+              <input
+                className="mt-1 w-full rounded-xl border border-ink/10 px-3 py-2 disabled:bg-sand disabled:text-ink/50"
+                value={key === "studentId" && lockedStudentId ? lockedStudentId : payload[key]}
+                disabled={key === "studentId" && Boolean(lockedStudentId)}
+                onChange={(event) => update(key, event.target.value)}
+              />
             </label>
           ))}
           {mode === "REGISTER" ? (
@@ -104,6 +121,7 @@ export default function RegisterDropSimulator() {
           </button>
           <p className="mt-4 text-sm text-ink/55">
             Tip: leave confirmedRegistrationRule unchecked to demonstrate P17 preB0 obligation deny.
+            {lockedStudentId ? ` Logged-in student is locked to ${lockedStudentId}.` : ""}
           </p>
         </form>
 
