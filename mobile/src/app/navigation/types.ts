@@ -8,6 +8,10 @@ export type MainTabParamList = {
   Student: undefined;
   Admin: undefined;
   Simulator: undefined;
+  Classes: undefined;
+  Registered: undefined;
+  History: undefined;
+  Sessions: undefined;
   Trace: undefined;
   Monitor: undefined;
   Policies: undefined;

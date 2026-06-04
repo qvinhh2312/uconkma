@@ -1,9 +1,12 @@
 package vn.edu.kma.ucon.engine.pip.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 
 @Entity
 public class AuditLog {
@@ -21,6 +24,7 @@ public class AuditLog {
 
     // Comma-separated rule IDs that failed
     private String failedPolicyCodes;
+    private LocalDateTime createdAt;
 
     public AuditLog() {}
 
@@ -40,4 +44,14 @@ public class AuditLog {
 
     public String getFailedPolicyCodes() { return failedPolicyCodes; }
     public void setFailedPolicyCodes(String failedPolicyCodes) { this.failedPolicyCodes = failedPolicyCodes; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

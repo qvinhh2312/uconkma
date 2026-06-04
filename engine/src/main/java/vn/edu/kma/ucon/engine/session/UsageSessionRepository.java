@@ -8,4 +8,5 @@ public interface UsageSessionRepository extends JpaRepository<UsageSession, Stri
     List<UsageSession> findByStatus(SessionStatus status);
     List<UsageSession> findByStatusAndObjectId(SessionStatus status, String objectId);
     List<UsageSession> findByStatusAndSubjectId(SessionStatus status, String subjectId);
+    List<UsageSession> findTop20BySubjectIdOrderByStartedAtDesc(String subjectId);
 }

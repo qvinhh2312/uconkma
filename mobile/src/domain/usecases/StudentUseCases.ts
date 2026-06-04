@@ -7,6 +7,10 @@ export class StudentUseCases {
     return this.studentRepository.listStudents();
   }
 
+  getMyDashboard() {
+    return this.studentRepository.getMyDashboard();
+  }
+
   getMyProfile() {
     return this.studentRepository.getMyProfile();
   }
@@ -17,5 +21,17 @@ export class StudentUseCases {
 
   listClasses() {
     return this.studentRepository.listClasses();
+  }
+
+  getMyRegisteredClasses() {
+    return this.studentRepository.getMyRegisteredClasses();
+  }
+
+  getMyHistory() {
+    return this.studentRepository.getMyHistory();
+  }
+
+  getMySessions() {
+    return this.studentRepository.getMySessions();
   }
 }

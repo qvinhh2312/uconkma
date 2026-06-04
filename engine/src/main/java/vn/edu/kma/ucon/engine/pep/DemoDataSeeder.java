@@ -48,11 +48,11 @@ public class DemoDataSeeder implements CommandLineRunner {
     }
 
     private void seedCoursesAndClasses() {
-        Course cs101 = upsertCourse("CS101", 3, "", 3000000);
-        Course cs102 = upsertCourse("CS102", 4, "CS101", 4000000);
-        Course cs201 = upsertCourse("CS201", 3, "CS101", 3500000);
-        Course net201 = upsertCourse("NET201", 3, "CS101", 3600000);
-        Course sec301 = upsertCourse("SEC301", 4, "CS102,NET201", 4800000);
+        Course cs101 = upsertCourse("CS101", "Lap trinh co ban", 3, "", 3000000);
+        Course cs102 = upsertCourse("CS102", "Cau truc du lieu", 4, "CS101", 4000000);
+        Course cs201 = upsertCourse("CS201", "Lap trinh huong doi tuong", 3, "CS101", 3500000);
+        Course net201 = upsertCourse("NET201", "Mang may tinh", 3, "CS101", 3600000);
+        Course sec301 = upsertCourse("SEC301", "An toan ung dung", 4, "CS102,NET201", 4800000);
 
         upsertClassSection("CS101_01", cs101, 30, 10, "T2_1-3", "OPEN");
         upsertClassSection("CS102_01", cs102, 5, 4, "T3_1-3,T5_4-6", "OPEN");
@@ -102,9 +102,14 @@ public class DemoDataSeeder implements CommandLineRunner {
         createGradeIfMissing("SV010", "CS201", "Lap trinh huong doi tuong", "2026_SPRING", 8.7, 9.1, 8.9, "A");
     }
 
-    private Course upsertCourse(String courseId, int credits, String prerequisites, int tuitionFee) {
+    private Course upsertCourse(String courseId,
+                                String courseName,
+                                int credits,
+                                String prerequisites,
+                                int tuitionFee) {
         Course course = courseRepository.findById(courseId).orElseGet(Course::new);
         course.setCourseId(courseId);
+        course.setCourseName(defaultText(course.getCourseName(), courseName));
         course.setCredits(credits);
         course.setPrerequisites(prerequisites);
         course.setTuitionFee(tuitionFee);

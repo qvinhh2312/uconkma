@@ -15,6 +15,11 @@ import { PolicyExplorerScreen } from "@presentation/screens/PolicyExplorerScreen
 import { RegisterDropScreen } from "@presentation/screens/RegisterDropScreen";
 import { StudentPortalScreen } from "@presentation/screens/StudentPortalScreen";
 import { ValidationReportScreen } from "@presentation/screens/ValidationReportScreen";
+import { StudentClassesScreen } from "@presentation/screens/student/StudentClassesScreen";
+import { StudentDashboardScreen } from "@presentation/screens/student/StudentDashboardScreen";
+import { StudentHistoryScreen } from "@presentation/screens/student/StudentHistoryScreen";
+import { StudentRegisteredClassesScreen } from "@presentation/screens/student/StudentRegisteredClassesScreen";
+import { StudentSessionsScreen } from "@presentation/screens/student/StudentSessionsScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -57,15 +62,23 @@ function MainTabs() {
         tabBarStyle: { backgroundColor: colors.paper, borderTopColor: "rgba(16,32,26,0.1)" },
       }}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      {!isAdmin ? <Tab.Screen name="Student" component={StudentPortalScreen} options={{ title: "My Profile" }} /> : null}
+      {isAdmin ? (
+        <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      ) : (
+        <Tab.Screen name="Dashboard" component={StudentDashboardScreen} options={{ title: "Dashboard" }} />
+      )}
+      {!isAdmin ? <Tab.Screen name="Student" component={StudentPortalScreen} options={{ title: "Profile" }} /> : null}
+      {!isAdmin ? <Tab.Screen name="Classes" component={StudentClassesScreen} options={{ title: "Classes" }} /> : null}
+      {!isAdmin ? <Tab.Screen name="Registered" component={StudentRegisteredClassesScreen} options={{ title: "Registered" }} /> : null}
+      {!isAdmin ? <Tab.Screen name="History" component={StudentHistoryScreen} options={{ title: "History" }} /> : null}
+      {!isAdmin ? <Tab.Screen name="Sessions" component={StudentSessionsScreen} options={{ title: "Sessions" }} /> : null}
       {isAdmin ? <Tab.Screen name="Admin" component={AdminStudentsScreen} options={{ title: "Students" }} /> : null}
-      <Tab.Screen name="Simulator" component={RegisterDropScreen} options={{ title: "Register/Drop" }} />
+      {isAdmin ? <Tab.Screen name="Simulator" component={RegisterDropScreen} options={{ title: "Register/Drop" }} /> : null}
       <Tab.Screen name="Trace" component={DecisionTraceScreen} options={{ title: "Trace" }} />
-      <Tab.Screen name="Monitor" component={MonitoringScreen} options={{ title: "Monitor" }} />
-      <Tab.Screen name="Policies" component={PolicyExplorerScreen} options={{ title: "Policies" }} />
-      <Tab.Screen name="PAP" component={PapLifecycleScreen} options={{ title: "PAP" }} />
-      <Tab.Screen name="Validation" component={ValidationReportScreen} options={{ title: "Validation" }} />
+      {isAdmin ? <Tab.Screen name="Monitor" component={MonitoringScreen} options={{ title: "Monitor" }} /> : null}
+      {isAdmin ? <Tab.Screen name="Policies" component={PolicyExplorerScreen} options={{ title: "Policies" }} /> : null}
+      {isAdmin ? <Tab.Screen name="PAP" component={PapLifecycleScreen} options={{ title: "PAP" }} /> : null}
+      {isAdmin ? <Tab.Screen name="Validation" component={ValidationReportScreen} options={{ title: "Validation" }} /> : null}
     </Tab.Navigator>
   );
 }

@@ -1,9 +1,12 @@
 package vn.edu.kma.ucon.engine.pip.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -28,6 +31,7 @@ public class Registration {
     private String classId;
     private String semester;
     private String actionType; // e.g. "REGISTER" or "DROP"
+    private LocalDateTime registeredAt;
 
     public Registration() {}
 
@@ -51,4 +55,14 @@ public class Registration {
 
     public String getActionType() { return actionType; }
     public void setActionType(String actionType) { this.actionType = actionType; }
+
+    public LocalDateTime getRegisteredAt() { return registeredAt; }
+    public void setRegisteredAt(LocalDateTime registeredAt) { this.registeredAt = registeredAt; }
+
+    @PrePersist
+    void prePersist() {
+        if (registeredAt == null) {
+            registeredAt = LocalDateTime.now();
+        }
+    }
 }

@@ -6,6 +6,7 @@ import { MonitoringResult } from "@domain/entities/Monitoring";
 import { EnvironmentState } from "@domain/entities/EnvironmentState";
 import { PapPolicy, PapSummary } from "@domain/entities/Policy";
 import { Student, StudentGrade } from "@domain/entities/Student";
+import { RegisteredClass, StudentDashboard, StudentRequestHistory, StudentSession } from "@domain/entities/StudentDashboard";
 
 export class UconApiDataSource {
   constructor(private readonly http: AxiosInstance) {}
@@ -29,6 +30,11 @@ export class UconApiDataSource {
     return response.data;
   }
 
+  async getMyDashboard(): Promise<StudentDashboard> {
+    const response = await this.http.get<StudentDashboard>("/students/me/dashboard");
+    return response.data;
+  }
+
   async getMyGrades(): Promise<StudentGrade[]> {
     const response = await this.http.get<StudentGrade[]>("/students/me/grades");
     return response.data;
@@ -36,6 +42,21 @@ export class UconApiDataSource {
 
   async listClasses(): Promise<ClassSection[]> {
     const response = await this.http.get<ClassSection[]>("/classes");
+    return response.data;
+  }
+
+  async getMyRegisteredClasses(): Promise<RegisteredClass[]> {
+    const response = await this.http.get<RegisteredClass[]>("/students/me/registered-classes");
+    return response.data;
+  }
+
+  async getMyHistory(): Promise<StudentRequestHistory[]> {
+    const response = await this.http.get<StudentRequestHistory[]>("/students/me/history");
+    return response.data;
+  }
+
+  async getMySessions(): Promise<StudentSession[]> {
+    const response = await this.http.get<StudentSession[]>("/students/me/sessions");
     return response.data;
   }
 
