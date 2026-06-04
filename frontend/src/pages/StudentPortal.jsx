@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMyGrades, getMyProfile } from "../api/studentApi.js";
 import { normalizeApiError } from "../api/client.js";
-import JsonPanel from "../components/JsonPanel.jsx";
 
 export default function StudentPortal() {
   const [profile, setProfile] = useState(null);
@@ -23,6 +22,11 @@ export default function StudentPortal() {
         <p className="text-sm uppercase tracking-[0.32em] text-clay">Student self-service</p>
         <h2 className="font-display text-4xl">My Student Portal</h2>
       </header>
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {error.message || error.errorCode || "Cannot load student profile."}
+        </div>
+      ) : null}
 
       <section className="grid gap-5 xl:grid-cols-[1fr,1fr]">
         <div className="rounded-3xl bg-paper p-6 shadow-soft">
@@ -69,9 +73,6 @@ export default function StudentPortal() {
           </div>
         </div>
       </section>
-
-      <JsonPanel title={error ? "Portal error" : "Profile JSON"} data={error || profile || { message: "Loading..." }} />
     </div>
   );
 }
-

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { getStudentGrades, listStudents } from "../api/studentApi.js";
 import { normalizeApiError } from "../api/client.js";
-import JsonPanel from "../components/JsonPanel.jsx";
 
 export default function AdminStudents() {
   const [students, setStudents] = useState([]);
@@ -31,6 +30,11 @@ export default function AdminStudents() {
         <p className="text-sm uppercase tracking-[0.32em] text-clay">Admin view</p>
         <h2 className="font-display text-4xl">Student Information & Grades</h2>
       </header>
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {error.message || error.errorCode || "Admin API request failed."}
+        </div>
+      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[1fr,26rem]">
         <div className="rounded-3xl bg-paper p-6 shadow-soft">
@@ -88,9 +92,6 @@ export default function AdminStudents() {
           ) : <p className="mt-4 text-sm text-ink/60">Click a student to view grades.</p>}
         </div>
       </section>
-
-      <JsonPanel title={error ? "Admin API error" : "Selected student JSON"} data={error || selected || { message: "No student selected." }} />
     </div>
   );
 }
-

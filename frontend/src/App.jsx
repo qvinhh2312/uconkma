@@ -20,7 +20,8 @@ export default function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/me" element={<RequireLogin><StudentPortal /></RequireLogin>} />
         <Route path="/students" element={<RequireLogin><AdminStudents /></RequireLogin>} />
@@ -30,7 +31,7 @@ export default function App() {
         <Route path="/monitor" element={<MonitoringDemo />} />
         <Route path="/pap" element={<PapLifecycle />} />
         <Route path="/validation" element={<ValidationReport />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Layout>
   );

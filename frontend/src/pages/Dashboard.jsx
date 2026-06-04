@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { getDemoState } from "../api/demoApi.js";
-import JsonPanel from "../components/JsonPanel.jsx";
 import MetricCard from "../components/MetricCard.jsx";
 import { policyCatalog, uconVariants, validationSnapshot } from "../data/policyCatalog.js";
 
@@ -63,7 +62,25 @@ export default function Dashboard() {
             <dd className="font-semibold">{validationSnapshot.branchCoverage}</dd>
           </dl>
         </div>
-        <JsonPanel title={error ? "Backend state error" : "Backend demo state"} data={error || state || { message: "Loading backend state..." }} />
+        <div className="rounded-3xl border border-ink/10 bg-paper p-6 shadow-soft">
+          <h3 className="font-display text-2xl">Backend Demo State</h3>
+          {error ? (
+            <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700">
+              {error.message || "Cannot load backend state."}
+            </p>
+          ) : (
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <dt className="text-ink/55">Student</dt>
+              <dd className="font-semibold">{state?.student?.studentId || "Loading..."}</dd>
+              <dt className="text-ink/55">Class</dt>
+              <dd className="font-semibold">{state?.classSection?.classId || "Loading..."}</dd>
+              <dt className="text-ink/55">Registrations</dt>
+              <dd className="font-semibold">{state?.totals?.registrations ?? "..."}</dd>
+              <dt className="text-ink/55">Committed sessions</dt>
+              <dd className="font-semibold">{state?.totals?.committedSessions ?? "..."}</dd>
+            </dl>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getPapSummary, listPolicies, reloadPolicies, transitionPolicy } from "../api/papApi.js";
 import { normalizeApiError } from "../api/client.js";
-import JsonPanel from "../components/JsonPanel.jsx";
+import MetricCard from "../components/MetricCard.jsx";
 
 const transitions = ["DRAFT", "VALIDATED", "ACTIVE", "DEPRECATED", "ARCHIVED"];
 
@@ -51,7 +51,17 @@ export default function PapLifecycle() {
         </div>
         <button onClick={reload} className="rounded-2xl bg-ink px-4 py-3 font-semibold text-paper">Reload policy model</button>
       </header>
-      <JsonPanel title="Runtime active summary" data={summary || { message: "Loading PAP summary..." }} />
+      <section className="grid gap-4 md:grid-cols-4">
+        <MetricCard label="ACTIVE" value={summary?.ACTIVE ?? "..."} />
+        <MetricCard label="DRAFT" value={summary?.DRAFT ?? "..."} tone="ink" />
+        <MetricCard label="DEPRECATED" value={summary?.DEPRECATED ?? "..."} tone="clay" />
+        <MetricCard label="Runtime active" value={summary?.RUNTIME_ACTIVE_POLICIES ?? "..."} />
+      </section>
+      {result ? (
+        <p className="rounded-2xl bg-paper px-4 py-3 text-sm font-semibold text-ink/70 shadow-soft">
+          {result.message || result.errorCode || "PAP action completed."}
+        </p>
+      ) : null}
       <section className="overflow-hidden rounded-3xl bg-paper shadow-soft">
         <table className="w-full text-left text-sm">
           <thead className="bg-ink text-paper">
@@ -81,7 +91,6 @@ export default function PapLifecycle() {
           </tbody>
         </table>
       </section>
-      <JsonPanel title="PAP action response" data={result || { message: "No PAP action yet." }} />
     </div>
   );
 }

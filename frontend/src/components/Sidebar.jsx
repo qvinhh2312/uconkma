@@ -17,7 +17,7 @@ import { logout } from "../api/authApi.js";
 import { clearSession, getSession } from "../auth/session.js";
 
 const items = [
-  { to: "/", label: "Dashboard", icon: Home },
+  { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/login", label: "Login", icon: LogIn },
   { to: "/me", label: "My Student Portal", icon: User },
   { to: "/students", label: "Admin Students", icon: Shield },
@@ -81,17 +81,23 @@ export default function Sidebar() {
         {session ? (
           <>
             <p className="font-semibold text-paper">{session.displayName}</p>
-            <p>{session.role}{session.studentId ? ` / ${session.studentId}` : ""}</p>
-            <button onClick={handleLogout} className="mt-3 flex items-center gap-2 rounded-xl bg-paper px-3 py-2 font-semibold text-ink">
+            <p>
+              {session.role}
+              {session.studentId ? ` / ${session.studentId}` : ""}
+            </p>
+            <button
+              onClick={handleLogout}
+              className="mt-3 flex items-center gap-2 rounded-xl bg-paper px-3 py-2 font-semibold text-ink"
+            >
               <LogOut size={16} /> Logout
             </button>
           </>
         ) : (
-          <p>Login as `sv001` or `admin` to demo SQL-backed role views.</p>
+          <p>Dang nhap bang tai khoan demo de bat dau.</p>
         )}
       </div>
       <div className="mt-auto rounded-3xl border border-paper/15 bg-paper/10 p-4 text-sm text-paper/70">
-        PRE → ONGOING → POST with Authorization, Obligation, Condition, mutable updates and trace.
+        PRE -&gt; ONGOING -&gt; POST with Authorization, Obligation, Condition, mutable updates and trace.
       </div>
     </aside>
   );

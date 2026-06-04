@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api/authApi.js";
 import { normalizeApiError } from "../api/client.js";
-import JsonPanel from "../components/JsonPanel.jsx";
 import { setSession } from "../auth/session.js";
 
 export default function Login() {
@@ -31,17 +30,16 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <header className="rounded-[2rem] bg-paper p-8 shadow-soft">
-        <p className="text-sm uppercase tracking-[0.32em] text-clay">SQL-backed account demo</p>
-        <h2 className="mt-3 font-display text-5xl text-ink">Login</h2>
-        <p className="mt-4 max-w-3xl text-ink/65">
-          Dang nhap de demo phan quyen: quan tri xem danh sach sinh vien/diem, sinh vien chi xem ho so cua minh va dang ky hoc phan qua UCON.
-        </p>
-      </header>
-
-      <section className="grid gap-6 lg:grid-cols-[24rem,1fr]">
-        <form onSubmit={submit} className="rounded-3xl bg-paper p-6 shadow-soft">
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+      <section className="w-full max-w-md">
+        <form onSubmit={submit} className="rounded-[2rem] bg-paper p-8 shadow-soft">
+          <p className="text-sm uppercase tracking-[0.32em] text-clay">UCONKMA</p>
+          <h2 className="mt-3 font-display text-5xl text-ink">Login</h2>
+          {result ? (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {result.message || result.errorCode || "Login failed."}
+            </div>
+          ) : null}
           <label className="mb-4 block text-sm text-ink/60">
             username
             <input
@@ -71,9 +69,7 @@ export default function Login() {
             </button>
           </div>
         </form>
-        <JsonPanel title="Login response / error" data={result || { message: "Login to receive a role-scoped token." }} />
       </section>
     </div>
   );
 }
-

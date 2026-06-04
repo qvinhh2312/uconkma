@@ -1,4 +1,3 @@
-import JsonPanel from "../components/JsonPanel.jsx";
 import SnapshotDiff from "../components/SnapshotDiff.jsx";
 import TraceTree from "../components/TraceTree.jsx";
 
@@ -14,9 +13,19 @@ export default function DecisionTraceViewer() {
           Use the Register / Drop Simulator first, then inspect phase, predicate, policy result and snapshots here.
         </p>
       </header>
-      <TraceTree trace={last?.decisionTrace} />
-      <SnapshotDiff response={last} />
-      <JsonPanel title="Latest decision JSON" data={last || { message: "No global trace yet. The simulator page shows trace immediately after submit." }} />
+      {last ? (
+        <>
+          <TraceTree trace={last.decisionTrace} />
+          <SnapshotDiff response={last} />
+        </>
+      ) : (
+        <section className="rounded-3xl bg-paper p-6 shadow-soft">
+          <h3 className="font-display text-2xl">No decision selected</h3>
+          <p className="mt-2 text-ink/60">
+            Submit a REGISTER or DROP request in the simulator to inspect the latest UCON decision trace here.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

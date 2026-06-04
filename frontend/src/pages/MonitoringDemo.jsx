@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { addStudentHold, changeClassStatus, recheckActiveSessions, setMaintenance } from "../api/monitorApi.js";
 import { normalizeApiError } from "../api/client.js";
-import JsonPanel from "../components/JsonPanel.jsx";
 import MetricCard from "../components/MetricCard.jsx";
 
 export default function MonitoringDemo() {
@@ -36,6 +35,11 @@ export default function MonitoringDemo() {
           <MetricCard label="revokedSessions" value={result.revokedSessions ?? "N/A"} tone="clay" />
           <MetricCard label="action" value={result.action || result.errorCode || "N/A"} tone="ink" />
         </section>
+      ) : null}
+      {result?.message ? (
+        <p className="rounded-2xl bg-paper px-4 py-3 text-sm font-semibold text-ink/70 shadow-soft">
+          {result.message}
+        </p>
       ) : null}
 
       <section className="grid gap-5 xl:grid-cols-4">
@@ -91,8 +95,6 @@ export default function MonitoringDemo() {
           </button>
         </div>
       </section>
-
-      <JsonPanel title="Monitoring API response" data={result || { message: "Run a monitoring action to see checked/revoked sessions." }} />
     </div>
   );
 }

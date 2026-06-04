@@ -1,4 +1,3 @@
-import JsonPanel from "../components/JsonPanel.jsx";
 import MetricCard from "../components/MetricCard.jsx";
 import { validationSnapshot } from "../data/policyCatalog.js";
 
@@ -31,7 +30,6 @@ export default function ValidationReport() {
           ))}
         </div>
       </section>
-      <JsonPanel title="Validation snapshot JSON" data={validationSnapshot} />
     </div>
   );
 }
