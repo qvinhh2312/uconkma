@@ -318,6 +318,7 @@ Neu can chay demo:
 4. [docs/guides/KICH_BAN_DEMO_FRONTEND_5P.md](docs/guides/KICH_BAN_DEMO_FRONTEND_5P.md)
 5. [docs/guides/FRONTEND_DEMO_SCRIPT.md](docs/guides/FRONTEND_DEMO_SCRIPT.md)
 6. [docs/guides/SQL_AUTH_DEMO.md](docs/guides/SQL_AUTH_DEMO.md)
+7. [docs/guides/MOBILE_APP_CLEAN_ARCHITECTURE_ROADMAP.md](docs/guides/MOBILE_APP_CLEAN_ARCHITECTURE_ROADMAP.md)
 
 ## 11. Frontend demo app
 
@@ -378,7 +379,42 @@ mvn spring-boot:run
 
 Bien moi truong mau nam tai `engine/.env.mysql.example`. Chi tiet: [docs/guides/SQL_AUTH_DEMO.md](docs/guides/SQL_AUTH_DEMO.md).
 
-## 12. Ket qua hien tai
+## 12. Android mobile demo app
+
+Thu muc `mobile/` la app Android demo bang `Expo + React Native + TypeScript`. Code duoc tach theo Clean Architecture:
+
+- `domain`: entities, repository contracts, use cases
+- `data`: API datasource va repository implementations
+- `core`: config, network, secure storage, error handling, theme
+- `presentation`: screens, components, hooks
+- `app`: DI, providers, navigation
+
+Backend:
+
+```powershell
+cd engine
+mvn spring-boot:run
+```
+
+Mobile:
+
+```powershell
+cd mobile
+npm install
+npm run android
+```
+
+Android Emulator dung backend URL:
+
+```text
+http://10.0.2.2:8080/api
+```
+
+Neu chay tren dien thoai that, sua `mobile/app.json` -> `expo.extra.apiBaseUrl` thanh IP LAN cua may dang chay backend.
+
+Tai lieu chi tiet: [docs/guides/MOBILE_APP_CLEAN_ARCHITECTURE_ROADMAP.md](docs/guides/MOBILE_APP_CLEAN_ARCHITECTURE_ROADMAP.md).
+
+## 13. Ket qua hien tai
 
 Baseline da verify:
 
@@ -387,7 +423,7 @@ Baseline da verify:
 - `benchmark suite`: `BUILD SUCCESS`
 - `PAP lifecycle`: co the transition policy va runtime chi giu `ACTIVE`
 
-## 13. Known limitations
+## 14. Known limitations
 
 Repo hien tai da rat gan tinh than UCON, nhung van con gioi han ro rang:
 

@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "UCONKMA Mobile",
+    "slug": "uconkma-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "uconkma",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "vn.edu.kma.ucon.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#EDE4D4"
+      }
+    },
+    "extra": {
+      "apiBaseUrl": "http://10.0.2.2:8080/api"
+    }
+  }
+}
