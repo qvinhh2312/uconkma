@@ -365,18 +365,18 @@ http://127.0.0.1:5173
 http://10.0.2.2:5173
 ```
 
-Chay voi MySQL thay H2:
+Chay voi MySQL thay H2. Tao database truoc bang `db/mysql/00-create-database.sql` hoac Docker Compose `docker-compose.mysql.yml`, sau do start backend:
 
 ```powershell
 cd engine
 $env:SPRING_PROFILES_ACTIVE="mysql"
 $env:DB_URL="jdbc:mysql://localhost:3306/ucon_kma?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Ho_Chi_Minh"
-$env:DB_USERNAME="root"
-$env:DB_PASSWORD="your_password"
+$env:DB_USERNAME="ucon_app"
+$env:DB_PASSWORD="ucon_app_123"
 mvn spring-boot:run
 ```
 
-Chi tiet: [docs/guides/SQL_AUTH_DEMO.md](docs/guides/SQL_AUTH_DEMO.md).
+Bien moi truong mau nam tai `engine/.env.mysql.example`. Chi tiet: [docs/guides/SQL_AUTH_DEMO.md](docs/guides/SQL_AUTH_DEMO.md).
 
 ## 12. Ket qua hien tai
 

@@ -4,12 +4,30 @@ Huong dan nay dung khi muon chay UCONKMA voi database SQL ben vung thay vi H2 in
 
 ## 1. MySQL database
 
-Tao database:
+Tao database va user demo bang MySQL account co quyen admin:
 
-```sql
-CREATE DATABASE IF NOT EXISTS ucon_kma
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+```powershell
+mysql -u root -p < db/mysql/00-create-database.sql
+```
+
+File bootstrap:
+
+```text
+db/mysql/00-create-database.sql
+```
+
+User demo duoc tao:
+
+```text
+database: ucon_kma
+username: ucon_app
+password: ucon_app_123
+```
+
+Neu may co Docker, co the dung compose thay vi cai MySQL local:
+
+```powershell
+docker compose -f docker-compose.mysql.yml up -d
 ```
 
 Chay backend voi profile MySQL:
@@ -18,18 +36,35 @@ Chay backend voi profile MySQL:
 cd engine
 $env:SPRING_PROFILES_ACTIVE="mysql"
 $env:DB_URL="jdbc:mysql://localhost:3306/ucon_kma?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Ho_Chi_Minh"
-$env:DB_USERNAME="root"
-$env:DB_PASSWORD="your_password"
+$env:DB_USERNAME="ucon_app"
+$env:DB_PASSWORD="ucon_app_123"
 mvn spring-boot:run
 ```
 
-Neu khong set bien moi truong, backend dung default:
+Co the copy gia tri tu file:
+
+```text
+engine/.env.mysql.example
+```
+
+Neu khong set bien moi truong, backend dung default trong `application-mysql.properties`:
 
 ```text
 DB_URL=jdbc:mysql://localhost:3306/ucon_kma?createDatabaseIfNotExist=true...
 DB_USERNAME=root
 DB_PASSWORD=
 ```
+
+Sau khi backend start, Hibernate se tao/cap nhat cac bang can thiet:
+
+- `student`
+- `course`
+- `class_section`
+- `registration`
+- `usage_session`
+- `audit_log`
+- `user_account`
+- `student_grade`
 
 ## 2. Demo accounts
 
@@ -127,4 +162,3 @@ http://10.0.2.2:5173
 - Student can view only own profile and grades.
 - Student can register/drop through the existing UCON PEP/PDP workflow.
 - H2 remains available for automated tests and quick local demo.
-

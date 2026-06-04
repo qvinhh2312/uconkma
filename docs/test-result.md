@@ -2,7 +2,7 @@
 
 Tai lieu nay ghi lai ket qua kiem thu tong hop cho ban hien tai cua repo.
 
-Lan chay gan nhat: `2026-06-02`.
+Lan chay gan nhat: `2026-06-04`.
 
 ## Command
 
@@ -63,6 +63,7 @@ Frontend demo app:
 ```text
 Node.js: v24.16.0
 npm install: 159 packages audited, 0 vulnerabilities
+npm audit --audit-level=moderate: 0 vulnerabilities
 npm run build: Vite production build SUCCESS
 Vite dev server: http://127.0.0.1:5173 returned HTTP 200
 ```
@@ -91,6 +92,22 @@ GET /api/students with ADMIN token -> 2 students
 GET /api/students/SV001/grades with ADMIN token -> 2 grades
 POST /api/register for SV002 with SV001 token -> 400 INVALID_ARGUMENT
 ```
+
+SQL database readiness:
+
+```text
+MySQL client on current machine: not found
+localhost:3306: closed
+Docker on current machine: not found
+
+Repo-provided SQL setup:
+- db/mysql/00-create-database.sql
+- docker-compose.mysql.yml
+- engine/.env.mysql.example
+- docs/guides/SQL_AUTH_DEMO.md
+```
+
+Ket luan: backend da co profile MySQL va schema se duoc tao/cap nhat boi Hibernate khi MySQL chay. May kiem thu hien tai chua co MySQL/Docker nen SQL-profile runtime smoke test chua the chay tren local nay.
 
 ## Coverage
 
