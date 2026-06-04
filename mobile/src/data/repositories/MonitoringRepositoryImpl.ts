@@ -1,6 +1,7 @@
 import { normalizeError } from "@core/errors/normalizeError";
 import { UconApiDataSource } from "@data/datasources/UconApiDataSource";
 import { MonitoringResult } from "@domain/entities/Monitoring";
+import { EnvironmentState } from "@domain/entities/EnvironmentState";
 import { MonitoringRepository } from "@domain/repositories/MonitoringRepository";
 
 export class MonitoringRepositoryImpl implements MonitoringRepository {
@@ -33,6 +34,30 @@ export class MonitoringRepositoryImpl implements MonitoringRepository {
   async recheckActiveSessions(): Promise<MonitoringResult> {
     try {
       return await this.api.recheckActiveSessions();
+    } catch (error) {
+      throw normalizeError(error);
+    }
+  }
+
+  async getEnvironmentState(): Promise<EnvironmentState> {
+    try {
+      return await this.api.getEnvironmentState();
+    } catch (error) {
+      throw normalizeError(error);
+    }
+  }
+
+  async openRegistrationWindow(): Promise<EnvironmentState> {
+    try {
+      return await this.api.openRegistrationWindow();
+    } catch (error) {
+      throw normalizeError(error);
+    }
+  }
+
+  async closeRegistrationWindow(): Promise<EnvironmentState> {
+    try {
+      return await this.api.closeRegistrationWindow();
     } catch (error) {
       throw normalizeError(error);
     }

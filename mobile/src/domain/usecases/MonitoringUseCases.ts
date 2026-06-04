@@ -18,4 +18,16 @@ export class MonitoringUseCases {
   recheckActiveSessions() {
     return this.monitoringRepository.recheckActiveSessions();
   }
+
+  getEnvironmentState() {
+    return this.monitoringRepository.getEnvironmentState();
+  }
+
+  openRegistrationWindow() {
+    return this.monitoringRepository.openRegistrationWindow();
+  }
+
+  closeRegistrationWindow() {
+    return this.monitoringRepository.closeRegistrationWindow();
+  }
 }

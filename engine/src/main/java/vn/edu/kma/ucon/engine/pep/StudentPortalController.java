@@ -15,6 +15,7 @@ import vn.edu.kma.ucon.engine.pip.entity.Course;
 import vn.edu.kma.ucon.engine.pip.entity.Student;
 import vn.edu.kma.ucon.engine.pip.entity.StudentGrade;
 import vn.edu.kma.ucon.engine.pip.repository.ClassSectionRepository;
+import vn.edu.kma.ucon.engine.pip.repository.CourseRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentGradeRepository;
 import vn.edu.kma.ucon.engine.pip.repository.StudentRepository;
 
@@ -26,15 +27,18 @@ public class StudentPortalController {
     private final StudentRepository studentRepository;
     private final StudentGradeRepository gradeRepository;
     private final ClassSectionRepository classSectionRepository;
+    private final CourseRepository courseRepository;
 
     public StudentPortalController(AuthService authService,
                                    StudentRepository studentRepository,
                                    StudentGradeRepository gradeRepository,
-                                   ClassSectionRepository classSectionRepository) {
+                                   ClassSectionRepository classSectionRepository,
+                                   CourseRepository courseRepository) {
         this.authService = authService;
         this.studentRepository = studentRepository;
         this.gradeRepository = gradeRepository;
         this.classSectionRepository = classSectionRepository;
+        this.courseRepository = courseRepository;
     }
 
     @GetMapping("/students")
@@ -119,6 +123,7 @@ public class StudentPortalController {
         data.put("academicWarning", student.isAcademicWarning());
         data.put("maxCreditsEffective", student.getMaxCreditsEffective());
         data.put("completedCourses", safe(student.getCompletedCourses()));
+        data.put("completedCredits", completedCredits(student));
         data.put("registeredClassIds", safe(student.getRegisteredClassIds()));
         data.put("registeredScheduleSlots", safe(student.getRegisteredScheduleSlots()));
         data.put("registerAttemptCount", student.getRegisterAttemptCount());
@@ -144,5 +149,22 @@ public class StudentPortalController {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private int completedCredits(Student student) {
+        String completedCourses = student.getCompletedCourses();
+        if (completedCourses == null || completedCourses.isBlank()) {
+            return 0;
+        }
+        int total = 0;
+        for (String courseId : completedCourses.split(",")) {
+            String normalizedCourseId = courseId.trim();
+            if (!normalizedCourseId.isBlank()) {
+                total += courseRepository.findById(normalizedCourseId)
+                        .map(Course::getCredits)
+                        .orElse(0);
+            }
+        }
+        return total;
     }
 }

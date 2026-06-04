@@ -11,6 +11,7 @@ export type Student = {
   completedCourses?: string;
   registeredClassIds?: string;
   registeredScheduleSlots?: string;
+  completedCredits?: number;
   maxCreditsEffective?: number;
   registerAttemptCount?: number;
   dropCountForSemester?: number;

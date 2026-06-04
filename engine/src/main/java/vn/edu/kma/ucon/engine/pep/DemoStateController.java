@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import vn.edu.kma.ucon.engine.pdp.MaintenanceFlag;
+import vn.edu.kma.ucon.engine.pip.EnvironmentStateService;
 import vn.edu.kma.ucon.engine.pip.entity.AuditLog;
 import vn.edu.kma.ucon.engine.pip.entity.ClassSection;
 import vn.edu.kma.ucon.engine.pip.entity.Registration;
@@ -30,20 +30,20 @@ public class DemoStateController {
     private final ClassSectionRepository classRepo;
     private final RegistrationRepository registrationRepo;
     private final AuditLogRepository auditRepo;
-    private final MaintenanceFlag maintenanceFlag;
+    private final EnvironmentStateService environmentStateService;
     private final UsageSessionRepository usageSessionRepository;
 
     public DemoStateController(StudentRepository studentRepo,
                                ClassSectionRepository classRepo,
                                RegistrationRepository registrationRepo,
                                AuditLogRepository auditRepo,
-                               MaintenanceFlag maintenanceFlag,
+                               EnvironmentStateService environmentStateService,
                                UsageSessionRepository usageSessionRepository) {
         this.studentRepo = studentRepo;
         this.classRepo = classRepo;
         this.registrationRepo = registrationRepo;
         this.auditRepo = auditRepo;
-        this.maintenanceFlag = maintenanceFlag;
+        this.environmentStateService = environmentStateService;
         this.usageSessionRepository = usageSessionRepository;
     }
 
@@ -67,15 +67,7 @@ public class DemoStateController {
     }
 
     private Map<String, Object> environmentSnapshot() {
-        Map<String, Object> environment = new LinkedHashMap<>();
-        environment.put("semester", DEMO_SEMESTER);
-        environment.put("maintenance", maintenanceFlag.isActive());
-        environment.put("registrationPhase", "NORMAL");
-        environment.put("openTime", "2026-01-01");
-        environment.put("closeTime", "2026-12-31");
-        environment.put("maxRegisterAttempts", 5);
-        environment.put("maxDropTimes", 2);
-        return environment;
+        return environmentStateService.snapshot();
     }
 
     private Map<String, Object> studentSnapshot(Student student) {

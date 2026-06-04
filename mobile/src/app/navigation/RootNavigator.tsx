@@ -58,7 +58,7 @@ function MainTabs() {
       }}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Student" component={StudentPortalScreen} options={{ title: "My Profile" }} />
+      {!isAdmin ? <Tab.Screen name="Student" component={StudentPortalScreen} options={{ title: "My Profile" }} /> : null}
       {isAdmin ? <Tab.Screen name="Admin" component={AdminStudentsScreen} options={{ title: "Students" }} /> : null}
       <Tab.Screen name="Simulator" component={RegisterDropScreen} options={{ title: "Register/Drop" }} />
       <Tab.Screen name="Trace" component={DecisionTraceScreen} options={{ title: "Trace" }} />

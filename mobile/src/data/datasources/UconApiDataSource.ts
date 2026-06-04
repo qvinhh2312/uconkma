@@ -3,6 +3,7 @@ import { AuthSession, LoginCommand } from "@domain/entities/AuthSession";
 import { ClassSection } from "@domain/entities/ClassSection";
 import { ApiDecisionResponse, DropCommand, RegisterCommand } from "@domain/entities/Decision";
 import { MonitoringResult } from "@domain/entities/Monitoring";
+import { EnvironmentState } from "@domain/entities/EnvironmentState";
 import { PapPolicy, PapSummary } from "@domain/entities/Policy";
 import { Student, StudentGrade } from "@domain/entities/Student";
 
@@ -71,6 +72,21 @@ export class UconApiDataSource {
 
   async recheckActiveSessions(): Promise<MonitoringResult> {
     const response = await this.http.post<MonitoringResult>("/demo/monitor/recheck");
+    return response.data;
+  }
+
+  async getEnvironmentState(): Promise<EnvironmentState> {
+    const response = await this.http.get<EnvironmentState>("/demo/environment/state");
+    return response.data;
+  }
+
+  async openRegistrationWindow(): Promise<EnvironmentState> {
+    const response = await this.http.post<EnvironmentState>("/demo/environment/open-registration");
+    return response.data;
+  }
+
+  async closeRegistrationWindow(): Promise<EnvironmentState> {
+    const response = await this.http.post<EnvironmentState>("/demo/environment/close-registration");
     return response.data;
   }
 
