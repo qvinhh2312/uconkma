@@ -7,6 +7,7 @@ export type MainTabParamList = {
   Dashboard: undefined;
   Student: undefined;
   Admin: undefined;
+  Data: undefined;
   Simulator: undefined;
   Classes: undefined;
   Registered: undefined;
@@ -17,4 +18,5 @@ export type MainTabParamList = {
   Policies: undefined;
   PAP: undefined;
   Validation: undefined;
+  Reports: undefined;
 };
