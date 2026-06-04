@@ -48,7 +48,8 @@ public class DemoStateController {
     }
 
     @GetMapping("/state")
-    public Map<String, Object> state(@RequestParam String studentId, @RequestParam String classId) {
+    public Map<String, Object> state(@RequestParam(defaultValue = "SV001") String studentId,
+                                     @RequestParam(defaultValue = "CS102_01") String classId) {
         Student student = studentRepo.findById(studentId).orElse(null);
         ClassSection cls = classRepo.findById(classId).orElse(null);
         Registration registration = registrationRepo.findByStudentIdAndClassIdAndSemester(studentId, classId, DEMO_SEMESTER)
