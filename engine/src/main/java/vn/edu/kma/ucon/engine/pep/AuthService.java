@@ -55,13 +55,13 @@ public class AuthService {
 
     public AuthPrincipal requireAuthenticated(String authorizationHeader) {
         return authenticate(authorizationHeader)
-                .orElseThrow(() -> new IllegalArgumentException("Authentication token is required."));
+                .orElseThrow(() -> new AuthenticationRequiredException("Authentication token is required."));
     }
 
     public AuthPrincipal requireAdmin(String authorizationHeader) {
         AuthPrincipal principal = requireAuthenticated(authorizationHeader);
         if (principal.role() != AccountRole.ADMIN) {
-            throw new IllegalArgumentException("ADMIN role is required.");
+            throw new ForbiddenRoleException("ADMIN role is required.");
         }
         return principal;
     }

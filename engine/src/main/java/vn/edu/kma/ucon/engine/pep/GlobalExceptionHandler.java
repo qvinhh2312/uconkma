@@ -39,6 +39,18 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.UNPROCESSABLE_ENTITY, "INVARIANT_VIOLATION", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(AuthenticationRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationRequired(AuthenticationRequiredException ex,
+                                                                      HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ForbiddenRoleException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenRole(ForbiddenRoleException ex,
+                                                             HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), request);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex,
                                                                HttpServletRequest request) {
