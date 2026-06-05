@@ -5,14 +5,12 @@ import { useDecisionHistory } from "@app/providers/DecisionProvider";
 import { useSession } from "@app/providers/SessionProvider";
 import { ClassSection } from "@domain/entities/ClassSection";
 import { colors, spacing } from "@core/theme/theme";
+import { friendlyMessage } from "@shared/data/policyMessages";
 import { AppButton } from "@presentation/components/AppButton";
 import { AppScreen } from "@presentation/components/AppScreen";
 import { AppText } from "@presentation/components/AppText";
 import { Card } from "@presentation/components/Card";
-import { DecisionResultCard } from "@presentation/components/DecisionResultCard";
 import { ErrorBanner } from "@presentation/components/ErrorBanner";
-import { Field } from "@presentation/components/Field";
-import { TraceTree } from "@presentation/components/TraceTree";
 import { useAsyncAction } from "@presentation/hooks/useAsyncAction";
 
 export function StudentClassesScreen() {
@@ -30,38 +28,34 @@ export function StudentClassesScreen() {
       sessionLeaseValid: leaseValid,
     }),
   );
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
     classes.execute().catch(() => undefined);
   }, []);
 
   async function handleRegister(classId: string, confirmed: boolean, leaseValid: boolean) {
+    if (!confirmed) {
+      Alert.alert("Không thể đăng kí", "Cần tuân thủ quy định trước khi đăng kí");
+      return;
+    }
     const decision = await register.execute(classId, confirmed, leaseValid);
     setLatestDecision(decision);
+    const decisionText = String(decision.decision ?? "").toUpperCase();
+    if (decisionText === "PERMIT" || decisionText === "ALLOW") {
+      Alert.alert("Đăng kí thành công", "Lớp học phần đã được ghi nhận.");
+      await classes.execute().catch(() => undefined);
+      return;
+    }
+    Alert.alert("Đăng kí thất bại", friendlyMessage(decision.denyReason || decision.failedPolicy));
   }
-
-  const visibleClasses = (classes.result ?? []).filter((item) =>
-    `${item.classId} ${item.courseId} ${item.courseName} ${item.scheduleSlots}`.toLowerCase().includes(search.toLowerCase()),
-  );
 
   return (
     <AppScreen>
-      <AppText variant="label">course registration</AppText>
-      <AppText variant="title">Lop hoc phan co the dang ky</AppText>
+      <AppText variant="title">ĐĂNG KÍ MÔN</AppText>
       <ErrorBanner error={classes.error ?? register.error} />
-      <Card>
-        <Field label="Tim lop / ma mon / lich hoc" value={search} onChangeText={setSearch} />
-      </Card>
-      {visibleClasses.map((item) => (
+      {(classes.result ?? []).map((item) => (
         <ClassCard key={item.classId} item={item} loading={register.loading} onRegister={handleRegister} />
       ))}
-      {register.result ? (
-        <>
-          <DecisionResultCard result={register.result} />
-          <TraceTree trace={register.result.decisionTrace} />
-        </>
-      ) : null}
     </AppScreen>
   );
 }
@@ -80,28 +74,22 @@ function ClassCard({
 
   return (
     <Card>
-      <AppText variant="subtitle">{item.classId}</AppText>
-      <Info label="courseName" value={item.courseName ?? item.courseId ?? "-"} />
-      <Info label="courseId" value={item.courseId ?? "-"} />
-      <Info label="semester" value={item.semester ?? "2026_FALL"} />
-      <Info label="capacity" value={item.capacity} />
-      <Info label="enrolled" value={item.enrolled} />
-      <Info label="reservedSeats" value={item.reservedSeats} />
-      <Info label="status" value={item.status} />
-      <Info label="schedule" value={item.scheduleSlots} />
-      <Info label="credits" value={item.credits ?? "-"} />
-      <Info label="fee" value={`${formatCurrency(item.tuitionFee ?? 0)} VND`} />
-      <Toggle label="Toi xac nhan da doc va dong y quy che dang ky hoc phan" value={confirmed} onValueChange={setConfirmed} />
-      <Toggle label="Session lease valid" value={leaseValid} onValueChange={setLeaseValid} />
+      <AppText variant="subtitle">{item.courseName ?? item.courseId ?? item.classId}</AppText>
+      <Info label="Mã lớp" value={item.classId} />
+      <Info label="Học kỳ" value={item.semester ?? "2026_FALL"} />
+      <Info label="Sĩ số" value={`${item.enrolled}+${item.reservedSeats}/${item.capacity}`} />
+      <Info label="Trạng thái" value={item.status} />
+      <Info label="Lịch học" value={item.scheduleSlots || "-"} />
+      <Info label="Tín chỉ" value={item.credits ?? "-"} />
+      <Info label="Học phí" value={`${formatCurrency(item.tuitionFee ?? 0)} VND`} />
+      <Toggle label="Tôi xác nhận đã đọc và đồng ý quy chế đăng ký học phần" value={confirmed} onValueChange={setConfirmed} />
+      <Toggle label="Phiên xử lý còn hợp lệ" value={leaseValid} onValueChange={setLeaseValid} />
       <View style={styles.actions}>
         <AppButton loading={loading} onPress={() => onRegister(item.classId, confirmed, leaseValid)}>
-          Dang ky
+          Đăng kí
         </AppButton>
         <AppButton tone="secondary" onPress={() => showClassDetail(item)}>
-          Xem chi tiet lop
-        </AppButton>
-        <AppButton tone="secondary" onPress={() => showRelatedPolicies(item)}>
-          Xem policy lien quan
+          Xem chi tiết lớp
         </AppButton>
       </View>
     </Card>
@@ -110,32 +98,15 @@ function ClassCard({
 
 function showClassDetail(item: ClassSection) {
   Alert.alert(
-    `Chi tiet ${item.classId}`,
+    `Chi tiết ${item.classId}`,
     [
-      `Mon: ${item.courseName ?? item.courseId ?? "-"}`,
-      `Hoc ky: ${item.semester ?? "2026_FALL"}`,
-      `Tin chi: ${item.credits ?? "-"}`,
-      `Hoc phi: ${formatCurrency(item.tuitionFee ?? 0)} VND`,
-      `Lich hoc: ${item.scheduleSlots || "-"}`,
-      `Si so: ${item.enrolled}/${item.capacity}`,
-      `Giu cho tam thoi: ${item.reservedSeats}`,
-      `Trang thai: ${item.status}`,
-      `Tien quyet: ${item.prerequisites || "Khong co"}`,
+      `Môn: ${item.courseName ?? item.courseId ?? "-"}`,
+      `Tín chỉ: ${item.credits ?? "-"}`,
+      `Lịch học: ${item.scheduleSlots || "-"}`,
+      `Sĩ số: ${item.enrolled}/${item.capacity}`,
+      `Học phí: ${formatCurrency(item.tuitionFee ?? 0)} VND`,
+      `Tiên quyết: ${item.prerequisites || "Không có"}`,
     ].join("\n"),
-  );
-}
-
-function showRelatedPolicies(item: ClassSection) {
-  Alert.alert(
-    "Policy lien quan",
-    [
-      "P17_AgreeRegistrationRule_PreB0: xac nhan quy che dang ky.",
-      "P01_TuitionPaid_PreA0: dieu kien hoc phi.",
-      "P06_Prerequisite_PreA0: dieu kien tien quyet.",
-      "P08_CapacityRecheck_OnA0: kiem tra lai si so.",
-      "P20_ReserveSeat_OnA2: cap nhat giu cho trong ongoing.",
-      `Lop dang xem: ${item.classId}`,
-    ].join("\n\n"),
   );
 }
 
@@ -143,7 +114,9 @@ function Info({ label, value }: { label: string; value: string | number }) {
   return (
     <View style={styles.info}>
       <AppText variant="muted">{label}</AppText>
-      <AppText variant="body" style={styles.strong}>{value}</AppText>
+      <AppText variant="body" style={styles.strong}>
+        {value}
+      </AppText>
     </View>
   );
 }
@@ -151,7 +124,9 @@ function Info({ label, value }: { label: string; value: string | number }) {
 function Toggle({ label, value, onValueChange }: { label: string; value: boolean; onValueChange(value: boolean): void }) {
   return (
     <View style={styles.toggle}>
-      <AppText variant="body" style={styles.toggleText}>{label}</AppText>
+      <AppText variant="body" style={styles.toggleText}>
+        {label}
+      </AppText>
       <Switch value={value} onValueChange={onValueChange} trackColor={{ true: colors.moss, false: "rgba(16,32,26,0.2)" }} />
     </View>
   );

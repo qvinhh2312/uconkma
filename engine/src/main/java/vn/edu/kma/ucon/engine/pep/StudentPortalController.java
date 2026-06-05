@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -83,6 +85,32 @@ public class StudentPortalController {
             throw new IllegalArgumentException("Logged-in account is not linked to a student profile.");
         }
         return studentDetail(principal.studentId(), authorizationHeader);
+    }
+
+    @PatchMapping("/students/me/profile")
+    public Map<String, Object> updateMyProfile(
+            @RequestBody Map<String, Object> request,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+        AuthPrincipal principal = requireStudent(authorizationHeader);
+        Student student = studentRepository.findById(principal.studentId())
+                .orElseThrow(() -> new IllegalArgumentException("Student not found: " + principal.studentId()));
+        if (request.containsKey("email")) {
+            String email = textValue(request.get("email"), "email");
+            if (!email.contains("@")) {
+                throw new IllegalArgumentException("email must be valid.");
+            }
+            student.setEmail(email);
+        }
+        if (request.containsKey("dateOfBirth")) {
+            student.setDateOfBirth(textValue(request.get("dateOfBirth"), "dateOfBirth"));
+        }
+        if (request.containsKey("gender")) {
+            student.setGender(textValue(request.get("gender"), "gender"));
+        }
+        studentRepository.save(student);
+        Map<String, Object> response = studentDetail(student);
+        response.put("message", "Profile updated.");
+        return response;
     }
 
     @GetMapping("/students/me/dashboard")
@@ -178,6 +206,8 @@ public class StudentPortalController {
         data.put("studentId", student.getStudentId());
         data.put("fullName", safe(student.getFullName()));
         data.put("email", safe(student.getEmail()));
+        data.put("dateOfBirth", safe(student.getDateOfBirth()));
+        data.put("gender", safe(student.getGender()));
         data.put("major", safe(student.getMajor()));
         data.put("cohort", safe(student.getCohort()));
         data.put("currentCredits", student.getCurrentCredits());
@@ -281,6 +311,13 @@ public class StudentPortalController {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private String textValue(Object value, String fieldName) {
+        if (value == null || value.toString().isBlank()) {
+            throw new IllegalArgumentException(fieldName + " is required.");
+        }
+        return value.toString().trim();
     }
 
     private int completedCredits(Student student) {

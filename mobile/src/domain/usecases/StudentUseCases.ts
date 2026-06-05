@@ -15,6 +15,10 @@ export class StudentUseCases {
     return this.studentRepository.getMyProfile();
   }
 
+  updateMyProfile(profile: { email: string; dateOfBirth: string; gender: string }) {
+    return this.studentRepository.updateMyProfile(profile);
+  }
+
   getMyGrades() {
     return this.studentRepository.getMyGrades();
   }

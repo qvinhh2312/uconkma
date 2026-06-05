@@ -13,6 +13,8 @@ public class Student {
 
     private String fullName;
     private String email;
+    private String dateOfBirth;
+    private String gender;
     private String major;
     private String cohort;
 
@@ -49,6 +51,12 @@ public class Student {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
 
     public String getMajor() { return major; }
     public void setMajor(String major) { this.major = major; }

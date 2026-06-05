@@ -5,7 +5,7 @@ export type RootStackParamList = {
 
 export type MainTabParamList = {
   Dashboard: undefined;
-  Student: undefined;
+  Profile: undefined;
   Admin: undefined;
   Data: undefined;
   Simulator: undefined;

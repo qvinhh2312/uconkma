@@ -7,7 +7,6 @@ import { AppText } from "@presentation/components/AppText";
 import { Card } from "@presentation/components/Card";
 import { ErrorBanner } from "@presentation/components/ErrorBanner";
 import { Field } from "@presentation/components/Field";
-import { JsonPanel } from "@presentation/components/JsonPanel";
 import { useAsyncAction } from "@presentation/hooks/useAsyncAction";
 import { spacing } from "@core/theme/theme";
 
@@ -97,8 +96,6 @@ export function AdminDataScreen() {
           ))}
         </Card>
       </View>
-      {studentState.result ? <JsonPanel title="Student update response" data={studentState.result} /> : null}
-      {classState.result ? <JsonPanel title="Class update response" data={classState.result} /> : null}
     </AppScreen>
   );
 }

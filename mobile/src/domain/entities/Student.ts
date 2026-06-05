@@ -2,6 +2,8 @@ export type Student = {
   studentId: string;
   fullName: string;
   email: string;
+  dateOfBirth?: string;
+  gender?: string;
   major: string;
   cohort: string;
   currentCredits: number;

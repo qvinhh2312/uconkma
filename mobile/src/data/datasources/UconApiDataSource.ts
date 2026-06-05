@@ -38,6 +38,11 @@ export class UconApiDataSource {
     return response.data;
   }
 
+  async updateMyProfile(profile: { email: string; dateOfBirth: string; gender: string }): Promise<Student> {
+    const response = await this.http.patch<Student>("/students/me/profile", profile);
+    return response.data;
+  }
+
   async getMyDashboard(): Promise<StudentDashboard> {
     const response = await this.http.get<StudentDashboard>("/students/me/dashboard");
     return response.data;

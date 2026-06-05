@@ -8,7 +8,6 @@ import { AppText } from "@presentation/components/AppText";
 import { Card } from "@presentation/components/Card";
 import { ErrorBanner } from "@presentation/components/ErrorBanner";
 import { Field } from "@presentation/components/Field";
-import { JsonPanel } from "@presentation/components/JsonPanel";
 import { MetricCard } from "@presentation/components/MetricCard";
 import { useAsyncAction } from "@presentation/hooks/useAsyncAction";
 import { spacing } from "@core/theme/theme";
@@ -37,7 +36,12 @@ export function MonitoringScreen() {
         <AppButton tone="secondary" loading={summary.loading} onPress={() => summary.execute()}>
           Refresh summary
         </AppButton>
-        {summary.result ? <JsonPanel title="Summary" data={summary.result} /> : null}
+        {summary.result ? (
+          <View style={styles.metrics}>
+            <MetricCard label="Active" value={Number(summary.result.activeSessions ?? 0)} />
+            <MetricCard label="Revoked" value={Number(summary.result.revokedSessions ?? 0)} />
+          </View>
+        ) : null}
       </Card>
       <Card>
         <AppText variant="subtitle">Maintenance</AppText>
@@ -76,13 +80,15 @@ export function MonitoringScreen() {
         </AppButton>
       </Card>
       {result ? (
-        <>
+        <Card>
+          <AppText variant="subtitle">Kết quả recheck</AppText>
           <View style={styles.metrics}>
             <MetricCard label="Checked sessions" value={Number(result.checkedSessions ?? 0)} />
             <MetricCard label="Revoked sessions" value={Number(result.revokedSessions ?? 0)} />
           </View>
-          <JsonPanel title="Monitoring response" data={result} />
-        </>
+          <AppText variant="body">Trigger: {String(result.trigger ?? "-")}</AppText>
+          <AppText variant="body">{String(result.message ?? "Recheck completed.")}</AppText>
+        </Card>
       ) : null}
     </AppScreen>
   );

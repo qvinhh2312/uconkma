@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
 import { dependencies } from "@app/di";
 import { useSession } from "@app/providers/SessionProvider";
 import { AppButton } from "@presentation/components/AppButton";
@@ -7,81 +7,73 @@ import { AppScreen } from "@presentation/components/AppScreen";
 import { AppText } from "@presentation/components/AppText";
 import { Card } from "@presentation/components/Card";
 import { ErrorBanner } from "@presentation/components/ErrorBanner";
+import { Field } from "@presentation/components/Field";
 import { useAsyncAction } from "@presentation/hooks/useAsyncAction";
 import { spacing } from "@core/theme/theme";
 
 export function StudentPortalScreen() {
-  const { session, logout } = useSession();
+  const { logout } = useSession();
   const profile = useAsyncAction(() => dependencies.students.getMyProfile());
-  const grades = useAsyncAction(() => dependencies.students.getMyGrades());
-  const classes = useAsyncAction(() => dependencies.students.listClasses());
+  const updateProfile = useAsyncAction((email: string, dateOfBirth: string, gender: string) =>
+    dependencies.students.updateMyProfile({ email, dateOfBirth, gender }),
+  );
+  const [email, setEmail] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("");
 
   useEffect(() => {
-    if (session?.role === "STUDENT") {
-      profile.execute().catch(() => undefined);
-      grades.execute().catch(() => undefined);
-      classes.execute().catch(() => undefined);
-    }
-  }, [session?.role]);
+    profile.execute().catch(() => undefined);
+  }, []);
 
-  const registeredClassIds = parseCsv(profile.result?.registeredClassIds);
-  const registeredClasses = (classes.result ?? []).filter((item) => registeredClassIds.includes(item.classId));
+  useEffect(() => {
+    if (profile.result) {
+      setEmail(profile.result.email ?? "");
+      setDateOfBirth(profile.result.dateOfBirth ?? "");
+      setGender(profile.result.gender ?? "");
+    }
+  }, [profile.result]);
+
+  async function saveProfile() {
+    const updated = await updateProfile.execute(email, dateOfBirth, gender);
+    Alert.alert("Đã cập nhật", "Thông tin cá nhân đã được lưu.");
+    setEmail(updated.email ?? "");
+    setDateOfBirth(updated.dateOfBirth ?? "");
+    setGender(updated.gender ?? "");
+    await profile.execute().catch(() => undefined);
+  }
+
+  const data = updateProfile.result ?? profile.result;
 
   return (
     <AppScreen>
-      <AppText variant="label">student scope</AppText>
-      <AppText variant="title">My Student Portal</AppText>
-      <ErrorBanner error={profile.error ?? grades.error} />
-      <Card>
-        <AppText variant="subtitle">{session?.displayName}</AppText>
-        <AppText variant="body">Role: {session?.role}</AppText>
-        <AppText variant="body">Student ID: {session?.studentId ?? "-"}</AppText>
-        <AppButton tone="secondary" onPress={() => logout()} style={styles.logout}>
-          Logout
-        </AppButton>
-      </Card>
-      {profile.result ? (
-        <Card>
-          <AppText variant="subtitle">{profile.result.fullName}</AppText>
-          <InfoRow label="Ma sinh vien" value={profile.result.studentId} />
-          <InfoRow label="Email" value={profile.result.email} />
-          <AppText variant="body">Major: {profile.result.major}</AppText>
-          <InfoRow label="Khoa" value={profile.result.cohort} />
-          <InfoRow label="Tin chi dang hoc" value={profile.result.currentCredits ?? 0} />
-          <InfoRow label="Tin chi da hoan thanh" value={profile.result.completedCredits ?? 0} />
-          <InfoRow label="Hoc phi da xac nhan" value={profile.result.tuitionPaid ? "Da hoan tat" : "Chua hoan tat"} />
-          <InfoRow label="Du no hoc phi" value={`${formatCurrency(profile.result.tuitionDebt)} VND`} />
-          <InfoRow label="Canh bao/hold" value={profile.result.holds || "Khong co"} />
-          <InfoRow label="Hoc phan da qua" value={profile.result.completedCourses || "Chua co"} />
-        </Card>
-      ) : null}
-      <Card>
-        <AppText variant="subtitle">Lop hoc da dang ky</AppText>
-        {registeredClasses.length ? (
-          registeredClasses.map((item) => (
-            <View key={item.classId} style={styles.registeredClass}>
-              <AppText variant="body" style={styles.strong}>
-                {item.classId} / {item.courseId}
-              </AppText>
-              <AppText variant="muted">Lich: {item.scheduleSlots}</AppText>
-              <AppText variant="muted">Trang thai: {item.status}</AppText>
-              <AppText variant="muted">Tin chi: {item.credits ?? "-"} / Hoc phi: {formatCurrency(item.tuitionFee ?? 0)} VND</AppText>
-            </View>
-          ))
-        ) : (
-          <AppText variant="muted">Sinh vien chua co lop nao trong hoc ky hien tai.</AppText>
-        )}
-      </Card>
-      {grades.result ? (
-        <Card>
-          <AppText variant="subtitle">Grades</AppText>
-          {grades.result.map((grade) => (
-            <View key={`${grade.courseId}-${grade.semester}`} style={styles.grade}>
-              <AppText variant="body">{grade.courseId} - {grade.courseName}</AppText>
-              <AppText variant="muted">{grade.semester}: {grade.totalScore} / {grade.letterGrade}</AppText>
-            </View>
-          ))}
-        </Card>
+      <AppText variant="title">Profile</AppText>
+      <ErrorBanner error={profile.error ?? updateProfile.error} />
+      {data ? (
+        <>
+          <Card>
+            <AppText variant="subtitle">{data.fullName}</AppText>
+            <InfoRow label="Mã sinh viên" value={data.studentId} />
+            <InfoRow label="Ngành" value={data.major} />
+            <InfoRow label="Khóa" value={data.cohort} />
+            <InfoRow label="Tín chỉ hiện tại" value={data.currentCredits} />
+            <InfoRow label="Tín chỉ hoàn thành" value={data.completedCredits ?? 0} />
+            <InfoRow label="Công nợ" value={`${formatCurrency(data.tuitionDebt)} VND`} />
+            <InfoRow label="Hold" value={data.holds || "Không có"} />
+            <InfoRow label="Môn đã hoàn thành" value={data.completedCourses || "Chưa có"} />
+          </Card>
+          <Card>
+            <AppText variant="subtitle">Thông tin có thể chỉnh sửa</AppText>
+            <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <Field label="Ngày sinh (YYYY-MM-DD)" value={dateOfBirth} onChangeText={setDateOfBirth} />
+            <Field label="Giới tính" value={gender} onChangeText={setGender} />
+            <AppButton loading={updateProfile.loading} onPress={saveProfile}>
+              Lưu thay đổi
+            </AppButton>
+          </Card>
+          <AppButton tone="secondary" onPress={logout} style={styles.logout}>
+            Logout
+          </AppButton>
+        </>
       ) : null}
     </AppScreen>
   );
@@ -98,22 +90,11 @@ function InfoRow({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function parseCsv(value?: string) {
-  if (!value || value === "<empty>") return [];
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
-}
-
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("vi-VN").format(value);
 }
 
 const styles = StyleSheet.create({
-  logout: {
-    marginTop: spacing.md,
-  },
-  grade: {
-    marginTop: spacing.md,
-  },
   infoRow: {
     borderBottomColor: "rgba(16,32,26,0.08)",
     borderBottomWidth: 1,
@@ -122,7 +103,7 @@ const styles = StyleSheet.create({
   strong: {
     fontWeight: "800",
   },
-  registeredClass: {
+  logout: {
     marginTop: spacing.md,
   },
 });

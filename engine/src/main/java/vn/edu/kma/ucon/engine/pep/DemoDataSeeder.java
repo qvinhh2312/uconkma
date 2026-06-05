@@ -53,16 +53,20 @@ public class DemoDataSeeder implements CommandLineRunner {
         Course cs201 = upsertCourse("CS201", "Lap trinh huong doi tuong", 3, "CS101", 3500000);
         Course net201 = upsertCourse("NET201", "Mang may tinh", 3, "CS101", 3600000);
         Course sec301 = upsertCourse("SEC301", "An toan ung dung", 4, "CS102,NET201", 4800000);
+        upsertCourse("MATH01", "Toan roi rac", 3, "", 2500000);
+        upsertCourse("ENG101", "Tieng Anh chuyen nganh", 2, "", 1800000);
+        upsertCourse("PHY101", "Vat ly dai cuong", 3, "", 2400000);
+        upsertCourse("NET101", "Nhap mon mang may tinh", 3, "", 2600000);
 
         upsertClassSection("CS101_01", cs101, 30, 10, "T2_1-3", "OPEN");
         upsertClassSection("CS102_01", cs102, 5, 4, "T3_1-3,T5_4-6", "OPEN");
-        upsertClassSection("CS201_01", cs201, 25, 12, "T4_1-3", "OPEN");
+        upsertClassSection("CS201_01", cs201, 25, 12, "T3_1-3", "OPEN");
         upsertClassSection("NET201_01", net201, 20, 18, "T2_7-9,T6_1-3", "OPEN");
         upsertClassSection("SEC301_01", sec301, 15, 14, "T5_7-9,T7_1-3", "OPEN");
     }
 
     private void seedStudents() {
-        upsertStudent("SV001", "Nguyen Van An", "An toan thong tin", "K2023", true, "CS101", "", 15);
+        upsertStudent("SV001", "Nguyen Van An", "An toan thong tin", "K2023", true, "CS101,MATH01,ENG101,PHY101,NET101", "", 15);
         upsertStudent("SV002", "Tran Thi Binh", "Cong nghe thong tin", "K2023", false, "CS101", "", 15);
         upsertStudent("SV003", "Le Minh Chau", "An toan thong tin", "K2022", true, "CS101,CS102", "", 18);
         upsertStudent("SV004", "Pham Quoc Dung", "Ky thuat phan mem", "K2022", true, "CS101", "ACADEMIC_HOLD", 15);
@@ -145,6 +149,8 @@ public class DemoDataSeeder implements CommandLineRunner {
         student.setStudentId(studentId);
         student.setFullName(defaultText(student.getFullName(), fullName));
         student.setEmail(defaultText(student.getEmail(), studentId.toLowerCase() + "@kma.edu.vn"));
+        student.setDateOfBirth(defaultText(student.getDateOfBirth(), "2005-01-01"));
+        student.setGender(defaultText(student.getGender(), "Nam"));
         student.setMajor(defaultText(student.getMajor(), major));
         student.setCohort(defaultText(student.getCohort(), cohort));
         student.setTuitionPaid(tuitionPaid);

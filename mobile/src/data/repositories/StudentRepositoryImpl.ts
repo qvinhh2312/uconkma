@@ -32,6 +32,14 @@ export class StudentRepositoryImpl implements StudentRepository {
     }
   }
 
+  async updateMyProfile(profile: { email: string; dateOfBirth: string; gender: string }): Promise<Student> {
+    try {
+      return await this.api.updateMyProfile(profile);
+    } catch (error) {
+      throw normalizeError(error);
+    }
+  }
+
   async getMyGrades(): Promise<StudentGrade[]> {
     try {
       return await this.api.getMyGrades();

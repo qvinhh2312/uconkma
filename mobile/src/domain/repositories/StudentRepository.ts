@@ -6,6 +6,7 @@ export interface StudentRepository {
   listStudents(): Promise<Student[]>;
   getMyDashboard(): Promise<StudentDashboard>;
   getMyProfile(): Promise<Student>;
+  updateMyProfile(profile: { email: string; dateOfBirth: string; gender: string }): Promise<Student>;
   getMyGrades(): Promise<StudentGrade[]>;
   listClasses(): Promise<ClassSection[]>;
   getMyRegisteredClasses(): Promise<RegisteredClass[]>;

@@ -90,6 +90,9 @@ public class AdminPortalService {
         response.put("domainSummary", Map.of(
                 "students", studentRepository.count(),
                 "classes", classSectionRepository.count(),
+                "openClasses", classSectionRepository.findAll().stream()
+                        .filter(classSection -> "OPEN".equalsIgnoreCase(safe(classSection.getStatus())))
+                        .count(),
                 "registrations", registrationRepository.count(),
                 "auditLogs", auditLogRepository.count()));
         response.put("environment", environmentStateService.snapshot());
